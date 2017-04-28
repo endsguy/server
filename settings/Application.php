@@ -35,8 +35,12 @@ use OC\App\AppStore\Fetcher\CategoryFetcher;
 use OC\AppFramework\Utility\TimeFactory;
 use OC\Authentication\Token\IProvider;
 use OC\Server;
+use OC\Settings\Activity\Provider;
+use OC\Settings\Activity\Setting;
+use OC\Settings\Mailer\NewUserMailHelper;
 use OC\Settings\Middleware\SubadminMiddleware;
 use OCP\AppFramework\App;
+use OCP\Defaults;
 use OCP\IContainer;
 use OCP\Settings\IManager;
 use OCP\Util;
@@ -75,9 +79,6 @@ class Application extends App {
 			}
 			return $isSubAdmin;
 		});
-		$container->registerService('fromMailAddress', function() {
-			return Util::getDefaultEmailAddress('no-reply');
-		});
 		$container->registerService('userCertificateManager', function(IContainer $c) {
 			return $c->query('ServerContainer')->getCertificateManager();
 		}, false);
@@ -89,6 +90,25 @@ class Application extends App {
 		});
 		$container->registerService(IManager::class, function (IContainer $c) {
 			return $c->query('ServerContainer')->getSettingsManager();
+		});
+
+		$container->registerService(NewUserMailHelper::class, function (IContainer $c) {
+			/** @var Server $server */
+			$server = $c->query('ServerContainer');
+			/** @var Defaults $defaults */
+			$defaults = $server->query(Defaults::class);
+
+			return new NewUserMailHelper(
+				$defaults,
+				$server->getURLGenerator(),
+				$server->getL10N('settings'),
+				$server->getMailer(),
+				$server->getSecureRandom(),
+				new TimeFactory(),
+				$server->getConfig(),
+				$server->getCrypto(),
+				Util::getDefaultEmailAddress('no-reply')
+			);
 		});
 		$container->registerService(AppFetcher::class, function (IContainer $c) {
 			/** @var Server $server */
@@ -106,8 +126,48 @@ class Application extends App {
 			return new CategoryFetcher(
 				$server->getAppDataDir('appstore'),
 				$server->getHTTPClientService(),
-				$server->query(TimeFactory::class)
+				$server->query(TimeFactory::class),
+				$server->getConfig()
 			);
 		});
+	}
+
+	public function register() {
+		$activityManager = $this->getContainer()->getServer()->getActivityManager();
+		$activityManager->registerSetting(Setting::class); // FIXME move to info.xml
+		$activityManager->registerProvider(Provider::class); // FIXME move to info.xml
+
+		Util::connectHook('OC_User', 'post_setPassword', $this, 'onChangePassword');
+		Util::connectHook('OC_User', 'changeUser', $this, 'onChangeInfo');
+	}
+
+	/**
+	 * @param array $parameters
+	 * @throws \InvalidArgumentException
+	 * @throws \BadMethodCallException
+	 * @throws \Exception
+	 * @throws \OCP\AppFramework\QueryException
+	 */
+	public function onChangePassword(array $parameters) {
+		/** @var Hooks $hooks */
+		$hooks = $this->getContainer()->query(Hooks::class);
+		$hooks->onChangePassword($parameters['uid']);
+	}
+
+	/**
+	 * @param array $parameters
+	 * @throws \InvalidArgumentException
+	 * @throws \BadMethodCallException
+	 * @throws \Exception
+	 * @throws \OCP\AppFramework\QueryException
+	 */
+	public function onChangeInfo(array $parameters) {
+		if ($parameters['feature'] !== 'eMailAddress') {
+			return;
+		}
+
+		/** @var Hooks $hooks */
+		$hooks = $this->getContainer()->query(Hooks::class);
+		$hooks->onChangeEmail($parameters['user'], $parameters['old_value']);
 	}
 }

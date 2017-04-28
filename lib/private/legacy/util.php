@@ -137,7 +137,7 @@ class OC_Util {
 		// If we are not forced to load a specific user we load the one that is logged in
 		if ($user === null) {
 			$user = '';
-		} else if ($user == "" && OC_User::isLoggedIn()) {
+		} else if ($user == "" && \OC::$server->getUserSession()->isLoggedIn()) {
 			$user = OC_User::getUser();
 		}
 
@@ -631,15 +631,15 @@ class OC_Util {
 	/**
 	 * check if the current server configuration is suitable for ownCloud
 	 *
-	 * @param \OCP\IConfig $config
+	 * @param \OC\SystemConfig $config
 	 * @return array arrays with error messages and hints
 	 */
-	public static function checkServer(\OCP\IConfig $config) {
+	public static function checkServer(\OC\SystemConfig $config) {
 		$l = \OC::$server->getL10N('lib');
 		$errors = array();
-		$CONFIG_DATADIRECTORY = $config->getSystemValue('datadirectory', OC::$SERVERROOT . '/data');
+		$CONFIG_DATADIRECTORY = $config->getValue('datadirectory', OC::$SERVERROOT . '/data');
 
-		if (!self::needUpgrade($config) && $config->getSystemValue('installed', false)) {
+		if (!self::needUpgrade($config) && $config->getValue('installed', false)) {
 			// this check needs to be done every time
 			$errors = self::checkDataDirectoryValidity($CONFIG_DATADIRECTORY);
 		}
@@ -651,7 +651,7 @@ class OC_Util {
 
 		$webServerRestart = false;
 		$setup = new \OC\Setup($config, \OC::$server->getIniWrapper(), \OC::$server->getL10N('lib'),
-			\OC::$server->getThemingDefaults(), \OC::$server->getLogger(), \OC::$server->getSecureRandom());
+			\OC::$server->query(\OCP\Defaults::class), \OC::$server->getLogger(), \OC::$server->getSecureRandom());
 
 		$urlGenerator = \OC::$server->getURLGenerator();
 
@@ -677,7 +677,7 @@ class OC_Util {
 		}
 
 		// Check if there is a writable install folder.
-		if ($config->getSystemValue('appstoreenabled', true)) {
+		if ($config->getValue('appstoreenabled', true)) {
 			if (OC_App::getInstallPath() === null
 				|| !is_writable(OC_App::getInstallPath())
 				|| !is_readable(OC_App::getInstallPath())
@@ -692,28 +692,28 @@ class OC_Util {
 			}
 		}
 		// Create root dir.
-		if ($config->getSystemValue('installed', false)) {
+		if ($config->getValue('installed', false)) {
 			if (!is_dir($CONFIG_DATADIRECTORY)) {
 				$success = @mkdir($CONFIG_DATADIRECTORY);
 				if ($success) {
 					$errors = array_merge($errors, self::checkDataDirectoryPermissions($CONFIG_DATADIRECTORY));
 				} else {
-					$errors[] = array(
-						'error' => $l->t('Cannot create "data" directory (%s)', array($CONFIG_DATADIRECTORY)),
+					$errors[] = [
+						'error' => $l->t('Cannot create "data" directory'),
 						'hint' => $l->t('This can usually be fixed by '
 							. '<a href="%s" target="_blank" rel="noreferrer">giving the webserver write access to the root directory</a>.',
-							array($urlGenerator->linkToDocs('admin-dir_permissions')))
-					);
+							[$urlGenerator->linkToDocs('admin-dir_permissions')])
+					];
 				}
 			} else if (!is_writable($CONFIG_DATADIRECTORY) or !is_readable($CONFIG_DATADIRECTORY)) {
 				//common hint for all file permissions error messages
 				$permissionsHint = $l->t('Permissions can usually be fixed by '
 					. '%sgiving the webserver write access to the root directory%s.',
-					array('<a href="' . $urlGenerator->linkToDocs('admin-dir_permissions') . '" target="_blank" rel="noreferrer">', '</a>'));
-				$errors[] = array(
-					'error' => 'Data directory (' . $CONFIG_DATADIRECTORY . ') not writable',
+					['<a href="' . $urlGenerator->linkToDocs('admin-dir_permissions') . '" target="_blank" rel="noreferrer">', '</a>']);
+				$errors[] = [
+					'error' => 'Your data directory is not writable',
 					'hint' => $permissionsHint
-				);
+				];
 			} else {
 				$errors = array_merge($errors, self::checkDataDirectoryPermissions($CONFIG_DATADIRECTORY));
 			}
@@ -923,15 +923,15 @@ class OC_Util {
 		$permissionsModHint = $l->t('Please change the permissions to 0770 so that the directory'
 			. ' cannot be listed by other users.');
 		$perms = substr(decoct(@fileperms($dataDirectory)), -3);
-		if (substr($perms, -1) != '0') {
+		if (substr($perms, -1) !== '0') {
 			chmod($dataDirectory, 0770);
 			clearstatcache();
 			$perms = substr(decoct(@fileperms($dataDirectory)), -3);
-			if (substr($perms, 2, 1) != '0') {
-				$errors[] = array(
-					'error' => $l->t('Data directory (%s) is readable by other users', array($dataDirectory)),
+			if ($perms[2] !== '0') {
+				$errors[] = [
+					'error' => $l->t('Your data directory is readable by other users'),
 					'hint' => $permissionsModHint
-				);
+				];
 			}
 		}
 		return $errors;
@@ -949,13 +949,13 @@ class OC_Util {
 		$errors = [];
 		if ($dataDirectory[0] !== '/') {
 			$errors[] = [
-				'error' => $l->t('Data directory (%s) must be an absolute path', [$dataDirectory]),
+				'error' => $l->t('Your data directory must be an absolute path'),
 				'hint' => $l->t('Check the value of "datadirectory" in your configuration')
 			];
 		}
 		if (!file_exists($dataDirectory . '/.ocdata')) {
 			$errors[] = [
-				'error' => $l->t('Data directory (%s) is invalid', [$dataDirectory]),
+				'error' => $l->t('Your data directory is invalid'),
 				'hint' => $l->t('Please check that the data directory contains a file' .
 					' ".ocdata" in its root.')
 			];
@@ -971,7 +971,7 @@ class OC_Util {
 	 */
 	public static function checkLoggedIn() {
 		// Check if we are a user
-		if (!OC_User::isLoggedIn()) {
+		if (!\OC::$server->getUserSession()->isLoggedIn()) {
 			header('Location: ' . \OC::$server->getURLGenerator()->linkToRoute(
 						'core.login.showLoginForm',
 						[
@@ -981,9 +981,9 @@ class OC_Util {
 			);
 			exit();
 		}
-		// Redirect to index page if 2FA challenge was not solved yet
+		// Redirect to 2FA challenge selection if 2FA challenge was not solved yet
 		if (\OC::$server->getTwoFactorAuthManager()->needsSecondFactor(\OC::$server->getUserSession()->getUser())) {
-			header('Location: ' . \OCP\Util::linkToAbsolute('', 'index.php'));
+			header('Location: ' . \OC::$server->getURLGenerator()->linkToRoute('core.TwoFactorChallenge.selectChallenge'));
 			exit();
 		}
 	}
@@ -999,27 +999,6 @@ class OC_Util {
 			header('Location: ' . \OCP\Util::linkToAbsolute('', 'index.php'));
 			exit();
 		}
-	}
-
-	/**
-	 * Check if it is allowed to remember login.
-	 *
-	 * @note Every app can set 'rememberlogin' to 'false' to disable the remember login feature
-	 *
-	 * @return bool
-	 */
-	public static function rememberLoginAllowed() {
-
-		$apps = OC_App::getEnabledApps();
-
-		foreach ($apps as $app) {
-			$appInfo = OC_App::getAppInfo($app);
-			if (isset($appInfo['rememberlogin']) && $appInfo['rememberlogin'] === 'false') {
-				return false;
-			}
-
-		}
-		return true;
 	}
 
 	/**
@@ -1381,12 +1360,12 @@ class OC_Util {
 	}
 
 	/**
-	 * A human readable string is generated based on version, channel and build number
+	 * A human readable string is generated based on version and build number
 	 *
 	 * @return string
 	 */
 	public static function getHumanVersion() {
-		$version = OC_Util::getVersionString() . ' (' . OC_Util::getChannel() . ')';
+		$version = OC_Util::getVersionString();
 		$build = OC_Util::getBuild();
 		if (!empty($build) and OC_Util::getChannel() === 'daily') {
 			$version .= ' Build:' . $build;
@@ -1409,6 +1388,12 @@ class OC_Util {
 		if (\OC\Files\Filesystem::isIgnoredDir($trimmed)) {
 			return false;
 		}
+
+		// detect part files
+		if (preg_match('/' . \OCP\Files\FileInfo::BLACKLIST_FILES_REGEX . '/', $trimmed) !== 0) {
+			return false;
+		}
+
 		foreach (str_split($trimmed) as $char) {
 			if (strpos(\OCP\Constants::FILENAME_INVALID_CHARS, $char) !== false) {
 				return false;
@@ -1422,18 +1407,18 @@ class OC_Util {
 	 * either when the core version is higher or any app requires
 	 * an upgrade.
 	 *
-	 * @param \OCP\IConfig $config
+	 * @param \OC\SystemConfig $config
 	 * @return bool whether the core or any app needs an upgrade
 	 * @throws \OC\HintException When the upgrade from the given version is not allowed
 	 */
-	public static function needUpgrade(\OCP\IConfig $config) {
-		if ($config->getSystemValue('installed', false)) {
-			$installedVersion = $config->getSystemValue('version', '0.0.0');
+	public static function needUpgrade(\OC\SystemConfig $config) {
+		if ($config->getValue('installed', false)) {
+			$installedVersion = $config->getValue('version', '0.0.0');
 			$currentVersion = implode('.', \OCP\Util::getVersion());
 			$versionDiff = version_compare($currentVersion, $installedVersion);
 			if ($versionDiff > 0) {
 				return true;
-			} else if ($config->getSystemValue('debug', false) && $versionDiff < 0) {
+			} else if ($config->getValue('debug', false) && $versionDiff < 0) {
 				// downgrade with debug
 				$installedMajor = explode('.', $installedVersion);
 				$installedMajor = $installedMajor[0] . '.' . $installedMajor[1];

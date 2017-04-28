@@ -68,7 +68,7 @@ describe('OCA.Files.FileList tests', function() {
 			useHTTPS: false
 		});
 		redirectStub = sinon.stub(OC, 'redirect');
-		notificationStub = sinon.stub(OC.Notification, 'showTemporary');
+		notificationStub = sinon.stub(OC.Notification, 'show');
 		// prevent resize algo to mess up breadcrumb order while
 		// testing
 		bcResizeStub = sinon.stub(OCA.Files.BreadCrumb.prototype, '_resize');
@@ -1507,6 +1507,12 @@ describe('OCA.Files.FileList tests', function() {
 			$('#app-content-files').trigger(new $.Event('urlChanged', {view: 'files', dir: '/somedir'}));
 			expect(fileList.getCurrentDirectory()).toEqual('/somedir');
 		});
+		it('reloads the list when leaving hidden state', function() {
+			var reloadStub = sinon.stub(fileList, 'reload');
+			$('#app-content-files').trigger(new $.Event('show'));
+			expect(reloadStub.calledOnce).toEqual(true);
+			reloadStub.restore();
+		});
 		it('refreshes breadcrumb after update', function() {
 			var setDirSpy = sinon.spy(fileList.breadcrumb, 'setDirectory');
 			fileList.changeDirectory('/anothersubdir');
@@ -2273,7 +2279,7 @@ describe('OCA.Files.FileList tests', function() {
 			var actionStub = sinon.stub();
 			var readyHandler = sinon.stub();
 			var clock = sinon.useFakeTimers();
-			var debounceStub = sinon.stub(_, 'debounce', function(callback) {
+			var debounceStub = sinon.stub(_, 'debounce').callsFake(function(callback) {
 				return function() {
 					// defer instead of debounce, to make it work with clock
 					_.defer(callback);
@@ -3003,6 +3009,24 @@ describe('OCA.Files.FileList tests', function() {
 			testMountType(123, null, 'external', 'external-root');
 			testMountType(123, 'external', 'external', 'external');
 			testMountType(123, 'external-root', 'external', 'external');
+		});
+	});
+	describe('file list should not refresh if url does not change', function() {
+		var fileListStub;
+
+		beforeEach(function() {
+			fileListStub = sinon.stub(OCA.Files.FileList.prototype, 'changeDirectory');
+		});
+		afterEach(function() {
+			fileListStub.restore();
+		});
+		it('File list must not be refreshed', function() {
+			$('#app-content-files').trigger(new $.Event('urlChanged', {dir: '/subdir'}));
+			expect(fileListStub.notCalled).toEqual(true);
+		});
+		it('File list must be refreshed', function() {
+			$('#app-content-files').trigger(new $.Event('urlChanged', {dir: '/'}));
+			expect(fileListStub.notCalled).toEqual(false);
 		});
 	});
 });

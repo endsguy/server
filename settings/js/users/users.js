@@ -10,6 +10,7 @@
 
 var $userList;
 var $userListBody;
+var $emptyContainer;
 
 var UserDeleteHandler;
 var UserList = {
@@ -396,15 +397,25 @@ var UserList = {
 					}
 					UserList.add(user);
 				});
+
 				if (result.length > 0) {
 					UserList.doSort();
 					$userList.siblings('.loading').css('visibility', 'hidden');
 					// reset state on load
 					UserList.noMoreEntries = false;
+					$userListHead.show();
+					$emptyContainer.hide();
+					$emptyContainer.find('h2').text('');
 				}
 				else {
 					UserList.noMoreEntries = true;
 					$userList.siblings('.loading').remove();
+
+					if (pattern !== ""){
+						$userListHead.hide();
+						$emptyContainer.show();
+						$emptyContainer.find('h2').html(t('settings', 'No user found for <strong>{pattern}</strong>', {pattern: pattern}));
+					}
 				}
 				UserList.offset += limit;
 			}).always(function() {
@@ -414,48 +425,69 @@ var UserList = {
 
 	applyGroupSelect: function (element, user, checked) {
 		if (OC.PasswordConfirmation.requiresPasswordConfirmation()) {
-			OC.PasswordConfirmation.requirePasswordConfirmation(_.bind(this.applySubadminSelect, this, element, user, checked));
+			OC.PasswordConfirmation.requirePasswordConfirmation(_.bind(this.applyGroupSelect, this, element, user, checked));
 			return;
 		}
 
 		var $element = $(element);
 
-		var checkHandler = null;
+		var addUserToGroup = null,
+			removeUserFromGroup = null;
 		if(user) { // Only if in a user row, and not the #newusergroups select
-			checkHandler = function (group) {
-				if (user === OC.currentUser && group === 'admin') {
+			var handleUserGroupMembership = function (group, add) {
+				if (user === OC.getCurrentUser().uid && group === 'admin') {
 					return false;
 				}
 				if (!OC.isUserAdmin() && checked.length === 1 && checked[0] === group) {
 					return false;
 				}
-				$.post(
-					OC.filePath('settings', 'ajax', 'togglegroups.php'),
-					{
-						username: user,
-						group: group
-					},
-					function (response) {
-						if (response.status === 'success') {
-							GroupList.update();
-							var groupName = response.data.groupname;
-							if (UserList.availableGroups.indexOf(groupName) === -1 &&
-								response.data.action === 'add'
-							) {
-								UserList.availableGroups.push(groupName);
-							}
 
-							if (response.data.action === 'add') {
-								GroupList.incGroupCount(groupName);
-							} else {
-								GroupList.decGroupCount(groupName);
-							}
+				if (add && OC.isUserAdmin() && UserList.availableGroups.indexOf(group) === -1) {
+					GroupList.createGroup(group);
+					if (UserList.availableGroups.indexOf(group) === -1) {
+						UserList.availableGroups.push(group);
+					}
+				}
+
+				$.ajax({
+					url: OC.linkToOCS('cloud/users/' + user , 2) + 'groups',
+					data: {
+						groupid: group
+					},
+					type: add ? 'POST' : 'DELETE',
+					beforeSend: function (request) {
+						request.setRequestHeader('Accept', 'application/json');
+					},
+					success: function() {
+						GroupList.update();
+						if (add && UserList.availableGroups.indexOf(group) === -1) {
+							UserList.availableGroups.push(group);
 						}
-						if (response.data.message) {
-							OC.Notification.show(response.data.message);
+
+						if (add) {
+							GroupList.incGroupCount(group);
+						} else {
+							GroupList.decGroupCount(group);
+						}
+					},
+					error: function() {
+						if (add) {
+							OC.Notification.show(t('settings', 'Unable to add user to group {group}', {
+								group: group
+							}));
+						} else {
+							OC.Notification.show(t('settings', 'Unable to remove user from group {group}', {
+								group: group
+							}));
 						}
 					}
-				);
+				});
+			};
+			addUserToGroup = function (group) {
+				return handleUserGroupMembership(group, true);
+			};
+			removeUserFromGroup = function (group) {
+				return handleUserGroupMembership(group, false);
 			};
 		}
 		var addGroup = function (select, group) {
@@ -473,8 +505,8 @@ var UserList = {
 			createText: label,
 			selectedFirst: true,
 			checked: checked,
-			oncheck: checkHandler,
-			onuncheck: checkHandler,
+			oncheck: addUserToGroup,
+			onuncheck: removeUserFromGroup,
 			minWidth: 100
 		});
 	},
@@ -533,7 +565,7 @@ var UserList = {
 		if (quota === 'other') {
 			return;
 		}
-		if ((quota !== 'default' && quota !=="none") && (isNaN(parseInt(quota, 10)) || parseInt(quota, 10) < 0)) {
+		if ((quota !== 'default' && quota !=="none") && (!OC.Util.computerFileSize(quota))) {
 			// the select component has added the bogus value, delete it again
 			$select.find('option[selected]').remove();
 			OC.Notification.showTemporary(t('core', 'Invalid quota value "{val}"', {val: quota}));
@@ -645,8 +677,11 @@ var UserList = {
 };
 
 $(document).ready(function () {
+	OC.Plugins.attach('OC.Settings.UserList', UserList);
 	$userList = $('#userlist');
 	$userListBody = $userList.find('tbody');
+	$userListHead = $userList.find('thead');
+	$emptyContainer = $userList.siblings('.emptycontent');
 
 	UserList.initDeleteHandling();
 
@@ -704,9 +739,9 @@ $(document).ready(function () {
 		blurFunction = _.bind(blurFunction, $input);
 		if(isRestoreDisabled) {
 			$tr.addClass('row-warning');
-			// add tipsy if the password change could cause data loss - no recovery enabled
-			$input.tipsy({gravity:'s'});
+			// add tooltip if the password change could cause data loss - no recovery enabled
 			$input.attr('title', t('settings', 'Changing the password will result in data loss, because data recovery is not available for this user'));
+			$input.tooltip({placement:'bottom'});
 		}
 		$td.find('img').hide();
 		$td.children('span').replaceWith($input);
@@ -878,6 +913,13 @@ $(document).ready(function () {
 		$(this).find('#default_quota').singleSelect().on('change', UserList.onQuotaSelect);
 	});
 
+	$('#newuser input').click(function() {
+		// empty the container also here to avoid visual delay
+		$emptyContainer.hide();
+		OC.Search = new OCA.Search($('#searchbox'), $('#searchresults'));
+		OC.Search.clear();
+	});
+
 	UserList._updateGroupListLabel($('#newuser .groups'), []);
 	var _submitNewUserForm = function (event) {
 		event.preventDefault();
@@ -897,7 +939,7 @@ $(document).ready(function () {
 			}));
 			return false;
 		}
-		if ($.trim(password) === '') {
+		if ($.trim(password) === '' && !$('#CheckboxMailOnUserCreate').is(':checked')) {
 			OC.Notification.showTemporary(t('settings', 'Error creating user: {message}', {
 				message: t('settings', 'A valid password must be provided')
 			}));

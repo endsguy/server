@@ -50,7 +50,7 @@ class TagsContext implements \Behat\Behat\Context\Context {
 	}
 
 	/** @BeforeScenario */
-	public function tearUpScenario() {
+	public function setUpScenario() {
 		$this->client = new Client();
 	}
 
@@ -511,18 +511,18 @@ class TagsContext implements \Behat\Behat\Context\Context {
 			)
 		));
 		$response = file_get_contents($url, false, $context);
-		preg_match_all('/\<oc:fileid\>(.*)\<\/oc:fileid\>/', $response, $matches);
+		preg_match_all('/\<oc:fileid\>(.*?)\<\/oc:fileid\>/', $response, $matches);
 		return (int)$matches[1][0];
 	}
 
 	/**
-	 * @When :taggingUser adds the tag :tagName to :fileName shared by :sharingUser
+	 * @When /^"([^"]*)" adds the tag "([^"]*)" to "([^"]*)" (shared|owned) by "([^"]*)"$/
 	 * @param string $taggingUser
 	 * @param string $tagName
 	 * @param string $fileName
 	 * @param string $sharingUser
 	 */
-	public function addsTheTagToSharedBy($taggingUser, $tagName, $fileName, $sharingUser) {
+	public function addsTheTagToSharedBy($taggingUser, $tagName, $fileName, $sharedOrOwnedBy, $sharingUser) {
 		$fileId = $this->getFileIdForPath($fileName, $sharingUser);
 		$tagId = $this->findTagIdByName($tagName);
 
@@ -542,13 +542,13 @@ class TagsContext implements \Behat\Behat\Context\Context {
 	}
 
 	/**
-	 * @Then :fileName shared by :sharingUser has the following tags
+	 * @Then /^"([^"]*)" (shared|owned) by "([^"]*)" has the following tags$/
 	 * @param string $fileName
 	 * @param string $sharingUser
 	 * @param TableNode $table
 	 * @throws \Exception
 	 */
-	public function sharedByHasTheFollowingTags($fileName, $sharingUser, TableNode $table)  {
+	public function sharedByHasTheFollowingTags($fileName, $sharedOrOwnedBy, $sharingUser, TableNode $table)  {
 		$loadedExpectedTags = $table->getTable();
 		$expectedTags = [];
 		foreach($loadedExpectedTags as $expected) {
@@ -576,7 +576,7 @@ class TagsContext implements \Behat\Behat\Context\Context {
 			]
 		);
 		$response = $this->client->send($request)->getBody()->getContents();
-		preg_match_all('/\<oc:display-name\>(.*)\<\/oc:display-name\>/', $response, $realTags);
+		preg_match_all('/\<oc:display-name\>(.*?)\<\/oc:display-name\>/', $response, $realTags);
 
 		foreach($expectedTags as $key => $row) {
 			foreach($realTags as $tag) {
@@ -631,7 +631,7 @@ class TagsContext implements \Behat\Behat\Context\Context {
 		} catch (\GuzzleHttp\Exception\ClientException $e) {
 			$this->response = $e->getResponse();
 		}
-		preg_match_all('/\<oc:display-name\>(.*)\<\/oc:display-name\>/', $this->response, $realTags);
+		preg_match_all('/\<oc:display-name\>(.*?)\<\/oc:display-name\>/', $this->response, $realTags);
 		$realTags = array_filter($realTags);
 		$expectedTags = array_filter($expectedTags);
 

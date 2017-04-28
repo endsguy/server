@@ -6,6 +6,7 @@ OC.L10N.register(
     "Please provide a valid app key and secret." : "Vänligen ange en giltig applikationsnyckel och hemlig fras.",
     "Step 1 failed. Exception: %s" : "Steg 1 flaerade. Undantag: %s",
     "Step 2 failed. Exception: %s" : "Steg 2 falerade. Undantag: %s",
+    "External storages" : "Extern Lagring",
     "External storage" : "Extern lagring",
     "Dropbox App Configuration" : "Dropbox Konfiguration",
     "Google Drive App Configuration" : "Google Drive Konfiguration",
@@ -38,7 +39,6 @@ OC.L10N.register(
     "Credentials saved" : "Sparade uppgifter",
     "Credentials saving failed" : "Misslyckades med att spara uppgifterna",
     "Credentials required" : "Uppgifter krävs",
-    "Storage with id \"%i\" not found" : "Lagring med id \"%i\" kan ej hittas",
     "Invalid backend or authentication mechanism class" : "Ogiltig backend eller autentiseringsmekanism-klass",
     "Invalid mount point" : "Ogiltig monteringspunkt",
     "Objectstore forbidden" : "Objekt förbjudet",
@@ -49,7 +49,6 @@ OC.L10N.register(
     "Unsatisfied authentication mechanism parameters" : "Otillfredsställda autentiseringsmekanism parametrar",
     "Insufficient data: %s" : "Otillräcklig data: %s",
     "%s" : "%s",
-    "Storage with id \"%i\" is not user editable" : "Lagring med id \"%i\" är inte redigerbar av användare",
     "Access key" : "Åtkomstnyckel",
     "Secret key" : "Hemlig nyckel",
     "Builtin" : "Inbyggt",
@@ -102,7 +101,6 @@ OC.L10N.register(
     "OpenStack Object Storage" : "OpenStack Object Storage",
     "Service name" : "Namn på tjänst",
     "Request timeout (seconds)" : "Sekunder för anslutningsförsök",
-    "External storages" : "Extern Lagring",
     "The cURL support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "cURL-stöd i PHP är inte aktiverat eller har inte installerats. Montering av %s är inte möjlig. Be din systemadministratör om installation.",
     "The FTP support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "FTP-stöd i PHP är inte aktiverat eller har inte installerats. Montering av %s är inte möjlig. Be din systemadministratör om installation.",
     "\"%s\" is not installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "\"%s\" är inte installerad. Montering av %s är inte möjlig. Be din systemadministratör om installation.",
@@ -126,6 +124,7 @@ OC.L10N.register(
     "Delete" : "Radera",
     "Allow users to mount external storage" : "Tillåt användare att montera extern lagring",
     "Allow users to mount the following external storage" : "Tillåt användare att montera följande extern lagring",
-    "Couldn't get the information from the ownCloud server: {code} {type}" : "Kan ej ta emot information från NextCloud server: {code} {type}"
+    "Storage with id \"%i\" not found" : "Lagring med id \"%i\" kan ej hittas",
+    "Storage with id \"%i\" is not user editable" : "Lagring med id \"%i\" är inte redigerbar av användare"
 },
 "nplurals=2; plural=(n != 1);");

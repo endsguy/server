@@ -40,7 +40,7 @@ class ThrottlerTest extends TestCase {
 	private $dbConnection;
 	/** @var ILogger */
 	private $logger;
-	/** @var IConfig */
+	/** @var IConfig|\PHPUnit_Framework_MockObject_MockObject */
 	private $config;
 
 	public function setUp() {
@@ -76,48 +76,91 @@ class ThrottlerTest extends TestCase {
 		$this->assertLessThan(2, $cutoff->s);
 	}
 
-	public function testSubnet() {
-		// IPv4
+	public function dataIsIPWhitelisted() {
+		return [
+			[
+				'10.10.10.10',
+				[
+					'whitelist_0' => '10.10.10.0/24',
+				],
+				true,
+			],
+			[
+				'10.10.10.10',
+				[
+					'whitelist_0' => '192.168.0.0/16',
+				],
+				false,
+			],
+			[
+				'10.10.10.10',
+				[
+					'whitelist_0' => '192.168.0.0/16',
+					'whitelist_1' => '10.10.10.0/24',
+				],
+				true,
+			],
+			[
+				'dead:beef:cafe::1',
+				[
+					'whitelist_0' => '192.168.0.0/16',
+					'whitelist_1' => '10.10.10.0/24',
+					'whitelist_2' => 'deaf:beef:cafe:1234::/64'
+				],
+				false,
+			],
+			[
+				'dead:beef:cafe::1',
+				[
+					'whitelist_0' => '192.168.0.0/16',
+					'whitelist_1' => '10.10.10.0/24',
+					'whitelist_2' => 'deaf:beef::/64'
+				],
+				false,
+			],
+			[
+				'dead:beef:cafe::1',
+				[
+					'whitelist_0' => '192.168.0.0/16',
+					'whitelist_1' => '10.10.10.0/24',
+					'whitelist_2' => 'deaf:cafe::/8'
+				],
+				true,
+			],
+			[
+				'invalid',
+				[],
+				false,
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider dataIsIPWhitelisted
+	 *
+	 * @param string $ip
+	 * @param string[] $whitelists
+	 * @param bool $isWhiteListed
+	 */
+	public function testIsIPWhitelisted($ip, $whitelists, $isWhiteListed) {
+		$this->config->method('getAppKeys')
+			->with($this->equalTo('bruteForce'))
+			->willReturn(array_keys($whitelists));
+
+		$this->config->method('getAppValue')
+			->will($this->returnCallback(function($app, $key, $default) use ($whitelists) {
+				if ($app !== 'bruteForce') {
+					return $default;
+				}
+				if (isset($whitelists[$key])) {
+					return $whitelists[$key];
+				}
+				return $default;
+			}));
+
 		$this->assertSame(
-			'64.233.191.254/32',
-			$this->invokePrivate($this->throttler, 'getIPv4Subnet', ['64.233.191.254', 32])
-		);
-		$this->assertSame(
-			'64.233.191.252/30',
-			$this->invokePrivate($this->throttler, 'getIPv4Subnet', ['64.233.191.254', 30])
-		);
-		$this->assertSame(
-			'64.233.191.240/28',
-			$this->invokePrivate($this->throttler, 'getIPv4Subnet', ['64.233.191.254', 28])
-		);
-		$this->assertSame(
-			'64.233.191.0/24',
-			$this->invokePrivate($this->throttler, 'getIPv4Subnet', ['64.233.191.254', 24])
-		);
-		$this->assertSame(
-			'64.233.188.0/22',
-			$this->invokePrivate($this->throttler, 'getIPv4Subnet', ['64.233.191.254', 22])
-		);
-		// IPv6
-		$this->assertSame(
-			'2001:db8:85a3::8a2e:370:7334/127',
-			$this->invokePrivate($this->throttler, 'getIPv6Subnet', ['2001:0db8:85a3:0000:0000:8a2e:0370:7334', 127])
-		);
-		$this->assertSame(
-			'2001:db8:85a3::8a2e:370:7300/120',
-			$this->invokePrivate($this->throttler, 'getIPv6Subnet', ['2001:0db8:85a3:0000:0000:8a2e:0370:7300', 120])
-		);
-		$this->assertSame(
-			'2001:db8:85a3::/64',
-			$this->invokePrivate($this->throttler, 'getIPv6Subnet', ['2001:0db8:85a3:0000:0000:8a2e:0370:7334', 64])
-		);
-		$this->assertSame(
-			'2001:db8:85a3::/48',
-			$this->invokePrivate($this->throttler, 'getIPv6Subnet', ['2001:0db8:85a3:0000:0000:8a2e:0370:7334', 48])
-		);
-		$this->assertSame(
-			'2001:db8:8500::/40',
-			$this->invokePrivate($this->throttler, 'getIPv6Subnet', ['2001:0db8:85a3:0000:0000:8a2e:0370:7334', 40])
+			$isWhiteListed,
+			$this->invokePrivate($this->throttler, 'isIPWhitelisted', [$ip])
 		);
 	}
 }

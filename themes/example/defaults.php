@@ -41,7 +41,7 @@ class OC_Theme {
 	 * @return string URL
 	 */
 	public function getiOSClientUrl() {
-		return 'https://itunes.apple.com/us/app/owncloud/id543672169?mt=8';
+		return 'https://itunes.apple.com/us/app/nextcloud/id1125420102?mt=8';
 	}
 
 	/**
@@ -49,7 +49,7 @@ class OC_Theme {
 	 * @return string AppId
 	 */
 	public function getiTunesAppId() {
-		return '543672169';
+		return '1125420102';
 	}
 
 	/**
@@ -65,7 +65,7 @@ class OC_Theme {
 	 * @return string URL
 	 */
 	public function getDocBaseUrl() {
-		return 'https://docs.nextcloud.org';
+		return 'https://docs.nextcloud.com';
 	}
 
 	/**
@@ -147,8 +147,18 @@ class OC_Theme {
 	 * Returns mail header color
 	 * @return string
 	 */
-	public function getMailHeaderColor() {
+	public function getColorPrimary() {
 		return '#745bca';
+	}
+
+	/**
+	 * Returns variables to overload defaults from core/css/variables.scss
+	 * @return array
+	 */
+	public function getScssVariables() {
+		return [
+			'color-primary' => '#745bca'
+		];
 	}
 
 }

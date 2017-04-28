@@ -128,7 +128,6 @@ class SecurityMiddleware extends Middleware {
 		$this->cspNonceManager = $cspNonceManager;
 	}
 
-
 	/**
 	 * This runs all the security checks before a method call. The
 	 * security checks are determined by inspecting the controller method

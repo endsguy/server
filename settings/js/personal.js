@@ -20,7 +20,8 @@ OC.Settings = OC.Settings || {};
 jQuery.fn.keyUpDelayedOrEnter = function (callback, allowEmptyValue) {
 	var cb = callback;
 	var that = this;
-	this.keyup(_.debounce(function (event) {
+
+	this.on('input', _.debounce(function (event) {
 		// enter is already handled in keypress
 		if (event.keyCode === 13) {
 			return;
@@ -34,14 +35,6 @@ jQuery.fn.keyUpDelayedOrEnter = function (callback, allowEmptyValue) {
 		if (event.keyCode === 13 && (allowEmptyValue || that.val() !== '')) {
 			event.preventDefault();
 			cb(event);
-		}
-	});
-
-	this.bind('paste', null, function (event) {
-		if(!event.keyCode){
-			if (allowEmptyValue || that.val() !== '') {
-				cb(event);
-			}
 		}
 	});
 };
@@ -334,15 +327,13 @@ $(document).ready(function () {
 	});
 
 	// Load the big avatar
-	if (oc_config.enable_avatars) {
-		$('#avatarform .avatardiv').avatar(OC.currentUser, 145, true, null, function() {
-			if($('#displayavatar img').length === 0) {
-				$('#removeavatar').removeClass('inlineblock').addClass('hidden');
-			} else {
-				$('#removeavatar').removeClass('hidden').addClass('inlineblock');
-			}
-		});
-	}
+	$('#avatarform .avatardiv').avatar(OC.currentUser, 145, true, null, function() {
+		if($('#displayavatar img').length === 0) {
+			$('#removeavatar').removeClass('inlineblock').addClass('hidden');
+		} else {
+			$('#removeavatar').removeClass('hidden').addClass('inlineblock');
+		}
+	});
 	
 
 	// Show token views

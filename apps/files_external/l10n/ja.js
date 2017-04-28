@@ -6,6 +6,7 @@ OC.L10N.register(
     "Please provide a valid app key and secret." : "有効なアプリのキーとパスワードを入力してください。",
     "Step 1 failed. Exception: %s" : "ステップ 1 の実行に失敗しました。例外: %s",
     "Step 2 failed. Exception: %s" : "ステップ 2 の実行に失敗しました。例外: %s",
+    "External storages" : "外部ストレージ",
     "External storage" : "外部ストレージ",
     "Dropbox App Configuration" : "Dropbox アプリ設定",
     "Google Drive App Configuration" : "Google アプリ設定",
@@ -38,7 +39,6 @@ OC.L10N.register(
     "Credentials saved" : "資格情報を保存しました",
     "Credentials saving failed" : "資格情報の保存に失敗しました",
     "Credentials required" : "資格情報が必要です",
-    "Storage with id \"%i\" not found" : "ストレージID \"%i\" が見つかりません",
     "Invalid backend or authentication mechanism class" : "バックエンドまたは認証システムクラスが無効",
     "Invalid mount point" : "無効なマウントポイント",
     "Objectstore forbidden" : "オブジェクトストアが禁じられています",
@@ -49,7 +49,6 @@ OC.L10N.register(
     "Unsatisfied authentication mechanism parameters" : "認証のためのパラメータが不十分です",
     "Insufficient data: %s" : "データが不足しています: %s",
     "%s" : "%s",
-    "Storage with id \"%i\" is not user editable" : "ストレージID \"%i\" はユーザーが編集できません",
     "Access key" : "アクセスキー",
     "Secret key" : "シークレットキー",
     "Builtin" : "ビルトイン",
@@ -102,7 +101,6 @@ OC.L10N.register(
     "OpenStack Object Storage" : "OpenStack ObjectStorage",
     "Service name" : "サービス名",
     "Request timeout (seconds)" : "リクエストがタイムアウトするまでの秒数",
-    "External storages" : "外部ストレージ",
     "The cURL support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "PHPでのcURLのサポートが有効になっていないか、インストールされていません。 %s のマウントは不可能です。システム管理者にインストールを依頼してください。",
     "The FTP support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "PHPのFTPサポートが有効になっていないか、インストールされていません。%s のマウントは不可能です。システム管理者にインストールを依頼してください。",
     "\"%s\" is not installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "\"%s\"はインストールされていません。 %s のマウントは不可能です。システム管理者にインストールを依頼してください。",
@@ -126,6 +124,7 @@ OC.L10N.register(
     "Delete" : "削除",
     "Allow users to mount external storage" : "ユーザーに外部ストレージの接続を許可する",
     "Allow users to mount the following external storage" : "ユーザーに以下の外部ストレージのマウントを許可する",
-    "Couldn't get the information from the ownCloud server: {code} {type}" : "ownCloud サーバーから情報を取得出来ませんでした。: {code} {type}"
+    "Storage with id \"%i\" not found" : "ストレージID \"%i\" が見つかりません",
+    "Storage with id \"%i\" is not user editable" : "ストレージID \"%i\" はユーザーが編集できません"
 },
 "nplurals=1; plural=0;");

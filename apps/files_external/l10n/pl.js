@@ -6,6 +6,7 @@ OC.L10N.register(
     "Please provide a valid app key and secret." : "Proszę podać prawidłowy klucz aplikacji i klucz sekretny.",
     "Step 1 failed. Exception: %s" : "Krok 1 błędny. Błąd: %s",
     "Step 2 failed. Exception: %s" : "Krok 2 błędny. Błąd: %s",
+    "External storages" : "Zewnętrzne zasoby dyskowe",
     "External storage" : "Zewnętrzne zasoby dyskowe",
     "Dropbox App Configuration" : "Konfiguracja aplikacji Dropbox",
     "Google Drive App Configuration" : "Konfiguracja aplikacji Google Drive",
@@ -38,7 +39,7 @@ OC.L10N.register(
     "Credentials saved" : "Poświadczenia zapisane",
     "Credentials saving failed" : "Poświadczenia oszczędności nie powiodło się",
     "Credentials required" : "Wymagane poświadczenia",
-    "Storage with id \"%i\" not found" : "Id magazynu nie został znaleziony",
+    "Storage with ID \"%d\" not found" : "Nie znaleziono magazynu o ID \"%d\"",
     "Invalid backend or authentication mechanism class" : "Nieprawidłowy mechanizm uwierzytelniania powrotu lub klasy",
     "Invalid mount point" : "Nieprawidłowy punkt montowania",
     "Objectstore forbidden" : "Zabroniony obiekt sklepu",
@@ -49,7 +50,7 @@ OC.L10N.register(
     "Unsatisfied authentication mechanism parameters" : "Niepoprawne parametry mechanizmu uwierzytelnienia",
     "Insufficient data: %s" : "Niewystarczające dane: %s",
     "%s" : "%s",
-    "Storage with id \"%i\" is not user editable" : "Magazyn o id \"%i\" nie jest edytowalny dla użytkowników",
+    "Storage with ID \"%d\" is not user editable" : "Magazyn o ID \"%d\" nie może być edytowany przez użytkownika",
     "Access key" : "Klucz dostępu",
     "Secret key" : "Sekretny klucz",
     "Builtin" : "Wbudowane",
@@ -102,7 +103,6 @@ OC.L10N.register(
     "OpenStack Object Storage" : "Magazyn obiektów OpenStack",
     "Service name" : "Nazwa serwisu",
     "Request timeout (seconds)" : "Limit czasu żądania (sekundy)",
-    "External storages" : "Zewnętrzne zasoby dyskowe",
     "The cURL support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "Obsługa cURL w PHP jest wyłączona lub nie jest zainstalowana. Zamontowanie %s jest niemożliwe. Proszę poprosić swojego administratora systemu, żeby ją zainstalował.",
     "The FTP support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "Obsługa FTP w PHP jest wyłączona lub nie jest zainstalowana. Zamontowanie %s jest niemożliwe. Proszę poprosić swojego administratora systemu, żeby ją zainstalował.",
     "\"%s\" is not installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "\"%s\" nie jest zainstalowane. Zamontowanie %s jest niemożliwe. Proszę poprosić swojego administratora systemu, żeby dokonał instalacji.",
@@ -126,6 +126,7 @@ OC.L10N.register(
     "Delete" : "Usuń",
     "Allow users to mount external storage" : "Pozwól użytkownikom montować zewnętrzne zasoby dyskowe",
     "Allow users to mount the following external storage" : "Pozwól użytkownikom montować następujące zewnętrzne zasoby dyskowe",
-    "Couldn't get the information from the ownCloud server: {code} {type}" : "Nie udało się uzyskać informacje z serwera ownCloud: {code} {type}"
+    "Storage with id \"%i\" not found" : "Id magazynu nie został znaleziony",
+    "Storage with id \"%i\" is not user editable" : "Magazyn o id \"%i\" nie jest edytowalny dla użytkowników"
 },
 "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>=14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);");

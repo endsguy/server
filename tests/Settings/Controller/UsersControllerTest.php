@@ -13,12 +13,15 @@ namespace Tests\Settings\Controller;
 use OC\Accounts\AccountManager;
 use OC\Group\Manager;
 use OC\Settings\Controller\UsersController;
+use OC\Settings\Mailer\NewUserMailHelper;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAvatar;
 use OCP\IAvatarManager;
 use OCP\IConfig;
+use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\ILogger;
@@ -27,7 +30,12 @@ use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCP\Mail\IEMailTemplate;
 use OCP\Mail\IMailer;
+use OCP\Security\ICrypto;
+use OCP\Security\ISecureRandom;
+use OC\User\User;
+use Test\Util\User\Dummy;
 
 /**
  * @group DB
@@ -46,8 +54,6 @@ class UsersControllerTest extends \Test\TestCase {
 	private $config;
 	/** @var ILogger|\PHPUnit_Framework_MockObject_MockObject */
 	private $logger;
-	/** @var \OC_Defaults|\PHPUnit_Framework_MockObject_MockObject */
-	private $defaults;
 	/** @var IMailer|\PHPUnit_Framework_MockObject_MockObject */
 	private $mailer;
 	/** @var IURLGenerator|\PHPUnit_Framework_MockObject_MockObject */
@@ -58,8 +64,16 @@ class UsersControllerTest extends \Test\TestCase {
 	private $avatarManager;
 	/** @var IL10N|\PHPUnit_Framework_MockObject_MockObject */
 	private $l;
-	/** @var  AccountManager | \PHPUnit_Framework_MockObject_MockObject */
+	/** @var AccountManager | \PHPUnit_Framework_MockObject_MockObject */
 	private $accountManager;
+	/** @var ISecureRandom | \PHPUnit_Framework_MockObject_MockObject  */
+	private $secureRandom;
+	/** @var ITimeFactory | \PHPUnit_Framework_MockObject_MockObject */
+	private $timeFactory;
+	/** @var NewUserMailHelper|\PHPUnit_Framework_MockObject_MockObject */
+	private $newUserMailHelper;
+	/** @var ICrypto | \PHPUnit_Framework_MockObject_MockObject */
+	private $crypto;
 
 	protected function setUp() {
 		parent::setUp();
@@ -69,12 +83,15 @@ class UsersControllerTest extends \Test\TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->config = $this->createMock(IConfig::class);
 		$this->logger = $this->createMock(ILogger::class);
-		$this->defaults = $this->createMock(\OC_Defaults::class);
 		$this->mailer = $this->createMock(IMailer::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->avatarManager = $this->createMock(IAvatarManager::class);
 		$this->accountManager = $this->createMock(AccountManager::class);
+		$this->secureRandom = $this->createMock(ISecureRandom::class);
+		$this->timeFactory = $this->createMock(ITimeFactory::class);
+		$this->crypto = $this->createMock(ICrypto::class);
+		$this->newUserMailHelper = $this->createMock(NewUserMailHelper::class);
 		$this->l = $this->createMock(IL10N::class);
 		$this->l->method('t')
 			->will($this->returnCallback(function ($text, $parameters = []) {
@@ -95,10 +112,6 @@ class UsersControllerTest extends \Test\TestCase {
 				['bar', $avatarExists],
 				['admin', $avatarNotExists],
 			]));
-
-		$this->config->method('getSystemValue')
-			->with('enable_avatars', true)
-			->willReturn(true);
 	}
 
 	/**
@@ -117,13 +130,13 @@ class UsersControllerTest extends \Test\TestCase {
 				$isAdmin,
 				$this->l,
 				$this->logger,
-				$this->defaults,
 				$this->mailer,
-				'no-reply@owncloud.com',
 				$this->urlGenerator,
 				$this->appManager,
 				$this->avatarManager,
-				$this->accountManager
+				$this->accountManager,
+				$this->secureRandom,
+				$this->newUserMailHelper
 			);
 		} else {
 			return $this->getMockBuilder(UsersController::class)
@@ -138,13 +151,13 @@ class UsersControllerTest extends \Test\TestCase {
 						$isAdmin,
 						$this->l,
 						$this->logger,
-						$this->defaults,
 						$this->mailer,
-						'no-reply@owncloud.com',
 						$this->urlGenerator,
 						$this->appManager,
 						$this->avatarManager,
-						$this->accountManager
+						$this->accountManager,
+						$this->secureRandom,
+						$this->newUserMailHelper
 					]
 				)->setMethods($mockedMethods)->getMock();
 		}
@@ -153,8 +166,7 @@ class UsersControllerTest extends \Test\TestCase {
 	public function testIndexAdmin() {
 		$controller = $this->getController(true);
 
-		$foo = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$foo = $this->createMock(User::class);
 		$foo
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -181,8 +193,7 @@ class UsersControllerTest extends \Test\TestCase {
 			->expects($this->once())
 			->method('getBackendClassName')
 			->will($this->returnValue('OC_User_Database'));
-		$admin = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$admin = $this->createMock(User::class);
 		$admin
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -210,9 +221,8 @@ class UsersControllerTest extends \Test\TestCase {
 		$admin
 			->expects($this->once())
 			->method('getBackendClassName')
-			->will($this->returnValue('\Test\Util\User\Dummy'));
-		$bar = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+			->willReturn(Dummy::class);
+		$bar = $this->createMock(User::class);
 		$bar
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -238,7 +248,7 @@ class UsersControllerTest extends \Test\TestCase {
 		$bar
 			->expects($this->once())
 			->method('getBackendClassName')
-			->will($this->returnValue('\Test\Util\User\Dummy'));
+			->willReturn(Dummy::class);
 
 		$this->groupManager
 			->expects($this->once())
@@ -311,7 +321,7 @@ class UsersControllerTest extends \Test\TestCase {
 					'quota' => 404,
 					'storageLocation' => '/home/admin',
 					'lastLogin' => 12000,
-					'backend' => '\Test\Util\User\Dummy',
+					'backend' => Dummy::class,
 					'email' => 'admin@bar.com',
 					'isRestoreDisabled' => false,
 					'isAvatarAvailable' => false,
@@ -324,7 +334,7 @@ class UsersControllerTest extends \Test\TestCase {
 					'quota' => 2323,
 					'storageLocation' => '/home/bar',
 					'lastLogin' => 3999000,
-					'backend' => '\Test\Util\User\Dummy',
+					'backend' => Dummy::class,
 					'email' => 'bar@dummy.com',
 					'isRestoreDisabled' => false,
 					'isAvatarAvailable' => true,
@@ -338,15 +348,13 @@ class UsersControllerTest extends \Test\TestCase {
 	public function testIndexSubAdmin() {
 		$controller = $this->getController(false);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$this->userSession
 			->expects($this->once())
 			->method('getUser')
 			->will($this->returnValue($user));
 
-		$foo = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$foo = $this->createMock(User::class);
 		$foo
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -373,8 +381,7 @@ class UsersControllerTest extends \Test\TestCase {
 			->expects($this->once())
 			->method('getBackendClassName')
 			->will($this->returnValue('OC_User_Database'));
-		$admin = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$admin = $this->createMock(User::class);
 		$admin
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -402,9 +409,8 @@ class UsersControllerTest extends \Test\TestCase {
 		$admin
 			->expects($this->once())
 			->method('getBackendClassName')
-			->will($this->returnValue('\Test\Util\User\Dummy'));
-		$bar = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+			->willReturn(Dummy::class);
+		$bar = $this->createMock(User::class);
 		$bar
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -430,7 +436,7 @@ class UsersControllerTest extends \Test\TestCase {
 		$bar
 			->expects($this->once())
 			->method('getBackendClassName')
-			->will($this->returnValue('\Test\Util\User\Dummy'));
+			->willReturn(Dummy::class);
 
 		$this->groupManager
 			->expects($this->at(2))
@@ -504,7 +510,7 @@ class UsersControllerTest extends \Test\TestCase {
 					'quota' => 2323,
 					'storageLocation' => '/home/bar',
 					'lastLogin' => 3999000,
-					'backend' => '\Test\Util\User\Dummy',
+					'backend' => Dummy::class,
 					'email' => 'bar@dummy.com',
 					'isRestoreDisabled' => false,
 					'isAvatarAvailable' => true,
@@ -530,7 +536,7 @@ class UsersControllerTest extends \Test\TestCase {
 					'quota' => 404,
 					'storageLocation' => '/home/admin',
 					'lastLogin' => 12000,
-					'backend' => '\Test\Util\User\Dummy',
+					'backend' => Dummy::class,
 					'email' => 'admin@bar.com',
 					'isRestoreDisabled' => false,
 					'isAvatarAvailable' => false,
@@ -549,8 +555,7 @@ class UsersControllerTest extends \Test\TestCase {
 	public function testIndexWithSearch() {
 		$controller = $this->getController(true);
 
-		$foo = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$foo = $this->createMock(User::class);
 		$foo
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -577,8 +582,7 @@ class UsersControllerTest extends \Test\TestCase {
 			->expects($this->once())
 			->method('getBackendClassName')
 			->will($this->returnValue('OC_User_Database'));
-		$admin = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$admin = $this->createMock(User::class);
 		$admin
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -606,9 +610,8 @@ class UsersControllerTest extends \Test\TestCase {
 		$admin
 			->expects($this->once())
 			->method('getBackendClassName')
-			->will($this->returnValue('\Test\Util\User\Dummy'));
-		$bar = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+			->willReturn(Dummy::class);
+		$bar = $this->createMock(User::class);
 		$bar
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -634,7 +637,7 @@ class UsersControllerTest extends \Test\TestCase {
 		$bar
 			->expects($this->once())
 			->method('getBackendClassName')
-			->will($this->returnValue('\Test\Util\User\Dummy'));
+			->willReturn(Dummy::class);
 
 		$this->userManager
 			->expects($this->once())
@@ -680,7 +683,7 @@ class UsersControllerTest extends \Test\TestCase {
 					'quota' => 404,
 					'storageLocation' => '/home/admin',
 					'lastLogin' => 12000,
-					'backend' => '\Test\Util\User\Dummy',
+					'backend' => Dummy::class,
 					'email' => 'admin@bar.com',
 					'isRestoreDisabled' => false,
 					'isAvatarAvailable' => false,
@@ -693,7 +696,7 @@ class UsersControllerTest extends \Test\TestCase {
 					'quota' => 2323,
 					'storageLocation' => '/home/bar',
 					'lastLogin' => 3999000,
-					'backend' => '\Test\Util\User\Dummy',
+					'backend' => Dummy::class,
 					'email' => 'bar@dummy.com',
 					'isRestoreDisabled' => false,
 					'isAvatarAvailable' => true,
@@ -707,8 +710,7 @@ class UsersControllerTest extends \Test\TestCase {
 	public function testIndexWithBackend() {
 		$controller = $this->getController(true);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->exactly(2))
 			->method('getUID')
@@ -738,7 +740,7 @@ class UsersControllerTest extends \Test\TestCase {
 		$this->userManager
 			->expects($this->once())
 			->method('getBackends')
-			->will($this->returnValue([new \Test\Util\User\Dummy(), new \OC\User\Database()]));
+			->will($this->returnValue([new Dummy(), new \OC\User\Database()]));
 		$this->userManager
 			->expects($this->once())
 			->method('clearBackends');
@@ -776,7 +778,7 @@ class UsersControllerTest extends \Test\TestCase {
 				)
 			)
 		);
-		$response = $controller->index(0, 10, '','', '\Test\Util\User\Dummy');
+		$response = $controller->index(0, 10, '','', Dummy::class);
 		$this->assertEquals($expectedResponse, $response);
 	}
 
@@ -786,7 +788,7 @@ class UsersControllerTest extends \Test\TestCase {
 		$this->userManager
 			->expects($this->once())
 			->method('getBackends')
-			->will($this->returnValue([new \Test\Util\User\Dummy(), new \OC\User\Database()]));
+			->will($this->returnValue([new Dummy(), new \OC\User\Database()]));
 		$this->userManager
 			->expects($this->once())
 			->method('search')
@@ -794,15 +796,14 @@ class UsersControllerTest extends \Test\TestCase {
 			->will($this->returnValue([]));
 
 		$expectedResponse = new DataResponse([]);
-		$response = $controller->index(0, 10, '','', '\Test\Util\User\Dummy');
+		$response = $controller->index(0, 10, '','', Dummy::class);
 		$this->assertEquals($expectedResponse, $response);
 	}
 
 	public function testCreateSuccessfulWithoutGroupAdmin() {
 		$controller = $this->getController(true);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->method('getHome')
 			->will($this->returnValue('/home/user'));
@@ -852,100 +853,10 @@ class UsersControllerTest extends \Test\TestCase {
 		$this->assertEquals($expectedResponse, $response);
 	}
 
-	public function testCreateSuccessfulWithoutGroupSubAdmin() {
-		$controller = $this->getController(false);
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
-		$this->userSession
-			->expects($this->once())
-			->method('getUser')
-			->will($this->returnValue($user));
-
-		$newUser = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
-		$newUser
-			->method('getUID')
-			->will($this->returnValue('foo'));
-		$newUser
-			->method('getHome')
-			->will($this->returnValue('/home/user'));
-		$newUser
-			->method('getHome')
-			->will($this->returnValue('/home/user'));
-		$newUser
-			->expects($this->once())
-			->method('getBackendClassName')
-			->will($this->returnValue('bar'));
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
-		$subGroup1 = $this->getMockBuilder('\OCP\IGroup')
-			->disableOriginalConstructor()->getMock();
-		$subGroup1
-			->expects($this->once())
-			->method('addUser')
-			->with($newUser);
-		$subGroup2 = $this->getMockBuilder('\OCP\IGroup')
-			->disableOriginalConstructor()->getMock();
-		$subGroup2
-			->expects($this->once())
-			->method('addUser')
-			->with($newUser);
-
-		$this->userManager
-			->expects($this->once())
-			->method('createUser')
-			->will($this->returnValue($newUser));
-		$this->groupManager
-			->expects($this->exactly(2))
-			->method('get')
-			->will($this->onConsecutiveCalls($subGroup1, $subGroup2));
-		$this->groupManager
-			->expects($this->once())
-			->method('getUserGroupIds')
-			->with($user)
-			->will($this->onConsecutiveCalls(['SubGroup1', 'SubGroup2']));
-
-		$subadmin = $this->getMockBuilder('\OC\SubAdmin')
-			->disableOriginalConstructor()
-			->getMock();
-		$subadmin
-			->expects($this->at(0))
-			->method('getSubAdminsGroups')
-			->will($this->returnValue([$subGroup1, $subGroup2]));
-		$subadmin
-			->expects($this->at(1))
-			->method('getSubAdminsGroups')
-			->will($this->returnValue([]));
-		$this->groupManager
-			->expects($this->any())
-			->method('getSubAdmin')
-			->will($this->returnValue($subadmin));
-
-		$expectedResponse = new DataResponse(
-			array(
-				'name' => 'foo',
-				'groups' => ['SubGroup1', 'SubGroup2'],
-				'storageLocation' => '/home/user',
-				'backend' => 'bar',
-				'lastLogin' => 0,
-				'displayname' => null,
-				'quota' => null,
-				'subadmin' => [],
-				'email' => null,
-				'isRestoreDisabled' => false,
-				'isAvatarAvailable' => true,
-			),
-			Http::STATUS_CREATED
-		);
-		$response = $controller->create('foo', 'password');
-		$this->assertEquals($expectedResponse, $response);
-	}
-
 	public function testCreateSuccessfulWithGroupAdmin() {
 		$controller = $this->getController(true);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->method('getHome')
 			->will($this->returnValue('/home/user'));
@@ -1026,16 +937,12 @@ class UsersControllerTest extends \Test\TestCase {
 
 	public function testCreateSuccessfulWithGroupSubAdmin() {
 		$controller = $this->getController(false);
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(IUser::class);
 		$this->userSession
 			->expects($this->once())
 			->method('getUser')
 			->will($this->returnValue($user));
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
-		$newUser = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$newUser = $this->createMock(IUser::class);
 		$newUser
 			->method('getHome')
 			->will($this->returnValue('/home/user'));
@@ -1049,8 +956,7 @@ class UsersControllerTest extends \Test\TestCase {
 			->expects($this->once())
 			->method('getBackendClassName')
 			->will($this->returnValue('bar'));
-		$subGroup1 = $this->getMockBuilder('\OCP\IGroup')
-			->disableOriginalConstructor()->getMock();
+		$subGroup1 = $this->createMock(IGroup::class);
 		$subGroup1
 			->expects($this->any())
 			->method('getGID')
@@ -1064,16 +970,6 @@ class UsersControllerTest extends \Test\TestCase {
 			->method('createUser')
 			->will($this->returnValue($newUser));
 		$this->groupManager
-			->expects($this->at(0))
-			->method('get')
-			->with('SubGroup1')
-			->will($this->returnValue($subGroup1));
-		$this->groupManager
-			->expects($this->at(4))
-			->method('get')
-			->with('SubGroup1')
-			->will($this->returnValue($subGroup1));
-		$this->groupManager
 			->expects($this->once())
 			->method('getUserGroupIds')
 			->with($user)
@@ -1084,21 +980,28 @@ class UsersControllerTest extends \Test\TestCase {
 			->with($newUser)
 			->will($this->onConsecutiveCalls(['SubGroup1']));
 
-		$subadmin = $this->getMockBuilder('\OC\SubAdmin')
-			->disableOriginalConstructor()
-			->getMock();
-		$subadmin->expects($this->at(1))
+		$subadmin = $this->createMock(\OC\SubAdmin::class);
+		$subadmin->expects($this->atLeastOnce())
 			->method('getSubAdminsGroups')
 			->with($user)
-			->will($this->returnValue([$subGroup1]));
-		$subadmin->expects($this->at(2))
-			->method('getSubAdminsGroups')
-			->with($newUser)
-			->will($this->returnValue([]));
+			->willReturnMap([
+				[$user, [$subGroup1]],
+				[$newUser, []],
+			]);
+		$subadmin->expects($this->atLeastOnce())
+			->method('isSubAdminofGroup')
+			->willReturnMap([
+				[$user, $subGroup1, true],
+			]);
 		$this->groupManager
 			->expects($this->any())
 			->method('getSubAdmin')
 			->will($this->returnValue($subadmin));
+		$this->groupManager->expects($this->atLeastOnce())
+			->method('get')
+			->willReturnMap([
+				['SubGroup1', $subGroup1],
+			]);
 
 		$expectedResponse = new DataResponse(
 			array(
@@ -1137,16 +1040,36 @@ class UsersControllerTest extends \Test\TestCase {
 		$this->assertEquals($expectedResponse, $response);
 	}
 
-	public function testCreateUnsuccessfulSubAdmin() {
+	public function testCreateUnsuccessfulSubAdminNoGroup() {
 		$controller = $this->getController(false);
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
-		$user
-			->expects($this->any())
+		$user = $this->createMock(IUser::class);
+		$user->expects($this->any())
 			->method('getUID')
 			->will($this->returnValue('username'));
-		$this->userSession
-			->expects($this->once())
+		$this->userSession->expects($this->once())
+			->method('getUser')
+			->will($this->returnValue($user));
+
+		$this->userManager->expects($this->never())
+			->method('createUser');
+
+		$expectedResponse = new DataResponse(
+			[
+				'message' => 'No valid group selected'
+			],
+			Http::STATUS_FORBIDDEN
+		);
+		$response = $controller->create('foo', 'password', []);
+		$this->assertEquals($expectedResponse, $response);
+	}
+
+	public function testCreateUnsuccessfulSubAdmin() {
+		$controller = $this->getController(false);
+		$user = $this->createMock(IUser::class);
+		$user->expects($this->any())
+			->method('getUID')
+			->will($this->returnValue('username'));
+		$this->userSession->expects($this->once())
 			->method('getUser')
 			->will($this->returnValue($user));
 
@@ -1154,29 +1077,24 @@ class UsersControllerTest extends \Test\TestCase {
 			->method('createUser')
 			->will($this->throwException(new \Exception()));
 
-		$subgroup1 = $this->getMockBuilder('\OCP\IGroup')
-			->disableOriginalConstructor()
-			->getMock();
-		$subgroup1->expects($this->once())
-			->method('getGID')
-			->will($this->returnValue('SubGroup1'));
-		$subgroup2 = $this->getMockBuilder('\OCP\IGroup')
-			->disableOriginalConstructor()
-			->getMock();
-		$subgroup2->expects($this->once())
-			->method('getGID')
-			->will($this->returnValue('SubGroup2'));
-		$subadmin = $this->getMockBuilder('\OC\SubAdmin')
-			->disableOriginalConstructor()
-			->getMock();
-		$subadmin->expects($this->once())
-			->method('getSubAdminsGroups')
-			->with($user)
-			->will($this->returnValue([$subgroup1, $subgroup2]));
-		$this->groupManager
-			->expects($this->any())
+		$subgroup1 = $this->createMock(IGroup::class);
+		$subgroup2 = $this->createMock(IGroup::class);
+		$subadmin = $this->createMock(\OC\SubAdmin::class);
+		$subadmin->expects($this->atLeastOnce())
+			->method('isSubAdminofGroup')
+			->willReturnMap([
+				[$user, $subgroup1, true],
+				[$user, $subgroup2, true],
+			]);
+		$this->groupManager->expects($this->any())
 			->method('getSubAdmin')
-			->will($this->returnValue($subadmin));
+			->willReturn($subadmin);
+		$this->groupManager->expects($this->atLeastOnce())
+			->method('get')
+			->willReturnMap([
+				['SubGroup1', $subgroup1],
+				['SubGroup2', $subgroup2],
+			]);
 
 		$expectedResponse = new DataResponse(
 			[
@@ -1184,15 +1102,14 @@ class UsersControllerTest extends \Test\TestCase {
 			],
 			Http::STATUS_FORBIDDEN
 		);
-		$response = $controller->create('foo', 'password', array());
+		$response = $controller->create('foo', 'password', array('SubGroup1', 'SubGroup2'));
 		$this->assertEquals($expectedResponse, $response);
 	}
 
 	public function testDestroySelfAdmin() {
 		$controller = $this->getController(true);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->once())
 			->method('getUID')
@@ -1217,8 +1134,7 @@ class UsersControllerTest extends \Test\TestCase {
 	public function testDestroySelfSubadmin() {
 		$controller = $this->getController(false);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->once())
 			->method('getUID')
@@ -1243,14 +1159,12 @@ class UsersControllerTest extends \Test\TestCase {
 	public function testDestroyAdmin() {
 		$controller = $this->getController(true);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->once())
 			->method('getUID')
 			->will($this->returnValue('Admin'));
-		$toDeleteUser = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$toDeleteUser = $this->createMock(User::class);
 		$toDeleteUser
 			->expects($this->once())
 			->method('delete')
@@ -1278,8 +1192,7 @@ class UsersControllerTest extends \Test\TestCase {
 
 	public function testDestroySubAdmin() {
 		$controller = $this->getController(false);
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->once())
 			->method('getUID')
@@ -1288,10 +1201,8 @@ class UsersControllerTest extends \Test\TestCase {
 			->method('getUser')
 			->will($this->returnValue($user));
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
-		$toDeleteUser = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
+		$toDeleteUser = $this->createMock(User::class);
 		$toDeleteUser
 			->expects($this->once())
 			->method('delete')
@@ -1332,14 +1243,12 @@ class UsersControllerTest extends \Test\TestCase {
 	public function testDestroyUnsuccessfulAdmin() {
 		$controller = $this->getController(true);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->once())
 			->method('getUID')
 			->will($this->returnValue('Admin'));
-		$toDeleteUser = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$toDeleteUser = $this->createMock(User::class);
 		$toDeleteUser
 			->expects($this->once())
 			->method('delete')
@@ -1367,8 +1276,7 @@ class UsersControllerTest extends \Test\TestCase {
 
 	public function testDestroyUnsuccessfulSubAdmin() {
 		$controller = $this->getController(false);
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->once())
 			->method('getUID')
@@ -1377,8 +1285,7 @@ class UsersControllerTest extends \Test\TestCase {
 			->method('getUser')
 			->will($this->returnValue($user));
 
-		$toDeleteUser = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$toDeleteUser = $this->createMock(User::class);
 		$toDeleteUser
 			->expects($this->once())
 			->method('delete')
@@ -1419,8 +1326,7 @@ class UsersControllerTest extends \Test\TestCase {
 	public function testDestroyNotAccessibleToSubAdmin() {
 		$controller = $this->getController(false);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->once())
 			->method('getUID')
@@ -1429,8 +1335,7 @@ class UsersControllerTest extends \Test\TestCase {
 			->method('getUser')
 			->will($this->returnValue($user));
 
-		$toDeleteUser = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$toDeleteUser = $this->createMock(User::class);
 		$this->userSession
 			->method('getUser')
 			->will($this->returnValue($user));
@@ -1484,63 +1389,13 @@ class UsersControllerTest extends \Test\TestCase {
 	 */
 	public function testCreateSuccessfulWithValidEmailAdmin() {
 		$controller = $this->getController(true);
-		$message = $this->getMockBuilder('\OC\Mail\Message')
-			->disableOriginalConstructor()->getMock();
-		$message
-			->expects($this->at(0))
-			->method('setTo')
-			->with(['validMail@Adre.ss' => 'foo']);
-		$message
-			->expects($this->at(1))
-			->method('setSubject')
-			->with('Your  account was created');
-		$htmlBody = new Http\TemplateResponse(
-			'settings',
-			'email.new_user',
-			[
-				'username' => 'foo',
-				'url' => '',
-			],
-			'blank'
-		);
-		$message
-			->expects($this->at(2))
-			->method('setHtmlBody')
-			->with($htmlBody->render());
-		$plainBody = new Http\TemplateResponse(
-			'settings',
-			'email.new_user_plain_text',
-			[
-				'username' => 'foo',
-				'url' => '',
-			],
-			'blank'
-		);
-		$message
-			->expects($this->at(3))
-			->method('setPlainBody')
-			->with($plainBody->render());
-		$message
-			->expects($this->at(4))
-			->method('setFrom')
-			->with(['no-reply@owncloud.com' => null]);
-
 		$this->mailer
 			->expects($this->at(0))
 			->method('validateMailAddress')
 			->with('validMail@Adre.ss')
 			->will($this->returnValue(true));
-		$this->mailer
-			->expects($this->at(1))
-			->method('createMessage')
-			->will($this->returnValue($message));
-		$this->mailer
-			->expects($this->at(2))
-			->method('send')
-			->with($message);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->method('getHome')
 			->will($this->returnValue('/home/user'));
@@ -1551,9 +1406,23 @@ class UsersControllerTest extends \Test\TestCase {
 			->method('getUID')
 			->will($this->returnValue('foo'));
 		$user
+			->method('getDisplayName')
+			->will($this->returnValue('foo'));
+		$user
 			->expects($this->once())
 			->method('getBackendClassName')
 			->will($this->returnValue('bar'));
+
+		$emailTemplate = $this->createMock(IEMailTemplate::class);
+		$this->newUserMailHelper
+			->expects($this->at(0))
+			->method('generateTemplate')
+			->with($user, false)
+			->willReturn($emailTemplate);
+		$this->newUserMailHelper
+			->expects($this->at(1))
+			->method('sendMail')
+			->with($user, $emailTemplate);
 
 		$this->userManager
 			->expects($this->once())
@@ -1577,8 +1446,7 @@ class UsersControllerTest extends \Test\TestCase {
 
 	private function mockUser($userId = 'foo', $displayName = 'M. Foo',
 							  $lastLogin = 500, $home = '/home/foo', $backend = 'OC_User_Database') {
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->any())
 			->method('getUID')
@@ -1813,8 +1681,7 @@ class UsersControllerTest extends \Test\TestCase {
 	public function testStatsSubAdmin() {
 		$controller = $this->getController(false);
 
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 
 		$this->userSession
 			->expects($this->once())
@@ -2108,7 +1975,7 @@ class UsersControllerTest extends \Test\TestCase {
 		$user->method('canChangeDisplayName')->willReturn(true);
 
 		if ($data[AccountManager::PROPERTY_EMAIL]['value'] === $oldEmailAddress ||
-		$oldEmailAddress === null && $data[AccountManager::PROPERTY_EMAIL]['value'] === '') {
+			($oldEmailAddress === null && $data[AccountManager::PROPERTY_EMAIL]['value'] === '')) {
 			$user->expects($this->never())->method('setEMailAddress');
 		} else {
 			$user->expects($this->once())->method('setEMailAddress')
@@ -2117,7 +1984,7 @@ class UsersControllerTest extends \Test\TestCase {
 		}
 
 		if ($data[AccountManager::PROPERTY_DISPLAYNAME]['value'] === $oldDisplayName ||
-			$oldDisplayName === null && $data[AccountManager::PROPERTY_DISPLAYNAME]['value'] === '') {
+			($oldDisplayName === null && $data[AccountManager::PROPERTY_DISPLAYNAME]['value'] === '')) {
 			$user->expects($this->never())->method('setDisplayName');
 		} else {
 			$user->expects($this->once())->method('setDisplayName')
@@ -2276,8 +2143,7 @@ class UsersControllerTest extends \Test\TestCase {
 	 *
 	 */
 	public function testSetEMailAddress($mailAddress, $isValid, $expectsUpdate, $canChangeDisplayName, $responseCode) {
-		$user = $this->getMockBuilder('\OC\User\User')
-			->disableOriginalConstructor()->getMock();
+		$user = $this->createMock(User::class);
 		$user
 			->expects($this->any())
 			->method('getUID')
@@ -2311,5 +2177,94 @@ class UsersControllerTest extends \Test\TestCase {
 		$controller = $this->getController(true);
 		$response = $controller->setEMailAddress($user->getUID(), $mailAddress);
 		$this->assertSame($responseCode, $response->getStatus());
+	}
+
+	public function testCreateUnsuccessfulWithoutPasswordAndEmail() {
+		$controller = $this->getController(true);
+
+		$expectedResponse = new DataResponse(
+			array(
+				'message' => 'To send a password link to the user an email address is required.'
+			),
+			Http::STATUS_UNPROCESSABLE_ENTITY
+		);
+		$response = $controller->create('foo', '', array(), '');
+		$this->assertEquals($expectedResponse, $response);
+	}
+
+
+
+	public function testCreateSuccessfulWithoutPasswordAndWithEmail() {
+		$user = $this->createMock(User::class);
+		$user
+			->method('getHome')
+			->willReturn('/home/user');
+		$user
+			->method('getUID')
+			->willReturn('foo');
+		$user
+			->method('getDisplayName')
+			->willReturn('John Doe');
+		$user
+			->method('getEmailAddress')
+			->willReturn('abc@example.org');
+		$user
+			->expects($this->once())
+			->method('getBackendClassName')
+			->willReturn('bar');
+
+		$this->userManager
+			->expects($this->once())
+			->method('createUser')
+			->will($this->onConsecutiveCalls($user));
+
+		$subadmin = $this->getMockBuilder('\OC\SubAdmin')
+			->disableOriginalConstructor()
+			->getMock();
+		$subadmin
+			->expects($this->any())
+			->method('getSubAdminsGroups')
+			->with($user)
+			->will($this->returnValue([]));
+		$this->groupManager
+			->expects($this->any())
+			->method('getSubAdmin')
+			->will($this->returnValue($subadmin));
+
+		$controller = $this->getController(true);
+		$this->mailer
+			->expects($this->at(0))
+			->method('validateMailAddress')
+			->with('abc@example.org')
+			->will($this->returnValue(true));
+		$emailTemplate = $this->createMock(IEMailTemplate::class);
+		$this->newUserMailHelper
+			->expects($this->at(0))
+			->method('generateTemplate')
+			->with($user, true)
+			->willReturn($emailTemplate);
+		$this->newUserMailHelper
+			->expects($this->at(1))
+			->method('sendMail')
+			->with($user, $emailTemplate);
+
+		$expectedResponse = new DataResponse(
+			[
+				'name' => 'foo',
+				'groups' => null,
+				'storageLocation' => '/home/user',
+				'backend' => 'bar',
+				'lastLogin' => 0,
+				'displayname' => 'John Doe',
+				'quota' => null,
+				'subadmin' => array(),
+				'email' => 'abc@example.org',
+				'isRestoreDisabled' => false,
+				'isAvatarAvailable' => true,
+			],
+			Http::STATUS_CREATED
+		);
+		$response = $controller->create('foo', '', array(), 'abc@example.org');
+		$this->assertEquals($expectedResponse, $response);
 	}
 }

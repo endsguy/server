@@ -20,8 +20,6 @@
  *
  */
 
-
-
 namespace Test\AppFramework\Middleware\Security;
 
 use OC\AppFramework\Http;
@@ -52,7 +50,6 @@ use OCP\IRequest;
 use OCP\ISession;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
-
 
 class SecurityMiddlewareTest extends \Test\TestCase {
 

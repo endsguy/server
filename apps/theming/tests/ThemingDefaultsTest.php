@@ -24,38 +24,47 @@
 namespace OCA\Theming\Tests;
 
 use OCA\Theming\ThemingDefaults;
+use OCP\Files\IAppData;
+use OCA\Theming\Util;
+use OCP\Files\NotFoundException;
+use OCP\Files\SimpleFS\ISimpleFile;
+use OCP\Files\SimpleFS\ISimpleFolder;
+use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\Files\IRootFolder;
 use Test\TestCase;
 
 class ThemingDefaultsTest extends TestCase {
-	/** @var IConfig */
+	/** @var IConfig|\PHPUnit_Framework_MockObject_MockObject */
 	private $config;
-	/** @var IL10N */
+	/** @var IL10N|\PHPUnit_Framework_MockObject_MockObject */
 	private $l10n;
-	/** @var IURLGenerator */
+	/** @var IURLGenerator|\PHPUnit_Framework_MockObject_MockObject */
 	private $urlGenerator;
-	/** @var \OC_Defaults */
+	/** @var \OC_Defaults|\PHPUnit_Framework_MockObject_MockObject */
 	private $defaults;
+	/** @var IAppData|\PHPUnit_Framework_MockObject_MockObject */
+	private $appData;
+	/** @var ICacheFactory|\PHPUnit_Framework_MockObject_MockObject */
+	private $cacheFactory;
 	/** @var ThemingDefaults */
 	private $template;
-	/** @var IRootFolder */
-	private $rootFolder;
-	/** @var ICacheFactory */
-	private $cacheFactory;
+	/** @var Util|\PHPUnit_Framework_MockObject_MockObject */
+	private $util;
+	/** @var ICache|\PHPUnit_Framework_MockObject_MockObject */
+	private $cache;
 
 	public function setUp() {
 		parent::setUp();
-		$this->config = $this->getMockBuilder(IConfig::class)->getMock();
-		$this->l10n = $this->getMockBuilder(IL10N::class)->getMock();
-		$this->urlGenerator = $this->getMockBuilder(IURLGenerator::class)->getMock();
-		$this->rootFolder = $this->getMockBuilder(IRootFolder::class)
-			->disableOriginalConstructor()
-			->getMock();
-		$this->cacheFactory = $this->getMockBuilder(ICacheFactory::class)->getMock();
+		$this->config = $this->createMock(IConfig::class);
+		$this->l10n = $this->createMock(IL10N::class);
+		$this->urlGenerator = $this->createMock(IURLGenerator::class);
+		$this->appData = $this->createMock(IAppData::class);
+		$this->cacheFactory = $this->createMock(ICacheFactory::class);
+		$this->cache = $this->createMock(ICache::class);
+		$this->util = $this->createMock(Util::class);
 		$this->defaults = $this->getMockBuilder(\OC_Defaults::class)
 			->disableOriginalConstructor()
 			->getMock();
@@ -73,15 +82,21 @@ class ThemingDefaultsTest extends TestCase {
 			->willReturn('Safe Data');
 		$this->defaults
 			->expects($this->at(3))
-			->method('getMailHeaderColor')
+			->method('getColorPrimary')
 			->willReturn('#000');
+		$this->cacheFactory
+			->expects($this->any())
+			->method('create')
+			->with('theming')
+			->willReturn($this->cache);
 		$this->template = new ThemingDefaults(
 			$this->config,
 			$this->l10n,
 			$this->urlGenerator,
 			$this->defaults,
-			$this->rootFolder,
-			$this->cacheFactory
+			$this->appData,
+			$this->cacheFactory,
+			$this->util
 		);
 	}
 
@@ -232,24 +247,24 @@ class ThemingDefaultsTest extends TestCase {
 		$this->assertEquals('<a href="url" target="_blank" rel="noreferrer">Name</a>', $this->template->getShortFooter());
 	}
 
-	public function testGetMailHeaderColorWithDefault() {
+	public function testgetColorPrimaryWithDefault() {
 		$this->config
 			->expects($this->once())
 			->method('getAppValue')
 			->with('theming', 'color', '#000')
 			->willReturn('#000');
 
-		$this->assertEquals('#000', $this->template->getMailHeaderColor());
+		$this->assertEquals('#000', $this->template->getColorPrimary());
 	}
 
-	public function testGetMailHeaderColorWithCustom() {
+	public function testgetColorPrimaryWithCustom() {
 		$this->config
 			->expects($this->once())
 			->method('getAppValue')
 			->with('theming', 'color', '#000')
 			->willReturn('#fff');
 
-		$this->assertEquals('#fff', $this->template->getMailHeaderColor());
+		$this->assertEquals('#fff', $this->template->getColorPrimary());
 	}
 
 	public function testSet() {
@@ -266,7 +281,10 @@ class ThemingDefaultsTest extends TestCase {
 			->expects($this->at(2))
 			->method('setAppValue')
 			->with('theming', 'cachebuster', 16);
-
+		$this->cache
+			->expects($this->once())
+			->method('clear')
+			->with('getScssVariables');
 		$this->template->set('MySetting', 'MyValue');
 	}
 
@@ -381,42 +399,143 @@ class ThemingDefaultsTest extends TestCase {
 	}
 
 	public function testGetBackgroundDefault() {
+		$this->appData->expects($this->once())
+			->method('getFolder')
+			->willThrowException(new NotFoundException());
 		$this->config
 			->expects($this->once())
 			->method('getAppValue')
 			->with('theming', 'backgroundMime')
 			->willReturn('');
-		$expected = $this->urlGenerator->imagePath('core','background.jpg');
-		$this->assertEquals($expected, $this->template->getBackground());
+		$this->appData
+			->expects($this->once())
+			->method('getFolder')
+			->with('images')
+			->willThrowException(new \Exception());
+		$this->urlGenerator->expects($this->once())
+			->method('imagePath')
+			->with('core', 'background.jpg')
+			->willReturn('core-background');
+		$this->assertEquals('core-background', $this->template->getBackground());
 	}
 
 	public function testGetBackgroundCustom() {
+		$folder = $this->createMock(ISimpleFolder::class);
+		$file = $this->createMock(ISimpleFile::class);
+		$folder->expects($this->once())
+			->method('getFile')
+			->willReturn($file);
+		$this->appData->expects($this->once())
+			->method('getFolder')
+			->willReturn($folder);
 		$this->config
 			->expects($this->once())
 			->method('getAppValue')
-			->with('theming', 'backgroundMime')
+			->with('theming', 'backgroundMime', false)
 			->willReturn('image/svg+xml');
-		$expected = $this->urlGenerator->linkToRoute('theming.Theming.getLoginBackground');
-		$this->assertEquals($expected, $this->template->getBackground());
+		$this->urlGenerator->expects($this->once())
+			->method('linkToRoute')
+			->with('theming.Theming.getLoginBackground')
+			->willReturn('custom-background');
+		$this->assertEquals('custom-background', $this->template->getBackground());
 	}
 
 	public function testGetLogoDefault() {
+		$this->appData->expects($this->once())
+			->method('getFolder')
+			->willThrowException(new NotFoundException());
 		$this->config
-			->expects($this->once())
+			->expects($this->at(0))
 			->method('getAppValue')
 			->with('theming', 'logoMime')
 			->willReturn('');
-		$expected = $this->urlGenerator->imagePath('core','logo.svg');
-		$this->assertEquals($expected, $this->template->getLogo());
+		$this->config
+			->expects($this->at(1))
+			->method('getAppValue')
+			->with('theming', 'cachebuster', '0')
+			->willReturn('0');
+		$this->appData
+			->expects($this->once())
+			->method('getFolder')
+			->with('images')
+			->willThrowException(new \Exception());
+		$this->urlGenerator->expects($this->once())
+			->method('imagePath')
+			->with('core', 'logo.svg')
+			->willReturn('core-logo');
+		$this->assertEquals('core-logo' . '?v=0', $this->template->getLogo());
 	}
 
 	public function testGetLogoCustom() {
+		$folder = $this->createMock(ISimpleFolder::class);
+		$file = $this->createMock(ISimpleFile::class);
+		$folder->expects($this->once())
+			->method('getFile')
+			->willReturn($file);
+		$this->appData->expects($this->once())
+			->method('getFolder')
+			->willReturn($folder);
 		$this->config
-			->expects($this->once())
+			->expects($this->at(0))
 			->method('getAppValue')
-			->with('theming', 'logoMime')
+			->with('theming', 'logoMime', false)
 			->willReturn('image/svg+xml');
-		$expected = $this->urlGenerator->linkToRoute('theming.Theming.getLogo');
-		$this->assertEquals($expected, $this->template->getLogo());
+		$this->config
+			->expects($this->at(1))
+			->method('getAppValue')
+			->with('theming', 'cachebuster', '0')
+			->willReturn('0');
+		$this->urlGenerator->expects($this->once())
+			->method('linkToRoute')
+			->with('theming.Theming.getLogo')
+			->willReturn('custom-logo');
+		$this->assertEquals('custom-logo' . '?v=0', $this->template->getLogo());
+	}
+
+	public function testGetScssVariablesCached() {
+		$this->cache->expects($this->once())->method('get')->with('getScssVariables')->willReturn(['foo'=>'bar']);
+		$this->assertEquals(['foo'=>'bar'], $this->template->getScssVariables());
+	}
+
+	public function testGetScssVariables() {
+		$this->config->expects($this->at(0))->method('getAppValue')->with('theming', 'cachebuster', '0')->willReturn('0');
+		$this->config->expects($this->at(1))->method('getAppValue')->with('theming', 'logoMime', false)->willReturn('jpeg');
+		$this->config->expects($this->at(2))->method('getAppValue')->with('theming', 'cachebuster', '0')->willReturn('0');
+		$this->config->expects($this->at(3))->method('getAppValue')->with('theming', 'backgroundMime', false)->willReturn('jpeg');
+		$this->config->expects($this->at(4))->method('getAppValue')->with('theming', 'color', null)->willReturn('#000000');
+		$this->config->expects($this->at(5))->method('getAppValue')->with('theming', 'color', '#000')->willReturn('#000000');
+		$this->config->expects($this->at(6))->method('getAppValue')->with('theming', 'color', '#000')->willReturn('#000000');
+
+		$this->util->expects($this->any())->method('invertTextColor')->with('#000000')->willReturn(false);
+		$this->cache->expects($this->once())->method('get')->with('getScssVariables')->willReturn(null);
+		$folder = $this->createMock(ISimpleFolder::class);
+		$file = $this->createMock(ISimpleFile::class);
+		$folder->expects($this->any())->method('getFile')->willReturn($file);
+		$this->appData->expects($this->any())
+			->method('getFolder')
+			->willReturn($folder);
+
+		$this->urlGenerator->expects($this->exactly(2))
+			->method('linkToRoute')
+			->willReturnMap([
+				['theming.Theming.getLogo', [], 'custom-logo'],
+				['theming.Theming.getLoginBackground', [], 'custom-background'],
+			]);
+
+		$this->urlGenerator->expects($this->exactly(2))
+			->method('getAbsoluteURL')
+			->willReturnCallback(function ($path) {
+				return 'absolute-' . $path;
+			});
+
+		$expected = [
+			'theming-cachebuster' => '\'0\'',
+			'image-logo' => "'absolute-custom-logo?v=0'",
+			'image-login-background' => "'absolute-custom-background'",
+			'color-primary' => '#000000',
+			'color-primary-text' => '#ffffff'
+
+		];
+		$this->assertEquals($expected, $this->template->getScssVariables());
 	}
 }

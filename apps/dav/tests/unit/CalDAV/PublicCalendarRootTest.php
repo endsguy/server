@@ -3,6 +3,7 @@
 namespace OCA\DAV\Tests\unit\CalDAV;
 
 use OCA\DAV\CalDAV\Calendar;
+use OCA\DAV\CalDAV\PublicCalendar;
 use OCA\DAV\Connector\Sabre\Principal;
 use OCP\IL10N;
 use OCA\DAV\CalDAV\CalDavBackend;
@@ -21,7 +22,7 @@ use Test\TestCase;
  */
 class PublicCalendarRootTest extends TestCase {
 
-	const UNIT_TEST_USER = 'principals/users/caldav-unit-test';
+	const UNIT_TEST_USER = '';
 	/** @var CalDavBackend */
 	private $backend;
 	/** @var PublicCalendarRoot */
@@ -92,13 +93,8 @@ class PublicCalendarRootTest extends TestCase {
 
 	public function testGetChildren() {
 		$this->createPublicCalendar();
-
-		$publicCalendars = $this->backend->getPublicCalendars();
-
 		$calendarResults = $this->publicCalendarRoot->getChildren();
-
-		$this->assertEquals(1, count($calendarResults));
-		$this->assertEquals(new Calendar($this->backend, $publicCalendars[0], $this->l10n), $calendarResults[0]);
+		$this->assertSame([], $calendarResults);
 	}
 
 	/**
@@ -108,11 +104,11 @@ class PublicCalendarRootTest extends TestCase {
 		$this->backend->createCalendar(self::UNIT_TEST_USER, 'Example', []);
 
 		$calendarInfo = $this->backend->getCalendarsForUser(self::UNIT_TEST_USER)[0];
-		$calendar = new Calendar($this->backend, $calendarInfo, $this->l10n);
+		$calendar = new PublicCalendar($this->backend, $calendarInfo, $this->l10n);
 		$publicUri = $calendar->setPublishStatus(true);
 
 		$calendarInfo = $this->backend->getPublicCalendar($publicUri);
-		$calendar = new Calendar($this->backend, $calendarInfo, $this->l10n);
+		$calendar = new PublicCalendar($this->backend, $calendarInfo, $this->l10n);
 
 		return $calendar;
 	}
