@@ -34,7 +34,7 @@ use Test\TestCase;
 class CalendarTest extends TestCase {
 
 	/** @var IL10N */
-	private $l10n;
+	protected $l10n;
 
 	public function setUp() {
 		parent::setUp();
@@ -109,7 +109,7 @@ class CalendarTest extends TestCase {
 			['user1', 'user2', [], true],
 			['user1', 'user2', [
 				'{http://owncloud.org/ns}calendar-enabled' => true,
-			], false],
+			], true],
 			['user1', 'user2', [
 				'{DAV:}displayname' => true,
 			], true],
@@ -134,7 +134,7 @@ class CalendarTest extends TestCase {
 	/**
 	 * @dataProvider dataPropPatch
 	 */
-	public function testPropPatch($ownerPrincipal, $principalUri, $mutations, $throws) {
+	public function testPropPatch($ownerPrincipal, $principalUri, $mutations, $shared) {
 		/** @var \PHPUnit_Framework_MockObject_MockObject | CalDavBackend $backend */
 		$backend = $this->getMockBuilder(CalDavBackend::class)->disableOriginalConstructor()->getMock();
 		$calendarInfo = [
@@ -144,14 +144,15 @@ class CalendarTest extends TestCase {
 			'uri' => 'default'
 		];
 		$c = new Calendar($backend, $calendarInfo, $this->l10n);
+		$propPatch = new PropPatch($mutations);
 
-		if ($throws) {
-			$this->setExpectedException('\Sabre\DAV\Exception\Forbidden');
+		if (!$shared) {
+			$backend->expects($this->once())
+				->method('updateCalendar')
+				->with(666, $propPatch);
 		}
-		$c->propPatch(new PropPatch($mutations));
-		if (!$throws) {
-			$this->assertTrue(true);
-		}
+		$c->propPatch($propPatch);
+		$this->assertTrue(true);
 	}
 
 	/**
@@ -224,8 +225,8 @@ class CalendarTest extends TestCase {
 
 	/**
 	 * @dataProvider providesConfidentialClassificationData
-	 * @param $expectedChildren
-	 * @param $isShared
+	 * @param int $expectedChildren
+	 * @param bool $isShared
 	 */
 	public function testPrivateClassification($expectedChildren, $isShared) {
 
@@ -267,8 +268,8 @@ class CalendarTest extends TestCase {
 
 	/**
 	 * @dataProvider providesConfidentialClassificationData
-	 * @param $expectedChildren
-	 * @param $isShared
+	 * @param int $expectedChildren
+	 * @param bool $isShared
 	 */
 	public function testConfidentialClassification($expectedChildren, $isShared) {
 		$start = '20160609';

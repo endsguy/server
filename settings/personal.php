@@ -57,10 +57,8 @@ OC_Util::addStyle( 'settings', 'settings' );
 \OC_Util::addVendorScript('strengthify/jquery.strengthify');
 \OC_Util::addVendorStyle('strengthify/strengthify');
 \OC_Util::addScript('files', 'jquery.fileupload');
-if ($config->getSystemValue('enable_avatars', true) === true) {
-	\OC_Util::addVendorScript('jcrop/js/jquery.Jcrop');
-	\OC_Util::addVendorStyle('jcrop/css/jquery.Jcrop');
-}
+\OC_Util::addVendorScript('jcrop/js/jquery.Jcrop');
+\OC_Util::addVendorStyle('jcrop/css/jquery.Jcrop');
 
 \OC::$server->getEventDispatcher()->dispatch('OC\Settings\Personal::loadAdditionalScripts');
 
@@ -88,7 +86,7 @@ foreach($languageCodes as $lang) {
 	if($l->getLanguageCode() === $lang && substr($potentialName, 0, 1) !== '_') {//first check if the language name is in the translation file
 		$ln = array('code' => $lang, 'name' => $potentialName);
 	} elseif ($lang === 'en') {
-		$ln = ['code' => $lang, 'name' => 'English'];
+		$ln = ['code' => $lang, 'name' => 'English (US)'];
 	}else{//fallback to language code
 		$ln=array('code'=>$lang, 'name'=>$lang);
 	}
@@ -160,6 +158,7 @@ $userData = $accountManager->getUser($user);
 
 $tmpl->assign('total_space', $totalSpace);
 $tmpl->assign('usage_relative', $storageInfo['relative']);
+$tmpl->assign('quota', $storageInfo['quota']);
 $tmpl->assign('clients', $clients);
 $tmpl->assign('email', $userData[\OC\Accounts\AccountManager::PROPERTY_EMAIL]['value']);
 $tmpl->assign('languages', $languages);
@@ -182,11 +181,14 @@ $tmpl->assign('websiteScope', $userData[\OC\Accounts\AccountManager::PROPERTY_WE
 $tmpl->assign('twitterScope', $userData[\OC\Accounts\AccountManager::PROPERTY_TWITTER]['scope']);
 $tmpl->assign('addressScope', $userData[\OC\Accounts\AccountManager::PROPERTY_ADDRESS]['scope']);
 
-$tmpl->assign('enableAvatars', $config->getSystemValue('enable_avatars', true) === true);
 $tmpl->assign('avatarChangeSupported', OC_User::canUserChangeAvatar(OC_User::getUser()));
 $tmpl->assign('certs', $certificateManager->listCertificates());
 $tmpl->assign('showCertificates', $enableCertImport);
 $tmpl->assign('urlGenerator', $urlGenerator);
+
+$lookupServerUploadEnabled = $config->getAppValue('files_sharing', 'lookupServerUploadEnabled', 'yes');
+$lookupServerUploadEnabled = $lookupServerUploadEnabled === 'yes';
+$tmpl->assign('lookupServerUploadEnabled', $lookupServerUploadEnabled);
 
 // Get array of group ids for this user
 $groups = \OC::$server->getGroupManager()->getUserIdGroups(OC_User::getUser());
@@ -218,8 +220,13 @@ $formsMap = array_map(function($form){
 	if (preg_match('%(<h2(?P<class>[^>]*)>.*?</h2>)%i', $form, $regs)) {
 		$sectionName = str_replace('<h2'.$regs['class'].'>', '', $regs[0]);
 		$sectionName = str_replace('</h2>', '', $sectionName);
-		$anchor = strtolower($sectionName);
-		$anchor = str_replace(' ', '-', $anchor);
+		if (strpos($regs['class'], 'data-anchor-name') !== false) {
+			preg_match('%.*data-anchor-name="(?P<anchor>[^"]*)"%i', $regs['class'], $matches);
+			$anchor = $matches['anchor'];
+		} else {
+			$anchor = strtolower($sectionName);
+			$anchor = str_replace(' ', '-', $anchor);
+		}
 
 		return array(
 			'anchor' => $anchor,

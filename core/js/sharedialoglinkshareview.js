@@ -17,6 +17,7 @@
 
 	var PASSWORD_PLACEHOLDER = '**********';
 	var PASSWORD_PLACEHOLDER_MESSAGE = t('core', 'Choose a password for the public link');
+	var PASSWORD_PLACEHOLDER_MESSAGE_OPTIONAL = t('core', 'Choose a password for the public link or press "Enter ↵"');
 
 	var TEMPLATE =
 			'{{#if shareAllowed}}' +
@@ -27,7 +28,12 @@
 			'<div class="oneline">' +
 			'<label for="linkText-{{cid}}" class="hidden-visually">{{urlLabel}}</label>' +
 			'<input id="linkText-{{cid}}" class="linkText {{#unless isLinkShare}}hidden{{/unless}}" type="text" readonly="readonly" value="{{shareLinkURL}}" />' +
-			'<a class="{{#unless isLinkShare}}hidden-visually{{/unless}} clipboardButton icon icon-clippy" data-clipboard-target="#linkText-{{cid}}"></a>' +
+			'{{#if singleAction}}' +
+				'<a class="{{#unless isLinkShare}}hidden-visually{{/unless}} clipboardButton icon icon-clippy" data-clipboard-target="#linkText-{{cid}}"></a>' +
+			'{{else}}' +
+				'<a class="{{#unless isLinkShare}}hidden-visually{{/unless}}" href="#"><span class="linkMore icon icon-more"></span></a>' +
+				'{{{popoverMenu}}}' +
+			'{{/if}}' +
 			'</div>' +
 			'    {{#if publicUpload}}' +
 			'<div id="allowPublicUploadWrapper">' +
@@ -43,20 +49,51 @@
 			'</div>' +
 			'        {{/if}}' +
 			'    {{/if}}' +
+			'     {{#if publicEditing}}' +
+			'<div id="allowPublicEditingWrapper">' +
+			'    <span class="icon-loading-small hidden"></span>' +
+			'    <input type="checkbox" value="1" name="allowPublicEditing" id="sharingDialogAllowPublicEditing-{{cid}}" class="checkbox publicEditingCheckbox" {{{publicEditingChecked}}} />' +
+			'<label for="sharingDialogAllowPublicEditing-{{cid}}">{{publicEditingLabel}}</label>' +
+			'</div>' +
+			'    {{/if}}' +
 			'    {{#if showPasswordCheckBox}}' +
 			'<input type="checkbox" name="showPassword" id="showPassword-{{cid}}" class="checkbox showPasswordCheckbox" {{#if isPasswordSet}}checked="checked"{{/if}} value="1" />' +
 			'<label for="showPassword-{{cid}}">{{enablePasswordLabel}}</label>' +
 			'    {{/if}}' +
-			'<div id="linkPass" class="linkPass {{#unless isPasswordSet}}hidden{{/unless}}">' +
+			'<div id="linkPass" class="oneline linkPass {{#unless isPasswordSet}}hidden{{/unless}}">' +
 			'    <label for="linkPassText-{{cid}}" class="hidden-visually">{{passwordLabel}}</label>' +
+			'    {{#if showPasswordCheckBox}}' +
 			'    <input id="linkPassText-{{cid}}" class="linkPassText" type="password" placeholder="{{passwordPlaceholder}}" />' +
-			'    <span class="icon-loading-small hidden"></span>' +
+			'    {{else}}' +
+			'    <input id="linkPassText-{{cid}}" class="linkPassText" type="password" placeholder="{{passwordPlaceholderInitial}}" />' +
+			'    {{/if}}' +
+			'    <span class="icon icon-loading-small hidden"></span>' +
 			'</div>' +
 			'{{else}}' +
 			// FIXME: this doesn't belong in this view
 			'{{#if noSharingPlaceholder}}<input id="shareWith-{{cid}}" class="shareWithField" type="text" placeholder="{{noSharingPlaceholder}}" disabled="disabled"/>{{/if}}' +
 			'{{/if}}'
 		;
+	var TEMPLATE_POPOVER_MENU =
+		'<div class="popovermenu bubble hidden menu socialSharingMenu">' +
+			'<ul>' +
+				'<li>' +
+					'<a href="#" class="shareOption menuitem clipboardButton" data-clipboard-target="#linkText-{{cid}}">' +
+						'<span class="icon icon-clippy" ></span>' +
+						'<span>{{copyLabel}}</span>' +
+					'</a>' +
+				'</li>' +
+				'{{#each social}}' +
+					'<li>' +
+						'<a href="#" class="shareOption menuitem pop-up" data-url="{{url}}" data-window="{{newWindow}}">' +
+							'<span class="icon {{iconClass}}"' +
+								'></span><span>{{label}}' +
+							'</span>' +
+						'</a>' +
+					'</li>' +
+				'{{/each}}' +
+			'</ul>' +
+		'</div>';
 
 	/**
 	 * @class OCA.Share.ShareDialogLinkShareView
@@ -78,6 +115,9 @@
 		/** @type {Function} **/
 		_template: undefined,
 
+		/** @type {Function} **/
+		_popoverMenuTemplate: undefined,
+
 		/** @type {boolean} **/
 		showLink: true,
 
@@ -87,8 +127,11 @@
 			'click .linkCheckbox': 'onLinkCheckBoxChange',
 			'click .linkText': 'onLinkTextClick',
 			'change .publicUploadCheckbox': 'onAllowPublicUploadChange',
+			'change .publicEditingCheckbox': 'onAllowPublicEditingChange',
 			'change .hideFileListCheckbox': 'onHideFileListChange',
-			'click .showPasswordCheckbox': 'onShowPasswordClick'
+			'click .showPasswordCheckbox': 'onShowPasswordClick',
+			'click .icon-more': 'onToggleMenu',
+			'click .pop-up': 'onPopUpClick'
 		},
 
 		initialize: function(options) {
@@ -128,11 +171,15 @@
 				'onLinkTextClick',
 				'onShowPasswordClick',
 				'onHideFileListChange',
-				'onAllowPublicUploadChange'
+				'onAllowPublicUploadChange',
+				'onAllowPublicEditingChange'
 			);
 
 			var clipboard = new Clipboard('.clipboardButton');
 			clipboard.on('success', function(e) {
+				event.preventDefault();
+				event.stopPropagation();
+
 				var $input = $(e.trigger);
 				$input.tooltip('hide')
 					.attr('data-original-title', t('core', 'Copied!'))
@@ -140,9 +187,13 @@
 					.tooltip({placement: 'bottom', trigger: 'manual'})
 					.tooltip('show');
 				_.delay(function() {
-					$input.tooltip('hide')
-						.attr('data-original-title', t('core', 'Copy'))
-						.tooltip('fixTitle');
+					$input.tooltip('hide');
+					if (OC.Share.Social.Collection.size() == 0) {
+						$input.attr('data-original-title', t('core', 'Copy'))
+							.tooltip('fixTitle');
+					} else {
+						$input.tooltip("destroy");
+					}
 				}, 3000);
 			});
 			clipboard.on('error', function (e) {
@@ -162,9 +213,13 @@
 					.tooltip({placement: 'bottom', trigger: 'manual'})
 					.tooltip('show');
 				_.delay(function () {
-					$input.tooltip('hide')
-						.attr('data-original-title', t('core', 'Copy'))
-						.tooltip('fixTitle');
+					$input.tooltip('hide');
+					if (OC.Share.Social.Collection.size() == 0) {
+						$input.attr('data-original-title', t('core', 'Copy'))
+							.tooltip('fixTitle');
+					} else {
+						$input.tooltip("destroy");
+					}
 				}, 3000);
 			});
 
@@ -178,7 +233,7 @@
 			}
 
 			if($checkBox.is(':checked')) {
-				if(this.configModel.get('enforcePasswordForPublicLink') === false) {
+				if(this.configModel.get('enforcePasswordForPublicLink') === false && this.configModel.get('enableLinkPasswordByDefault') === false) {
 					$loading.removeClass('hidden');
 					// this will create it
 					this.model.saveLinkShare();
@@ -209,7 +264,9 @@
 					password: ''
 				});
 			} else {
-				this.$el.find('.linkPassText').focus();
+				if (!OC.Util.isIE()) {
+					this.$el.find('.linkPassText').focus();
+				}
 			}
 		},
 
@@ -228,9 +285,19 @@
 			var $input = this.$el.find('.linkPassText');
 			$input.removeClass('error');
 			var password = $input.val();
-			// in IE9 the password might be the placeholder due to bugs in the placeholders polyfill
-			if(password === '' || password === PASSWORD_PLACEHOLDER || password === PASSWORD_PLACEHOLDER_MESSAGE) {
-				return;
+
+			if (this.$el.find('.linkPassText').attr('placeholder') === PASSWORD_PLACEHOLDER_MESSAGE_OPTIONAL) {
+
+				// in IE9 the password might be the placeholder due to bugs in the placeholders polyfill
+				if(password === PASSWORD_PLACEHOLDER_MESSAGE_OPTIONAL) {
+					password = '';
+				}
+			} else {
+
+				// in IE9 the password might be the placeholder due to bugs in the placeholders polyfill
+				if(password === '' || password === PASSWORD_PLACEHOLDER || password === PASSWORD_PLACEHOLDER_MESSAGE) {
+					return;
+				}
 			}
 
 			$loading
@@ -240,10 +307,12 @@
 			this.model.saveLinkShare({
 				password: password
 			}, {
+				complete: function(model) {
+					$loading.removeClass('inlineblock').addClass('hidden');
+				},
 				error: function(model, msg) {
 					// destroy old tooltips
 					$input.tooltip('destroy');
-					$loading.removeClass('inlineblock').addClass('hidden');
 					$input.addClass('error');
 					$input.attr('title', msg);
 					$input.tooltip({placement: 'bottom', trigger: 'manual'});
@@ -259,6 +328,20 @@
 			var permissions = OC.PERMISSION_READ;
 			if($checkbox.is(':checked')) {
 				permissions = OC.PERMISSION_UPDATE | OC.PERMISSION_CREATE | OC.PERMISSION_READ | OC.PERMISSION_DELETE;
+			}
+
+			this.model.saveLinkShare({
+				permissions: permissions
+			});
+		},
+
+		onAllowPublicEditingChange: function() {
+			var $checkbox = this.$('.publicEditingCheckbox');
+			$checkbox.siblings('.icon-loading-small').removeClass('hidden').addClass('inlineblock');
+
+			var permissions = OC.PERMISSION_READ;
+			if($checkbox.is(':checked')) {
+				permissions = OC.PERMISSION_UPDATE | OC.PERMISSION_READ;
 			}
 
 			this.model.saveLinkShare({
@@ -307,6 +390,12 @@
 				publicUploadChecked = 'checked="checked"';
 			}
 
+			var publicEditingChecked = '';
+			if(this.model.isPublicEditingAllowed()) {
+				publicEditingChecked = 'checked="checked"';
+			}
+
+
 			var hideFileList = publicUploadChecked;
 
 			var hideFileListChecked = '';
@@ -319,6 +408,34 @@
 			var showPasswordCheckBox = isLinkShare
 				&& (   !this.configModel.get('enforcePasswordForPublicLink')
 					|| !this.model.get('linkShare').password);
+			var passwordPlaceholderInitial = this.configModel.get('enforcePasswordForPublicLink')
+				? PASSWORD_PLACEHOLDER_MESSAGE : PASSWORD_PLACEHOLDER_MESSAGE_OPTIONAL;
+
+			var publicEditable =
+				!this.model.isFolder()
+				&& isLinkShare
+				&& this.model.updatePermissionPossible();
+
+			var link = this.model.get('linkShare').link;
+			var social = [];
+			OC.Share.Social.Collection.each(function(model) {
+				var url = model.get('url');
+				url = url.replace('{{reference}}', link);
+
+				social.push({
+					url: url,
+					label: t('core', 'Share to {name}', {name: model.get('name')}),
+					name: model.get('name'),
+					iconClass: model.get('iconClass'),
+					newWindow: model.get('newWindow')
+				});
+			});
+
+			var popover = this.popoverMenuTemplate({
+				cid: this.cid,
+				copyLabel: t('core', 'Copy'),
+				social: social
+			});
 
 			this.$el.html(linkShareTemplate({
 				cid: this.cid,
@@ -331,22 +448,45 @@
 				enablePasswordLabel: t('core', 'Password protect'),
 				passwordLabel: t('core', 'Password'),
 				passwordPlaceholder: isPasswordSet ? PASSWORD_PLACEHOLDER : PASSWORD_PLACEHOLDER_MESSAGE,
+				passwordPlaceholderInitial: passwordPlaceholderInitial,
 				isPasswordSet: isPasswordSet,
 				showPasswordCheckBox: showPasswordCheckBox,
 				publicUpload: publicUpload && isLinkShare,
 				publicUploadChecked: publicUploadChecked,
 				hideFileListChecked: hideFileListChecked,
 				publicUploadLabel: t('core', 'Allow upload and editing'),
-				hideFileListLabel: t('core', 'File drop (upload only)'),
+				publicEditing: publicEditable,
+				publicEditingChecked: publicEditingChecked,
+				publicEditingLabel: t('core', 'Allow editing'),
+				hideFileListLabel: 'Secure drop (' + t('core', 'upload only') + ')',
 				mailPrivatePlaceholder: t('core', 'Email link to person'),
-				mailButtonText: t('core', 'Send')
+				mailButtonText: t('core', 'Send'),
+				singleAction: OC.Share.Social.Collection.size() == 0,
+				popoverMenu: popover
 			}));
 
-			this.$el.find('.clipboardButton').tooltip({placement: 'bottom', title: t('core', 'Copy'), trigger: 'hover'});
+			if (OC.Share.Social.Collection.size() == 0) {
+				this.$el.find('.clipboardButton').tooltip({
+					placement: 'bottom',
+					title: t('core', 'Copy'),
+					trigger: 'hover'
+				});
+			}
 
 			this.delegateEvents();
 
 			return this;
+		},
+
+		onToggleMenu: function(event) {
+			event.preventDefault();
+			event.stopPropagation();
+			var $element = $(event.target);
+			var $li = $element.closest('.oneline');
+			var $menu = $li.find('.popovermenu');
+
+			OC.showMenu(null, $menu);
+			this._menuOpen = $li.data('share-id');
 		},
 
 		/**
@@ -358,6 +498,40 @@
 				this._template = Handlebars.compile(TEMPLATE);
 			}
 			return this._template;
+		},
+
+		/**
+		 * renders the popover template and returns the resulting HTML
+		 *
+		 * @param {Object} data
+		 * @returns {string}
+		 */
+		popoverMenuTemplate: function(data) {
+			if(!this._popoverMenuTemplate) {
+				this._popoverMenuTemplate = Handlebars.compile(TEMPLATE_POPOVER_MENU);
+			}
+			return this._popoverMenuTemplate(data);
+		},
+
+		onPopUpClick: function(event) {
+			event.preventDefault();
+			event.stopPropagation();
+
+			var url = $(event.currentTarget).data('url');
+			var newWindow = $(event.currentTarget).data('window');
+			$(event.currentTarget).tooltip('hide');
+			if (url) {
+				if (newWindow === true) {
+					var width = 600;
+					var height = 400;
+					var left = (screen.width / 2) - (width / 2);
+					var top = (screen.height / 2) - (height / 2);
+
+					window.open(url, 'name', 'width=' + width + ', height=' + height + ', top=' + top + ', left=' + left);
+				} else {
+					window.location.href = url;
+				}
+			}
 		}
 
 	});

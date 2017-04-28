@@ -6,6 +6,7 @@ OC.L10N.register(
     "Please provide a valid app key and secret." : "Bitte einen gültigen Anwendungsschlüssel mit Sicherheitsschlüssel eingeben.",
     "Step 1 failed. Exception: %s" : "Schritt 1 fehlgeschlagen. Fehlermeldung: %s",
     "Step 2 failed. Exception: %s" : "Schritt 2 fehlgeschlagen. Fehlermeldung: %s",
+    "External storages" : "Externer Speicher",
     "External storage" : "Externer Speicher",
     "Dropbox App Configuration" : "Dropbox-App Konfiguration",
     "Google Drive App Configuration" : "Google Drive - App Konfiguration",
@@ -38,7 +39,7 @@ OC.L10N.register(
     "Credentials saved" : "Anmeldeinformationen gespeichert",
     "Credentials saving failed" : "Speichern der Anmeldeinformationen fehlgeschlagen",
     "Credentials required" : "Anmeldeinformationen benötigt",
-    "Storage with id \"%i\" not found" : "Der Speicher mit der ID „%i“ wurde nicht gefunden",
+    "Storage with ID \"%d\" not found" : "Der Speicher mit der ID „%d“ wurde nicht gefunden",
     "Invalid backend or authentication mechanism class" : "Ungültiger Backend- oder Authentifizierungsmechanismus",
     "Invalid mount point" : "Ungültiger mount point",
     "Objectstore forbidden" : "Objekt nicht erlaubt",
@@ -49,7 +50,7 @@ OC.L10N.register(
     "Unsatisfied authentication mechanism parameters" : "Unbefriedigende Authentifizierungsmechanismus Parameter",
     "Insufficient data: %s" : "Unzureichende Daten: %s",
     "%s" : "%s",
-    "Storage with id \"%i\" is not user editable" : "Speicher mit der ID \"%i\" kann nicht vom Benutzer bearbeitet werden",
+    "Storage with ID \"%d\" is not user editable" : "Speicher mit der ID \"%d\" kann nicht vom Benutzer bearbeitet werden",
     "Access key" : "Zugangsschlüssel",
     "Secret key" : "Geheimer Schlüssel",
     "Builtin" : "eingebaut",
@@ -102,7 +103,6 @@ OC.L10N.register(
     "OpenStack Object Storage" : "Openstack-Objektspeicher",
     "Service name" : "Service Name",
     "Request timeout (seconds)" : "Anfrage -Timeout ( Sekunden)",
-    "External storages" : "Externer Speicher",
     "The cURL support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "Die cURL-Unterstützung von PHP ist deaktiviert oder nicht installiert. Das Hinzufügen von %s ist nicht möglich. Bitte wenden Sie Sich zur Installation an den Systemadministrator.",
     "The FTP support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "Die FTP-Unterstützung von PHP ist deaktiviert oder nicht installiert. Das Hinzufügen von %s ist nicht möglich. Bitte wenden Sie Sich zur Installation an den Systemadministrator.",
     "\"%s\" is not installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "\"%s\" ist nicht installiert. Das Hinzufügen von %s ist nicht möglich. Bitte wenden Sie Sich zur Installation an den Systemadministrator.",
@@ -126,6 +126,7 @@ OC.L10N.register(
     "Delete" : "Löschen",
     "Allow users to mount external storage" : "Benutzern erlauben, externen Speicher einzubinden",
     "Allow users to mount the following external storage" : "Benutzern erlauben, den oder die folgenden externen Speicher einzubinden:",
-    "Couldn't get the information from the ownCloud server: {code} {type}" : "Die gewünschten Informationen konnten nicht vom Server gelesen werden: {code} {type}"
+    "Storage with id \"%i\" not found" : "Der Speicher mit der ID „%i“ wurde nicht gefunden",
+    "Storage with id \"%i\" is not user editable" : "Speicher mit der ID \"%i\" kann nicht vom Benutzer bearbeitet werden"
 },
 "nplurals=2; plural=(n != 1);");

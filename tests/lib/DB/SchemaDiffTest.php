@@ -21,6 +21,7 @@
 
 namespace Test\DB;
 
+use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\SchemaDiff;
 use OC\DB\MDB2SchemaManager;
 use OC\DB\MDB2SchemaReader;
@@ -47,8 +48,12 @@ class SchemaDiffTest extends TestCase {
 	/** @var string */
 	private $testPrefix;
 
+	private $schemaFile;
+
 	protected function setUp() {
 		parent::setUp();
+
+		$this->schemaFile = \OC::$server->getTempManager()->getTemporaryFile();
 
 		$this->config = \OC::$server->getConfig();
 		$this->connection = \OC::$server->getDatabaseConnection();
@@ -57,7 +62,7 @@ class SchemaDiffTest extends TestCase {
 	}
 
 	protected function tearDown() {
-		$this->manager->removeDBStructure('static://test_db_scheme');
+		$this->manager->removeDBStructure($this->schemaFile);
 		parent::tearDown();
 	}
 
@@ -68,14 +73,15 @@ class SchemaDiffTest extends TestCase {
 	public function testZeroChangeOnSchemaMigrations($xml) {
 
 		$xml = str_replace( '*dbprefix*', $this->testPrefix, $xml );
-		$schemaFile = 'static://test_db_scheme';
+		$schemaFile = $this->schemaFile;
 		file_put_contents($schemaFile, $xml);
 
 		// apply schema
 		$this->manager->createDbFromStructure($schemaFile);
 
 		$schemaReader = new MDB2SchemaReader($this->config, $this->connection->getDatabasePlatform());
-		$endSchema = $schemaReader->loadSchemaFromFile($schemaFile);
+		$toSchema = new Schema([], [], $this->connection->getSchemaManager()->createSchemaConfig());
+		$endSchema = $schemaReader->loadSchemaFromFile($schemaFile, $toSchema);
 
 		// get the diff
 		/** @var SchemaDiff $diff */

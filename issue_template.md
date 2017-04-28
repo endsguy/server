@@ -5,7 +5,8 @@ This is the bug tracker for the Server component. Find other components at https
 
 For reporting potential security issues please see https://nextcloud.com/security/
 
-To make it possible for us to help you please fill out below information carefully.
+To make it possible for us to help you please fill out below information carefully. 
+You can also use the Issue Template application to prefill most of the required information: https://apps.nextcloud.com/apps/issuetemplate
 --> 
 ### Steps to reproduce
 1.
@@ -19,6 +20,7 @@ Tell us what should happen
 Tell us what happens instead
 
 ### Server configuration
+
 **Operating system**:
 
 **Web server:**
@@ -55,7 +57,7 @@ from within your Nextcloud installation folder
 ```
 </details>
 
-**The content of config/config.php:**
+**Nextcloud configuration:**
 <details>
 <summary>Config report</summary>
 
@@ -66,8 +68,8 @@ from within your Nextcloud installation folder
 
 or 
 
-Insert your config.php content here
-(Without the database password, passwordsalt and secret)
+Insert your config.php content here. 
+Make sure to remove all sensitive content such as passwords. (e.g. database password, passwordsalt, secret, smtp password, …)
 ```
 </details>
 
@@ -104,6 +106,7 @@ Eventually replace sensitive data as the name/IP-address of your LDAP server or 
 #### Web server error log
 <details>
 <summary>Web server error log</summary>
+
 ```
 Insert your webserver log here
 ```
@@ -112,6 +115,7 @@ Insert your webserver log here
 #### Nextcloud log (data/nextcloud.log)
 <details>
 <summary>Nextcloud log</summary>
+
 ```
 Insert your Nextcloud log here
 ```
@@ -120,6 +124,7 @@ Insert your Nextcloud log here
 #### Browser log
 <details>
 <summary>Browser log</summary>
+
 ```
 Insert your browser log here, this could for example include:
 

@@ -2,6 +2,22 @@ Feature: webdav-related
 	Background:
 		Given using api version "1"
 
+	Scenario: Unauthenticated call old dav path
+		Given using old dav path
+		When connecting to dav endpoint
+		Then the HTTP status code should be "401"
+		And there are no duplicate headers
+		And The following headers should be set
+			|WWW-Authenticate|Basic realm="Nextcloud"|
+
+	Scenario: Unauthenticated call new dav path
+		Given using new dav path
+		When connecting to dav endpoint
+		Then the HTTP status code should be "401"
+		And there are no duplicate headers
+		And The following headers should be set
+			|WWW-Authenticate|Basic realm="Nextcloud"|
+
 	Scenario: Moving a file
 		Given using old dav path
 		And As an "admin"
@@ -227,7 +243,7 @@ Feature: webdav-related
 			|Content-Security-Policy|default-src 'none';|
 			|X-Content-Type-Options |nosniff|
 			|X-Download-Options|noopen|
-			|X-Frame-Options|Sameorigin|
+			|X-Frame-Options|SAMEORIGIN|
 			|X-Permitted-Cross-Domain-Policies|none|
 			|X-Robots-Tag|none|
 			|X-XSS-Protection|1; mode=block|
@@ -447,3 +463,57 @@ Feature: webdav-related
 		And As an "user1"
 		When User "user1" deletes file "/testfolder/asdf.txt"
 		Then the HTTP status code should be "204"
+
+	Scenario: Creating a folder
+		Given using old dav path
+		And user "user0" exists
+		And user "user0" created a folder "/test_folder"
+		When as "user0" gets properties of folder "/test_folder" with
+		  |{DAV:}resourcetype|
+		Then the single response should contain a property "{DAV:}resourcetype" with value "{DAV:}collection"
+
+	Scenario: Creating a folder with special chars
+		Given using old dav path
+		And user "user0" exists
+		And user "user0" created a folder "/test_folder:5"
+		When as "user0" gets properties of folder "/test_folder:5" with
+		  |{DAV:}resourcetype|
+		Then the single response should contain a property "{DAV:}resourcetype" with value "{DAV:}collection"
+
+	Scenario: Removing everything of a folder
+		Given using old dav path
+		And As an "admin"
+		And user "user0" exists
+		And As an "user0"
+		And User "user0" moves file "/welcome.txt" to "/FOLDER/welcome.txt"
+		And user "user0" created a folder "/FOLDER/SUBFOLDER"
+		And User "user0" copies file "/textfile0.txt" to "/FOLDER/SUBFOLDER/testfile0.txt"
+		When User "user0" deletes everything from folder "/FOLDER/"
+		Then user "user0" should see following elements
+			| /FOLDER/ |
+			| /PARENT/ |
+			| /PARENT/parent.txt |
+			| /textfile0.txt |
+			| /textfile1.txt |
+			| /textfile2.txt |
+			| /textfile3.txt |
+			| /textfile4.txt |
+
+	Scenario: Removing everything of a folder using new dav path
+		Given using new dav path
+		And As an "admin"
+		And user "user0" exists
+		And As an "user0"
+		And User "user0" moves file "/welcome.txt" to "/FOLDER/welcome.txt"
+		And user "user0" created a folder "/FOLDER/SUBFOLDER"
+		And User "user0" copies file "/textfile0.txt" to "/FOLDER/SUBFOLDER/testfile0.txt"
+		When User "user0" deletes everything from folder "/FOLDER/"
+		Then user "user0" should see following elements
+			| /FOLDER/ |
+			| /PARENT/ |
+			| /PARENT/parent.txt |
+			| /textfile0.txt |
+			| /textfile1.txt |
+			| /textfile2.txt |
+			| /textfile3.txt |
+			| /textfile4.txt |

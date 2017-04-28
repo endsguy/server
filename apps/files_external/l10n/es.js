@@ -6,6 +6,7 @@ OC.L10N.register(
     "Please provide a valid app key and secret." : "Por favor facilite una clave de app y una clave secreta válidas.",
     "Step 1 failed. Exception: %s" : "El paso 1 falló. Excepción: %s",
     "Step 2 failed. Exception: %s" : "El paso 2 falló. Excepción: %s",
+    "External storages" : "Almacenamientos externos",
     "External storage" : "Almacenamiento externo",
     "Dropbox App Configuration" : "Configuración de la app de Dropbox",
     "Google Drive App Configuration" : "Configuración de la app de Google Drive",
@@ -38,7 +39,6 @@ OC.L10N.register(
     "Credentials saved" : "Credenciales guardados",
     "Credentials saving failed" : "Guardado de credenciales fallido",
     "Credentials required" : "Credenciales requeridos",
-    "Storage with id \"%i\" not found" : "No se ha encontrado almacenamiento con id \"%i\"",
     "Invalid backend or authentication mechanism class" : "Sistema o mecanismo de autentificación inválido",
     "Invalid mount point" : "Punto de montaje no válido",
     "Objectstore forbidden" : "Objeto de almacenaje prohibido",
@@ -49,7 +49,6 @@ OC.L10N.register(
     "Unsatisfied authentication mechanism parameters" : "Los parámetros del mecanismo de autentificación no son válidos",
     "Insufficient data: %s" : "Datos insuficientes: %s",
     "%s" : "%s",
-    "Storage with id \"%i\" is not user editable" : "El almacenamiento con id \"%i\" no es editable por usuarios",
     "Access key" : "Clave de acceso",
     "Secret key" : "Clave secreta",
     "Builtin" : "Incorporado",
@@ -102,7 +101,6 @@ OC.L10N.register(
     "OpenStack Object Storage" : "Almacenamiento de objeto OpenStack",
     "Service name" : "Nombre del servicio",
     "Request timeout (seconds)" : "Tiempo agotado para petición (segundos)",
-    "External storages" : "Almacenamientos externos",
     "The cURL support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "El soporte de cURL en PHP no está activado o instalado. No se puede montar %s. Pídale al administrador del sistema que lo instale.",
     "The FTP support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "El soporte para FTP desde PHP no esta habilitado o instalado. Montar el %s no ha sido posible. Por favor consulta al administrador de tu sistema para que lo instale.",
     "\"%s\" is not installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "\"%s\" no está instalado. El montaje de %s no es posible. Por favor, pregunte a su administrador del sistema para instalarlo.",
@@ -126,6 +124,7 @@ OC.L10N.register(
     "Delete" : "Eliminar",
     "Allow users to mount external storage" : "Permitir a los usuarios montar un almacenamiento externo",
     "Allow users to mount the following external storage" : "Permitir a los usuarios montar el siguiente almacenamiento externo",
-    "Couldn't get the information from the ownCloud server: {code} {type}" : "No se puede obtener información acerca del servidor de OwnCloud: {code} {type}"
+    "Storage with id \"%i\" not found" : "No se ha encontrado almacenamiento con id \"%i\"",
+    "Storage with id \"%i\" is not user editable" : "El almacenamiento con id \"%i\" no es editable por usuarios"
 },
 "nplurals=2; plural=(n != 1);");

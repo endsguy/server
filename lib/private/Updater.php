@@ -82,6 +82,12 @@ class Updater extends BasicEmitter {
 		$this->log = $log;
 		$this->config = $config;
 		$this->checker = $checker;
+
+		// If at least PHP 7.0.0 is used we don't need to disable apps as we catch
+		// fatal errors and exceptions and disable the app just instead.
+		if(version_compare(phpversion(), '7.0.0', '>=')) {
+			$this->skip3rdPartyAppsDisable = true;
+		}
 	}
 
 	/**
@@ -151,13 +157,13 @@ class Updater extends BasicEmitter {
 	/**
 	 * Return version from which this version is allowed to upgrade from
 	 *
-	 * @return string allowed previous version
+	 * @return array allowed previous versions per vendor
 	 */
-	private function getAllowedPreviousVersion() {
+	private function getAllowedPreviousVersions() {
 		// this should really be a JSON file
 		require \OC::$SERVERROOT . '/version.php';
 		/** @var array $OC_VersionCanBeUpgradedFrom */
-		return implode('.', $OC_VersionCanBeUpgradedFrom);
+		return $OC_VersionCanBeUpgradedFrom;
 	}
 
 	/**
@@ -176,26 +182,22 @@ class Updater extends BasicEmitter {
 	 * Whether an upgrade to a specified version is possible
 	 * @param string $oldVersion
 	 * @param string $newVersion
-	 * @param string $allowedPreviousVersion
+	 * @param array $allowedPreviousVersions
 	 * @return bool
 	 */
-	public function isUpgradePossible($oldVersion, $newVersion, $allowedPreviousVersion) {
-		$allowedUpgrade = (version_compare($allowedPreviousVersion, $oldVersion, '<=')
-			&& (version_compare($oldVersion, $newVersion, '<=') || $this->config->getSystemValue('debug', false)));
+	public function isUpgradePossible($oldVersion, $newVersion, array $allowedPreviousVersions) {
+		$version = explode('.', $oldVersion);
+		$majorMinor = $version[0] . '.' . $version[1];
 
-		if ($allowedUpgrade) {
-			return $allowedUpgrade;
+		$currentVendor = $this->config->getAppValue('core', 'vendor', '');
+		if ($currentVendor === 'nextcloud') {
+			return isset($allowedPreviousVersions[$currentVendor][$majorMinor])
+				&& (version_compare($oldVersion, $newVersion, '<=') ||
+					$this->config->getSystemValue('debug', false));
 		}
 
-		// Upgrade not allowed, someone switching vendor?
-		if ($this->getVendor() !== $this->config->getAppValue('core', 'vendor', '')) {
-			$oldVersion = explode('.', $oldVersion);
-			$newVersion = explode('.', $newVersion);
-
-			return $oldVersion[0] === $newVersion[0] && $oldVersion[1] === $newVersion[1];
-		}
-
-		return false;
+		// Check if the instance can be migrated
+		return isset($allowedPreviousVersions[$currentVendor][$majorMinor]);
 	}
 
 	/**
@@ -209,8 +211,8 @@ class Updater extends BasicEmitter {
 	 */
 	private function doUpgrade($currentVersion, $installedVersion) {
 		// Stop update if the update is over several major versions
-		$allowedPreviousVersion = $this->getAllowedPreviousVersion();
-		if (!self::isUpgradePossible($installedVersion, $currentVersion, $allowedPreviousVersion)) {
+		$allowedPreviousVersions = $this->getAllowedPreviousVersions();
+		if (!$this->isUpgradePossible($installedVersion, $currentVersion, $allowedPreviousVersions)) {
 			throw new \Exception('Updates between multiple major versions and downgrades are unsupported.');
 		}
 
@@ -241,11 +243,11 @@ class Updater extends BasicEmitter {
 		}
 
 		// update all shipped apps
-		$disabledApps = $this->checkAppsRequirements();
+		$this->checkAppsRequirements();
 		$this->doAppUpgrade();
 
 		// upgrade appstore apps
-		$this->upgradeAppStoreApps($disabledApps);
+		$this->upgradeAppStoreApps(\OC::$server->getAppManager()->getInstalledApps());
 
 		// install new shipped apps on upgrade
 		OC_App::loadApps('authentication');
@@ -363,7 +365,7 @@ class Updater extends BasicEmitter {
 					// load authentication, filesystem and logging apps after
 					// upgrading them. Other apps my need to rely on modifying
 					// user and/or filesystem aspects.
-					\OC_App::loadApp($appId, false);
+					\OC_App::loadApp($appId);
 				}
 			}
 		}
@@ -439,7 +441,8 @@ class Updater extends BasicEmitter {
 					\OC::$server->getAppFetcher(),
 					\OC::$server->getHTTPClientService(),
 					\OC::$server->getTempManager(),
-					$this->log
+					$this->log,
+					\OC::$server->getConfig()
 				);
 				if (Installer::isUpdateAvailable($app, \OC::$server->getAppFetcher())) {
 					$this->emit('\OC\Updater', 'upgradeAppStoreApp', [$app]);

@@ -23,8 +23,10 @@ namespace Tests\Core\Controller;
 
 use OC\Core\Controller\LostController;
 use OC\Mail\Message;
+use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\Defaults;
 use OCP\Encryption\IManager;
 use OCP\IConfig;
 use OCP\IL10N;
@@ -32,6 +34,7 @@ use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCP\Mail\IEMailTemplate;
 use OCP\Mail\IMailer;
 use OCP\Security\ICrypto;
 use OCP\Security\ISecureRandom;
@@ -54,7 +57,7 @@ class LostControllerTest extends \Test\TestCase {
 	private $l10n;
 	/** @var IUserManager | PHPUnit_Framework_MockObject_MockObject */
 	private $userManager;
-	/** @var \OC_Defaults */
+	/** @var Defaults */
 	private $defaults;
 	/** @var IConfig | PHPUnit_Framework_MockObject_MockObject */
 	private $config;
@@ -75,8 +78,12 @@ class LostControllerTest extends \Test\TestCase {
 		parent::setUp();
 
 		$this->existingUser = $this->createMock(IUser::class);
-		$this->existingUser->method('getEMailAddress')
+		$this->existingUser->expects($this->any())
+			->method('getEMailAddress')
 			->willReturn('test@example.com');
+		$this->existingUser->expects($this->any())
+			->method('getUID')
+			->willReturn('ExistingUser');
 
 		$this->config = $this->createMock(IConfig::class);
 		$this->config->method('getSystemValue')
@@ -89,7 +96,7 @@ class LostControllerTest extends \Test\TestCase {
 			->will($this->returnCallback(function($text, $parameters = array()) {
 				return vsprintf($text, $parameters);
 			}));
-		$this->defaults = $this->getMockBuilder('\OC_Defaults')
+		$this->defaults = $this->getMockBuilder('\OCP\Defaults')
 			->disableOriginalConstructor()->getMock();
 		$this->userManager = $this->getMockBuilder('\OCP\IUserManager')
 			->disableOriginalConstructor()->getMock();
@@ -239,7 +246,7 @@ class LostControllerTest extends \Test\TestCase {
 		$this->assertEquals($expectedResponse, $response);
 	}
 
-	public function testEmailUnsucessful() {
+	public function testEmailUnsuccessful() {
 		$existingUser = 'ExistingUser';
 		$nonExistingUser = 'NonExistingUser';
 		$this->userManager
@@ -252,11 +259,12 @@ class LostControllerTest extends \Test\TestCase {
 
 		// With a non existing user
 		$response = $this->lostController->email($nonExistingUser);
-		$expectedResponse = [
+		$expectedResponse = new JSONResponse([
 			'status' => 'error',
 			'msg' => 'Couldn\'t send reset email. Please make sure your username is correct.'
-		];
-		$this->assertSame($expectedResponse, $response);
+		]);
+		$expectedResponse->throttle();
+		$this->assertEquals($expectedResponse, $response);
 
 		// With no mail address
 		$this->config
@@ -265,11 +273,12 @@ class LostControllerTest extends \Test\TestCase {
 			->with($existingUser, 'settings', 'email')
 			->will($this->returnValue(null));
 		$response = $this->lostController->email($existingUser);
-		$expectedResponse = [
+		$expectedResponse = new JSONResponse([
 			'status' => 'error',
 			'msg' => 'Couldn\'t send reset email. Please make sure your username is correct.'
-		];
-		$this->assertSame($expectedResponse, $response);
+		]);
+		$expectedResponse->throttle();
+		$this->assertEquals($expectedResponse, $response);
 	}
 
 	public function testEmailSuccessful() {
@@ -278,11 +287,6 @@ class LostControllerTest extends \Test\TestCase {
 			->method('generate')
 			->with('21')
 			->will($this->returnValue('ThisIsMaybeANotSoSecretToken!'));
-		$this->userManager
-				->expects($this->once())
-				->method('userExists')
-				->with('ExistingUser')
-				->will($this->returnValue(true));
 		$this->userManager
 				->expects($this->any())
 				->method('get')
@@ -314,17 +318,32 @@ class LostControllerTest extends \Test\TestCase {
 		$message
 			->expects($this->at(2))
 			->method('setPlainBody')
-			->with('Use the following link to reset your password: https://example.tld/index.php/lostpassword/');
+			->with('text body');
 		$message
 			->expects($this->at(3))
+			->method('setHtmlBody')
+			->with('HTML body');
+		$message
+			->expects($this->at(4))
 			->method('setFrom')
 			->with(['lostpassword-noreply@localhost' => null]);
+		$emailTemplate = $this->createMock(IEMailTemplate::class);
+		$emailTemplate->expects($this->any())
+			->method('renderHtml')
+			->willReturn('HTML body');
+		$emailTemplate->expects($this->any())
+			->method('renderText')
+			->willReturn('text body');
 		$this->mailer
 			->expects($this->at(0))
+			->method('createEMailTemplate')
+			->willReturn($emailTemplate);
+		$this->mailer
+			->expects($this->at(1))
 			->method('createMessage')
 			->will($this->returnValue($message));
 		$this->mailer
-			->expects($this->at(1))
+			->expects($this->at(2))
 			->method('send')
 			->with($message);
 
@@ -339,8 +358,96 @@ class LostControllerTest extends \Test\TestCase {
 			)->willReturn('encryptedToken');
 
 		$response = $this->lostController->email('ExistingUser');
-		$expectedResponse = array('status' => 'success');
-		$this->assertSame($expectedResponse, $response);
+		$expectedResponse = new JSONResponse(['status' => 'success']);
+		$expectedResponse->throttle();
+		$this->assertEquals($expectedResponse, $response);
+	}
+
+	public function testEmailWithMailSuccessful() {
+		$this->secureRandom
+			->expects($this->once())
+			->method('generate')
+			->with('21')
+			->will($this->returnValue('ThisIsMaybeANotSoSecretToken!'));
+		$this->userManager
+				->expects($this->any())
+				->method('get')
+				->with('test@example.com')
+				->willReturn(null);
+		$this->userManager
+				->expects($this->any())
+				->method('getByEmail')
+				->with('test@example.com')
+				->willReturn([$this->existingUser]);
+		$this->timeFactory
+			->expects($this->once())
+			->method('getTime')
+			->will($this->returnValue(12348));
+		$this->config
+			->expects($this->once())
+			->method('setUserValue')
+			->with('ExistingUser', 'core', 'lostpassword', 'encryptedToken');
+		$this->urlGenerator
+			->expects($this->once())
+			->method('linkToRouteAbsolute')
+			->with('core.lost.resetform', array('userId' => 'ExistingUser', 'token' => 'ThisIsMaybeANotSoSecretToken!'))
+			->will($this->returnValue('https://example.tld/index.php/lostpassword/'));
+		$message = $this->getMockBuilder('\OC\Mail\Message')
+			->disableOriginalConstructor()->getMock();
+		$message
+			->expects($this->at(0))
+			->method('setTo')
+			->with(['test@example.com' => 'ExistingUser']);
+		$message
+			->expects($this->at(1))
+			->method('setSubject')
+			->with(' password reset');
+		$message
+			->expects($this->at(2))
+			->method('setPlainBody')
+			->with('text body');
+		$message
+			->expects($this->at(3))
+			->method('setHtmlBody')
+			->with('HTML body');
+		$message
+			->expects($this->at(4))
+			->method('setFrom')
+			->with(['lostpassword-noreply@localhost' => null]);
+		$emailTemplate = $this->createMock(IEMailTemplate::class);
+		$emailTemplate->expects($this->any())
+			->method('renderHtml')
+			->willReturn('HTML body');
+		$emailTemplate->expects($this->any())
+			->method('renderText')
+			->willReturn('text body');
+		$this->mailer
+			->expects($this->at(0))
+			->method('createEMailTemplate')
+			->willReturn($emailTemplate);
+		$this->mailer
+			->expects($this->at(1))
+			->method('createMessage')
+			->will($this->returnValue($message));
+		$this->mailer
+			->expects($this->at(2))
+			->method('send')
+			->with($message);
+
+		$this->config->method('getSystemValue')
+			->with('secret', '')
+			->willReturn('SECRET');
+
+		$this->crypto->method('encrypt')
+			->with(
+				$this->equalTo('12348:ThisIsMaybeANotSoSecretToken!'),
+				$this->equalTo('test@example.comSECRET')
+			)->willReturn('encryptedToken');
+
+		$response = $this->lostController->email('test@example.com');
+		$expectedResponse = new JSONResponse(['status' => 'success']);
+		$expectedResponse->throttle();
+		$this->assertEquals($expectedResponse, $response);
 	}
 
 	public function testEmailCantSendException() {
@@ -349,11 +456,6 @@ class LostControllerTest extends \Test\TestCase {
 			->method('generate')
 			->with('21')
 			->will($this->returnValue('ThisIsMaybeANotSoSecretToken!'));
-		$this->userManager
-			->expects($this->once())
-			->method('userExists')
-			->with('ExistingUser')
-			->will($this->returnValue(true));
 		$this->userManager
 				->expects($this->any())
 				->method('get')
@@ -384,17 +486,32 @@ class LostControllerTest extends \Test\TestCase {
 		$message
 			->expects($this->at(2))
 			->method('setPlainBody')
-			->with('Use the following link to reset your password: https://example.tld/index.php/lostpassword/');
+			->with('text body');
 		$message
 			->expects($this->at(3))
+			->method('setHtmlBody')
+			->with('HTML body');
+		$message
+			->expects($this->at(4))
 			->method('setFrom')
 			->with(['lostpassword-noreply@localhost' => null]);
+		$emailTemplate = $this->createMock(IEMailTemplate::class);
+		$emailTemplate->expects($this->any())
+			->method('renderHtml')
+			->willReturn('HTML body');
+		$emailTemplate->expects($this->any())
+			->method('renderText')
+			->willReturn('text body');
 		$this->mailer
 			->expects($this->at(0))
+			->method('createEMailTemplate')
+			->willReturn($emailTemplate);
+		$this->mailer
+			->expects($this->at(1))
 			->method('createMessage')
 			->will($this->returnValue($message));
 		$this->mailer
-			->expects($this->at(1))
+			->expects($this->at(2))
 			->method('send')
 			->with($message)
 			->will($this->throwException(new \Exception()));
@@ -410,8 +527,9 @@ class LostControllerTest extends \Test\TestCase {
 			)->willReturn('encryptedToken');
 
 		$response = $this->lostController->email('ExistingUser');
-		$expectedResponse = ['status' => 'error', 'msg' => 'Couldn\'t send reset email. Please contact your administrator.'];
-		$this->assertSame($expectedResponse, $response);
+		$expectedResponse = new JSONResponse(['status' => 'error', 'msg' => 'Couldn\'t send reset email. Please contact your administrator.']);
+		$expectedResponse->throttle();
+		$this->assertEquals($expectedResponse, $response);
 	}
 
 	public function testSetPasswordUnsuccessful() {
@@ -580,8 +698,9 @@ class LostControllerTest extends \Test\TestCase {
 			->willReturn($user);
 
 		$response = $this->lostController->email('ExistingUser');
-		$expectedResponse = ['status' => 'error', 'msg' => 'Could not send reset email because there is no email address for this username. Please contact your administrator.'];
-		$this->assertSame($expectedResponse, $response);
+		$expectedResponse = new JSONResponse(['status' => 'error', 'msg' => 'Could not send reset email because there is no email address for this username. Please contact your administrator.']);
+		$expectedResponse->throttle();
+		$this->assertEquals($expectedResponse, $response);
 	}
 
 	public function testSetPasswordEncryptionDontProceed() {

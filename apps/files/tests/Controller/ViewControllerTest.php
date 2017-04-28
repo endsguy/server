@@ -33,8 +33,6 @@ use OCP\Template;
 use Test\TestCase;
 use OCP\IRequest;
 use OCP\IURLGenerator;
-use OCP\AppFramework\Http\RedirectResponse;
-use OCP\INavigationManager;
 use OCP\IL10N;
 use OCP\IConfig;
 use OCP\IUserSession;
@@ -51,8 +49,6 @@ class ViewControllerTest extends TestCase {
 	private $request;
 	/** @var IURLGenerator|\PHPUnit_Framework_MockObject_MockObject */
 	private $urlGenerator;
-	/** @var INavigationManager */
-	private $navigationManager;
 	/** @var IL10N */
 	private $l10n;
 	/** @var IConfig|\PHPUnit_Framework_MockObject_MockObject */
@@ -74,7 +70,6 @@ class ViewControllerTest extends TestCase {
 		parent::setUp();
 		$this->request = $this->getMockBuilder('\OCP\IRequest')->getMock();
 		$this->urlGenerator = $this->getMockBuilder('\OCP\IURLGenerator')->getMock();
-		$this->navigationManager = $this->getMockBuilder('\OCP\INavigationManager')->getMock();
 		$this->l10n = $this->getMockBuilder('\OCP\IL10N')->getMock();
 		$this->config = $this->getMockBuilder('\OCP\IConfig')->getMock();
 		$this->eventDispatcher = $this->getMockBuilder('\Symfony\Component\EventDispatcher\EventDispatcherInterface')->getMock();
@@ -93,7 +88,6 @@ class ViewControllerTest extends TestCase {
 			'files',
 			$this->request,
 			$this->urlGenerator,
-			$this->navigationManager,
 			$this->l10n,
 			$this->config,
 			$this->eventDispatcher,
@@ -140,6 +134,7 @@ class ViewControllerTest extends TestCase {
 				'name' => \OC::$server->getL10N('files')->t('All files'),
 				'active' => false,
 				'icon' => '',
+				'type' => 'link',
 			],
 			[
 				'id' => 'recent',
@@ -149,6 +144,7 @@ class ViewControllerTest extends TestCase {
 				'name' => \OC::$server->getL10N('files')->t('Recent'),
 				'active' => false,
 				'icon' => '',
+				'type' => 'link',
 			],
 			[
 				'id' => 'favorites',
@@ -158,6 +154,7 @@ class ViewControllerTest extends TestCase {
 				'name' => null,
 				'active' => false,
 				'icon' => '',
+				'type' => 'link',
 			],
 			[
 			'id' => 'sharingin',
@@ -167,6 +164,7 @@ class ViewControllerTest extends TestCase {
 				'name' => \OC::$server->getL10N('files_sharing')->t('Shared with you'),
 				'active' => false,
 				'icon' => '',
+				'type' => 'link',
 			],
 			[
 			'id' => 'sharingout',
@@ -176,6 +174,7 @@ class ViewControllerTest extends TestCase {
 				'name' => \OC::$server->getL10N('files_sharing')->t('Shared with others'),
 				'active' => false,
 				'icon' => '',
+				'type' => 'link',
 			],
 			[
 				'id' => 'sharinglinks',
@@ -185,6 +184,7 @@ class ViewControllerTest extends TestCase {
 				'name' => \OC::$server->getL10N('files_sharing')->t('Shared by link', []),
 				'active' => false,
 				'icon' => '',
+				'type' => 'link',
 			],
 			[
 				'id' => 'systemtagsfilter',
@@ -194,6 +194,7 @@ class ViewControllerTest extends TestCase {
 				'name' => \OC::$server->getL10N('systemtags')->t('Tags'),
 				'active' => false,
 				'icon' => '',
+				'type' => 'link',
 			],
 			[
 				'id' => 'trashbin',
@@ -203,7 +204,8 @@ class ViewControllerTest extends TestCase {
 				'name' => \OC::$server->getL10N('files_trashbin')->t('Deleted files'),
 				'active' => false,
 				'icon' => '',
-				],
+				'type' => 'link',
+			],
 		]);
 
 		$expected = new Http\TemplateResponse(

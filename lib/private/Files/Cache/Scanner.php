@@ -40,7 +40,6 @@ use OC\Hooks\BasicEmitter;
 use OCP\Config;
 use OCP\Files\Cache\IScanner;
 use OCP\Files\ForbiddenException;
-use OCP\Files\Storage\ILockingStorage;
 use OCP\Lock\ILockingProvider;
 
 /**
@@ -168,7 +167,7 @@ class Scanner extends BasicEmitter implements IScanner {
 					$parent = '';
 				}
 				if ($parentId === -1) {
-					$parentId = $this->cache->getId($parent);
+					$parentId = $this->cache->getParentId($file);
 				}
 
 				// scan the parent if it's not in the cache (id -1) and the current file is not the root folder
@@ -491,7 +490,7 @@ class Scanner extends BasicEmitter implements IScanner {
 		} else {
 			$lastPath = null;
 			while (($path = $this->cache->getIncomplete()) !== false && $path !== $lastPath) {
-				$this->runBackgroundScanJob(function() use ($path) {
+				$this->runBackgroundScanJob(function () use ($path) {
 					$this->scan($path, self::SCAN_RECURSIVE_INCOMPLETE, self::REUSE_ETAG | self::REUSE_SIZE);
 				}, $path);
 				// FIXME: this won't proceed with the next item, needs revamping of getIncomplete()

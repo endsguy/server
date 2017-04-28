@@ -148,7 +148,7 @@ OCA = OCA || {};
 				} else if(usersFound === 1) {
 					message = t('user_ldap', 'User found and settings verified.');
 				} else if(usersFound > 1) {
-					message = t('user_ldap', 'Settings verified, but one user found. Only the first will be able to login. Consider a more narrow filter.');
+					message = t('user_ldap', 'Settings verified, but more than one user found. Only the first will be able to login. Consider a more narrow filter.');
 				}
 			} else {
 				message = t('user_ldap', 'An unspecified error occurred. Please check the settings and the log.');
@@ -160,7 +160,7 @@ OCA = OCA || {};
 				} else if(message === 'connection error') {
 					message = t('user_ldap', 'A connection error to LDAP / AD occurred, please check host, port and credentials.');
 				} else if(message === 'missing placeholder') {
-					message = t('user_ldap', 'The %uid placeholder is missing. It will be replaced with the login name when querying LDAP / AD.');
+					message = t('user_ldap', 'The "%uid" placeholder is missing. It will be replaced with the login name when querying LDAP / AD.');
 				}
 			}
 			OC.Notification.showTemporary(message, {isHTML: isHtml});

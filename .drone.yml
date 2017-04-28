@@ -19,6 +19,20 @@ pipeline:
     when:
       matrix:
         TESTS: check-autoloader
+  check-mergejs:
+    image: nextcloudci/php7.0:php7.0-7
+    commands:
+      - bash ./build/mergejschecker.sh
+    when:
+      matrix:
+        TESTS: check-mergejs
+  translation-check:
+    image: nextcloudci/php7.0:php7.0-7
+    commands:
+      - php ./build/translation-checker.php
+    when:
+      matrix:
+        TESTS: translation-check
   app-check-code:
     image: nextcloudci/php7.0:php7.0-7
     commands:
@@ -122,6 +136,45 @@ pipeline:
     when:
       matrix:
         TESTS: carddavtester-old-endpoint
+  sqlite-php7.0-samba-native:
+      image: nextcloudci/samba-native-php7.0:samba-native-php7.0-1
+      commands:
+        - smbd -D -FS &
+        - ./autotest-external.sh sqlite smb-linux
+        - wget https://codecov.io/bash -O codecov.sh
+        - sh -c "if [ '$DRONE_BUILD_EVENT' = 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -P $DRONE_PULL_REQUEST -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite.xml; fi"
+        - sh -c "if [ '$DRONE_BUILD_EVENT' != 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite.xml; fi"
+        - sh -c "if [ '$DRONE_BUILD_EVENT' = 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -P $DRONE_PULL_REQUEST -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite-smb-linux.xml; fi"
+        - sh -c "if [ '$DRONE_BUILD_EVENT' != 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite-smb-linux.xml; fi"
+      when:
+        matrix:
+          TESTS: sqlite-php7.0-samba-native
+  sqlite-php7.0-samba-non-native:
+      image: nextcloudci/samba-non-native-php7.0:samba-non-native-php7.0-2
+      commands:
+        - smbd -D -FS &
+        - ./autotest-external.sh sqlite smb-linux
+        - wget https://codecov.io/bash -O codecov.sh
+        - sh -c "if [ '$DRONE_BUILD_EVENT' = 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -P $DRONE_PULL_REQUEST -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite.xml; fi"
+        - sh -c "if [ '$DRONE_BUILD_EVENT' != 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite.xml; fi"
+        - sh -c "if [ '$DRONE_BUILD_EVENT' = 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -P $DRONE_PULL_REQUEST -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite-smb-linux.xml; fi"
+        - sh -c "if [ '$DRONE_BUILD_EVENT' != 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite-smb-linux.xml; fi"
+      when:
+        matrix:
+          TESTS: sqlite-php7.0-samba-non-native
+  sqlite-php7.0-webdav-apache:
+    image: nextcloudci/webdav-apache-php7.0
+    commands:
+      - apache2
+      - ./autotest-external.sh sqlite webdav-apachedrone
+      - wget https://codecov.io/bash -O codecov.sh
+      - sh -c "if [ '$DRONE_BUILD_EVENT' = 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -P $DRONE_PULL_REQUEST -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite.xml; fi"
+      - sh -c "if [ '$DRONE_BUILD_EVENT' != 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite.xml; fi"
+      - sh -c "if [ '$DRONE_BUILD_EVENT' = 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -P $DRONE_PULL_REQUEST -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite-webdav-apachedrone.xml; fi"
+      - sh -c "if [ '$DRONE_BUILD_EVENT' != 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-external-clover-sqlite-webdav-apachedrone.xml; fi"
+    when:
+      matrix:
+        TESTS: sqlite-php7.0-webdav-apache
   nodb-php5.6:
     image: nextcloudci/php5.6:php5.6-7
     commands:
@@ -222,6 +275,27 @@ pipeline:
     when:
       matrix:
         TESTS: integration-auth
+  integration-maintenance-mode:
+    image: nextcloudci/integration-php7.0:integration-php7.0-3
+    commands:
+      - ./occ maintenance:install --admin-pass=admin
+      - cd build/integration
+      - ./run.sh features/maintenance-mode.feature
+    when:
+      matrix:
+        TESTS: integration-maintenance-mode
+  integration-ratelimiting:
+    image: nextcloudci/integration-php7.0:integration-php7.0-3
+    commands:
+      - ./occ maintenance:install --admin-pass=admin
+      - ./occ config:system:set --type string --value "\\OC\\Memcache\\Redis" memcache.local
+      - ./occ config:system:set --type string --value "\\OC\\Memcache\\Redis" memcache.distributed
+      - ./occ app:enable testing
+      - cd build/integration
+      - ./run.sh features/ratelimiting.feature
+    when:
+      matrix:
+        TESTS: integration-ratelimiting
   integration-carddav:
     image: nextcloudci/integration-php7.0:integration-php7.0-3
     commands:
@@ -258,6 +332,15 @@ pipeline:
     when:
       matrix:
         TESTS: integration-sharing-v1
+  integration-sharing-v1-part2:
+    image: nextcloudci/integration-php7.0:integration-php7.0-3
+    commands:
+      - ./occ maintenance:install --admin-pass=admin
+      - cd build/integration
+      - ./run.sh features/sharing-v1-part2.feature
+    when:
+      matrix:
+        TESTS: integration-sharing-v1-part2
   integration-checksums-v1:
     image: nextcloudci/integration-php7.0:integration-php7.0-3
     commands:
@@ -348,6 +431,15 @@ pipeline:
     when:
       matrix:
         TESTS: integration-sharees-features
+  integration-sharees-v2-features:
+    image: nextcloudci/integration-php7.0:integration-php7.0-3
+    commands:
+      - ./occ maintenance:install --admin-pass=admin
+      - cd build/integration
+      - ./run.sh sharees_features/sharees_provisioningapiv2.feature
+    when:
+      matrix:
+        TESTS: integration-sharees-v2-features
   integration-setup-features:
     image: nextcloudci/integration-php7.0:integration-php7.0-3
     commands:
@@ -365,6 +457,15 @@ pipeline:
     when:
       matrix:
         TESTS: integration-filesdrop-features
+  integration-transfer-ownership-features:
+    image: nextcloudci/integration-php7.0:integration-php7.0-3
+    commands:
+      - ./occ maintenance:install --admin-pass=admin
+      - cd build/integration
+      - ./run.sh features/transfer-ownership.feature
+    when:
+      matrix:
+        TESTS: integration-transfer-ownership-features
   integration-ldap-features:
       image: nextcloudci/integration-php7.0:integration-php7.0-3
       commands:
@@ -375,6 +476,36 @@ pipeline:
       when:
         matrix:
           TESTS: integration-ldap-features
+  integration-trashbin:
+    image: nextcloudci/integration-php7.0:integration-php7.0-3
+    commands:
+      - ./occ maintenance:install --admin-pass=admin
+      - cd build/integration
+      - ./run.sh features/trashbin.feature
+    when:
+      matrix:
+        TESTS: integration-trashbin
+  acceptance-access-levels:
+      image: nextcloudci/php7.0:php7.0-7
+      commands:
+        - tests/acceptance/run-local.sh allow-git-repository-modifications features/access-levels.feature
+      when:
+        matrix:
+          TESTS-ACCEPTANCE: access-levels
+  acceptance-app-files:
+      image: nextcloudci/php7.0:php7.0-7
+      commands:
+        - tests/acceptance/run-local.sh allow-git-repository-modifications features/app-files.feature
+      when:
+        matrix:
+          TESTS-ACCEPTANCE: app-files
+  acceptance-login:
+      image: nextcloudci/php7.0:php7.0-7
+      commands:
+        - tests/acceptance/run-local.sh allow-git-repository-modifications features/login.feature
+      when:
+        matrix:
+          TESTS-ACCEPTANCE: login
   nodb-codecov:
     image: nextcloudci/php7.0:php7.0-7
     commands:
@@ -395,19 +526,44 @@ pipeline:
     when:
       matrix:
         TESTS: db-codecov
+  object-store:
+      image: nextcloudci/php7.0:php7.0-7
+      commands:
+        - TEST_SELECTION=PRIMARY-${OBJECT_STORE} ./autotest.sh sqlite
+        - wget https://codecov.io/bash -O codecov.sh
+        - sh -c "if [ '$DRONE_BUILD_EVENT' = 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -P $DRONE_PULL_REQUEST -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-clover-sqlite.xml; fi"
+        - sh -c "if [ '$DRONE_BUILD_EVENT' != 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-clover-sqlite.xml; fi"
+      when:
+        matrix:
+          TESTS: object-store
+  memcache-memcached:
+    image: nextcloudci/php7.0-memcached:php7.0-memcached-6
+    commands:
+      - service memcached restart
+      - ./autotest.sh sqlite tests/lib/Memcache/MemcachedTest.php
+      - wget https://codecov.io/bash -O codecov.sh
+      - sh -c "if [ '$DRONE_BUILD_EVENT' = 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -P $DRONE_PULL_REQUEST -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-clover-sqlite.xml; fi"
+      - sh -c "if [ '$DRONE_BUILD_EVENT' != 'pull_request' ]; then bash codecov.sh -B $DRONE_BRANCH -C $DRONE_COMMIT -t 117641e2-a9e8-4b7b-984b-ae872d9b05f5 -f tests/autotest-clover-sqlite.xml; fi"
+    when:
+      matrix:
+        TEST: memcache-memcached
 matrix:
   include:
     - TESTS: signed-off-check
+    - TESTS: translation-check
     - TESTS: htaccess-checker
     - TESTS: nodb-codecov
-    - TESTS: db-codecov    
+    - TESTS: db-codecov
     - TESTS: integration-capabilities_features
     - TESTS: integration-federation_features
+    - TESTS: integration-maintenance-mode
+    - TESTS: integration-ratelimiting
     - TESTS: integration-auth
     - TESTS: integration-carddav
     - TESTS: integration-dav-v2
     - TESTS: integration-ocs-v1
     - TESTS: integration-sharing-v1
+    - TESTS: integration-sharing-v1-part2
     - TESTS: integration-checksums
     - TESTS: integration-external-storage
     - TESTS: integration-provisioning-v1
@@ -418,11 +574,21 @@ matrix:
     - TESTS: integration-provisioning-v2
     - TESTS: integration-webdav-related
     - TESTS: integration-sharees-features
+    - TESTS: integration-sharees-v2-features
     - TESTS: integration-setup-features
     - TESTS: integration-filesdrop-features
+    - TESTS: integration-transfer-ownership-features
     - TESTS: integration-ldap-features
+    - TESTS: integration-trashbin
+    - TESTS: acceptance
+      TESTS-ACCEPTANCE: access-levels
+    - TESTS: acceptance
+      TESTS-ACCEPTANCE: app-files
+    - TESTS: acceptance
+      TESTS-ACCEPTANCE: login
     - TESTS: jsunit
     - TESTS: check-autoloader
+    - TESTS: check-mergejs
     - TESTS: app-check-code
     - TESTS: syntax-php5.6
     - TESTS: syntax-php7.0
@@ -433,6 +599,12 @@ matrix:
     - TESTS: caldavtester-new-endpoint
     - TESTS: carddavtester-new-endpoint
     - TESTS: carddavtester-old-endpoint
+    - TESTS: object-store
+      OBJECT_STORE: s3
+    - TESTS: sqlite-php7.0-samba-native
+    - TESTS: sqlite-php7.0-samba-non-native
+    - TEST: memcache-memcached
+    - TESTS: sqlite-php7.0-webdav-apache
     - DB: NODB
       PHP: 5.6
     - DB: NODB
@@ -484,3 +656,19 @@ services:
     when:
       matrix:
         DB: mysqlmb4
+  fake-s3:
+      image: lphoward/fake-s3
+      when:
+        matrix:
+          OBJECT_STORE: s3
+  selenium:
+    image: selenium/standalone-firefox:2.53.1-beryllium
+    environment:
+      # Reduce default log level for Selenium server (INFO) as it is too
+      # verbose.
+      - JAVA_OPTS=-Dselenium.LOGGER.level=WARNING
+    when:
+      matrix:
+        TESTS: acceptance
+
+branches: [ master, stable* ]

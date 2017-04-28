@@ -58,14 +58,14 @@ class ResponseTest extends \Test\TestCase {
 
 		$this->childResponse->setHeaders($expected);
 		$headers = $this->childResponse->getHeaders();
-		$expected['Content-Security-Policy'] = "default-src 'none';script-src 'self' 'unsafe-eval';style-src 'self' 'unsafe-inline';img-src 'self' data: blob:;font-src 'self';connect-src 'self';media-src 'self'";
+		$expected['Content-Security-Policy'] = "default-src 'none';base-uri 'none';manifest-src 'self';script-src 'self' 'unsafe-eval';style-src 'self' 'unsafe-inline';img-src 'self' data: blob:;font-src 'self';connect-src 'self';media-src 'self'";
 
 		$this->assertEquals($expected, $headers);
 	}
 
 	public function testOverwriteCsp() {
 		$expected = [
-			'Content-Security-Policy' => "default-src 'none';script-src 'self' 'unsafe-inline' 'unsafe-eval';style-src 'self' 'unsafe-inline';img-src 'self';font-src 'self';connect-src 'self';media-src 'self'",
+			'Content-Security-Policy' => "default-src 'none';base-uri 'none';manifest-src 'self';script-src 'self' 'unsafe-inline' 'unsafe-eval';style-src 'self' 'unsafe-inline';img-src 'self';font-src 'self';connect-src 'self';media-src 'self'",
 		];
 		$policy = new Http\ContentSecurityPolicy();
 		$policy->allowInlineScript(true);
@@ -97,7 +97,7 @@ class ResponseTest extends \Test\TestCase {
 
 	public function testCacheHeadersAreDisabledByDefault(){
 		$headers = $this->childResponse->getHeaders();
-		$this->assertEquals('no-cache, must-revalidate', $headers['Cache-Control']);
+		$this->assertEquals('no-cache, no-store, must-revalidate', $headers['Cache-Control']);
 	}
 
 
@@ -264,4 +264,9 @@ class ResponseTest extends \Test\TestCase {
 
 	}
 
+	public function testThrottle() {
+		$this->assertFalse($this->childResponse->isThrottled());
+		$this->childResponse->throttle();
+		$this->assertTrue($this->childResponse->isThrottled());
+	}
 }

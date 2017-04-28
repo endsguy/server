@@ -35,12 +35,9 @@
     "Allow users on this server to receive shares from other servers" : "Lejoju përdoruesve në këtë shërbyes të marrin ndarje nga shërbyes të tjerë",
     "Federated Cloud" : "Re e Federuar",
     "Your Federated Cloud ID:" : "ID-ja juaj për Re të Federuar:",
-    "Share it:" : "Ndajeni:",
     "Add to your website" : "Shtojeni te sajti juaj",
     "Share with me via Nextcloud" : "Ndani me mua përmes Nextcloud-it",
     "HTML Code:" : "Kod HTML:",
-    "Sharing %s failed, could not find %s, maybe the server is currently unreachable." : "Ndarja për %s dështoi, s’u gjet dot %s, ndoshta shërbyesi është hëpërhë jashtë pune.",
-    "You received \"/%3$s\" as a remote share from %1$s (on behalf of %2$s)" : "\"/%3$s\" e morët si një ndarje të largët prej %1$s (në emër të %2$s)",
-    "You received \"/%3$s\" as a remote share from %1$s" : "\"/%3$s\" e morët si një ndarje të largët prej %1$s"
+    "Share it:" : "Ndajeni:"
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

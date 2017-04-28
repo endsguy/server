@@ -48,7 +48,7 @@ class IntegrationTestUserHome extends AbstractIntegrationTest {
 		$this->mapping = new UserMapping(\OC::$server->getDatabaseConnection());
 		$this->mapping->clear();
 		$this->access->setUserMapper($this->mapping);
-		$this->backend = new \OCA\User_LDAP\User_LDAP($this->access, \OC::$server->getConfig());
+		$this->backend = new \OCA\User_LDAP\User_LDAP($this->access, \OC::$server->getConfig(), \OC::$server->getNotificationManager());
 	}
 
 	/**
@@ -79,7 +79,7 @@ class IntegrationTestUserHome extends AbstractIntegrationTest {
 
 	/**
 	 * homeDirectory on LDAP is empty. Return values of getHome should be
-	 * identical to user name, following ownCloud default.
+	 * identical to user name, following Nextcloud default.
 	 *
 	 * @return bool
 	 */
@@ -135,7 +135,7 @@ class IntegrationTestUserHome extends AbstractIntegrationTest {
 
 	/**
 	 * homeDirectory on LDAP is set to "attr:" which is effectively empty.
-	 * Return values of getHome should be ownCloud default.
+	 * Return values of getHome should be Nextcloud default.
 	 *
 	 * @return bool
 	 */

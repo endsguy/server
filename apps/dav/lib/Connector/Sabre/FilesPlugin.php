@@ -31,7 +31,6 @@
 namespace OCA\DAV\Connector\Sabre;
 
 use OC\Files\View;
-use OCA\DAV\Upload\FutureFile;
 use OCP\Files\ForbiddenException;
 use OCP\IPreview;
 use Sabre\DAV\Exception\Forbidden;
@@ -46,8 +45,6 @@ use \Sabre\HTTP\ResponseInterface;
 use OCP\Files\StorageNotAvailableException;
 use OCP\IConfig;
 use OCP\IRequest;
-use Sabre\DAV\Exception\BadRequest;
-use OCA\DAV\Connector\Sabre\Directory;
 
 class FilesPlugin extends ServerPlugin {
 
@@ -317,16 +314,26 @@ class FilesPlugin extends ServerPlugin {
 
 			$propFind->handle(self::OWNER_ID_PROPERTYNAME, function() use ($node) {
 				$owner = $node->getOwner();
-				return $owner->getUID();
+				if (!$owner) {
+					return null;
+				} else {
+					return $owner->getUID();
+				}
 			});
 			$propFind->handle(self::OWNER_DISPLAY_NAME_PROPERTYNAME, function() use ($node) {
 				$owner = $node->getOwner();
-				$displayName = $owner->getDisplayName();
-				return $displayName;
+				if (!$owner) {
+					return null;
+				} else {
+					return $owner->getDisplayName();
+				}
 			});
 
 			$propFind->handle(self::HAS_PREVIEW_PROPERTYNAME, function () use ($node) {
 				return json_encode($this->previewManager->isAvailable($node->getFileInfo()));
+			});
+			$propFind->handle(self::SIZE_PROPERTYNAME, function() use ($node) {
+				return $node->getSize();
 			});
 		}
 
@@ -379,24 +386,21 @@ class FilesPlugin extends ServerPlugin {
 	 * @return void
 	 */
 	public function handleUpdateProperties($path, PropPatch $propPatch) {
-		$propPatch->handle(self::LASTMODIFIED_PROPERTYNAME, function($time) use ($path) {
+		$node = $this->tree->getNodeForPath($path);
+		if (!($node instanceof \OCA\DAV\Connector\Sabre\Node)) {
+			return;
+		}
+
+		$propPatch->handle(self::LASTMODIFIED_PROPERTYNAME, function($time) use ($node) {
 			if (empty($time)) {
 				return false;
-			}
-			$node = $this->tree->getNodeForPath($path);
-			if (is_null($node)) {
-				return 404;
 			}
 			$node->touch($time);
 			return true;
 		});
-		$propPatch->handle(self::GETETAG_PROPERTYNAME, function($etag) use ($path) {
+		$propPatch->handle(self::GETETAG_PROPERTYNAME, function($etag) use ($node) {
 			if (empty($etag)) {
 				return false;
-			}
-			$node = $this->tree->getNodeForPath($path);
-			if (is_null($node)) {
-				return 404;
 			}
 			if ($node->setEtag($etag) !== -1) {
 				return true;

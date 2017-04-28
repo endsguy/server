@@ -6,6 +6,7 @@ OC.L10N.register(
     "Please provide a valid app key and secret." : "請提供有效的應用程式金鑰及密碼",
     "Step 1 failed. Exception: %s" : "步驟 1 失敗，出現異常: %s",
     "Step 2 failed. Exception: %s" : "步驟 2 失敗，出現異常: %s",
+    "External storages" : "外部儲存",
     "External storage" : "外部儲存",
     "Dropbox App Configuration" : "Dropbox 應用設置",
     "Google Drive App Configuration" : "Google Drive 應用設置",
@@ -30,7 +31,6 @@ OC.L10N.register(
     "external-storage" : "外部儲存",
     "Username" : "使用者名稱",
     "Password" : "密碼",
-    "Storage with id \"%i\" not found" : "沒有找到編號 \"%i\" 的儲存空間 ",
     "Invalid backend or authentication mechanism class" : "無效的後端處理或是驗證方式",
     "Invalid mount point" : "無效的掛載點",
     "Objectstore forbidden" : "物件儲存禁止存取",
@@ -84,7 +84,6 @@ OC.L10N.register(
     "OpenStack Object Storage" : "OpenStack 物件儲存",
     "Service name" : "服務名稱",
     "Request timeout (seconds)" : "請求超時 (秒)",
-    "External storages" : "外部儲存",
     "No external storage configured" : "目前尚未配置任何外部儲存",
     "You can add external storages in the personal settings" : "在個人設定裡您可以自行加入外部儲存設定",
     "Name" : "名稱",
@@ -104,6 +103,6 @@ OC.L10N.register(
     "Delete" : "刪除",
     "Allow users to mount external storage" : "允許使用者能自行掛載外部儲存",
     "Allow users to mount the following external storage" : "允許使用者自行掛載以下的外部儲存",
-    "Couldn't get the information from the ownCloud server: {code} {type}" : "無法從ownCloud伺服器得到資訊: {code} {type}"
+    "Storage with id \"%i\" not found" : "沒有找到編號 \"%i\" 的儲存空間 "
 },
 "nplurals=1; plural=0;");
