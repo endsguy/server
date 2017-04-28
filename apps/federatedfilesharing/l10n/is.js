@@ -41,14 +41,11 @@ OC.L10N.register(
     "Open documentation" : "Opna hjálparskjöl",
     "Allow users on this server to send shares to other servers" : "Leyfa notendum á þessum þjóni að senda sameignir til annarra þjóna",
     "Allow users on this server to receive shares from other servers" : "Leyfa notendum á þessum þjóni að taka á móti sameignum frá öðrum þjónum",
-    "Search global and public address book for users and let local users publish their data" : "Leita að notendum í víðværri og opinberri vistfangaskrá og leyfa staðværum notendum að birta gögnin sín",
-    "Allow users to publish their data to a global and public address book" : "Leifa notendum að birta gögnin sín í víðværri og opinberri vistfangaskrá",
     "Federated Cloud" : "Skýjasamband (federated)",
     "Your Federated Cloud ID:" : "Skýjasambandsauðkennið þitt (Federated Cloud ID):",
     "Add to your website" : "Bæta við vefsvæðið þitt",
     "Share with me via Nextcloud" : "Deila með mér í gegnum Nextcloud",
     "HTML Code:" : "HTML-kóði:",
-    "Search global and public address book for users" : "Leita að notendum í víðværri og opinberri vistfangaskrá",
-    "Share it:" : "Deila því:"
+    "Search global and public address book for users" : "Leita að notendum í víðværri og opinberri vistfangaskrá"
 },
 "nplurals=2; plural=(n % 10 != 1 || n % 100 == 11);");

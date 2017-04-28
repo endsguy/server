@@ -8,7 +8,6 @@ OC.L10N.register(
     "Trusted servers" : "Έμπιστοι διακομιστές",
     "+ Add trusted server" : "+Προσθήκη έμπιστων διακομιστών",
     "Trusted server" : "Έμπιστοι διακομιστές",
-    "Add" : "Προσθήκη",
-    "Federation" : "Federation"
+    "Add" : "Προσθήκη"
 },
 "nplurals=2; plural=(n != 1);");

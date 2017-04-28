@@ -37,8 +37,6 @@ OC.L10N.register(
     "Password" : "Κωδικός πρόσβασης",
     "Credentials saved" : "Τα διαπιστευτήρια αποθηκεύτηκαν",
     "Credentials saving failed" : "Αποτυχία αποθήκευσης διαπιστευτηρίων",
-    "Credentials required" : "Απαιτούνται διαπιστευτήρια ",
-    "Storage with ID \"%d\" not found" : "Αποθηκευτικός χώρος με ID \"%d\" δεν βρέθηκε ",
     "Invalid backend or authentication mechanism class" : "Μη έγκυρη κλάση συστήματος ή μηχανισμού πιστοποίησης",
     "Invalid mount point" : "Μη έγκυρο σημείο ανάρτησης",
     "Objectstore forbidden" : "Απαγορευμένο objectstore",
@@ -125,7 +123,6 @@ OC.L10N.register(
     "Delete" : "Διαγραφή",
     "Allow users to mount external storage" : "Να επιτρέπεται στους χρήστες η σύνδεση εξωτερικού χώρου",
     "Allow users to mount the following external storage" : "Χορήγηση άδειας στους χρήστες να συνδέσουν τα παρακάτω εξωτερικά μέσα αποθήκευσης",
-    "Storage with id \"%i\" not found" : "Αποθήκευση με id \"%i\" δεν βρέθηκε",
-    "Storage with id \"%i\" is not user editable" : "Αποθηκευτικός χώρος με ID \"%i\" δεν είναι επεξεργάσιμος από τον χρήστη "
+    "Storage with id \"%i\" not found" : "Αποθήκευση με id \"%i\" δεν βρέθηκε"
 },
 "nplurals=2; plural=(n != 1);");

@@ -208,36 +208,6 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 				'{' . \OCA\DAV\DAV\Sharing\Plugin::NS_OWNCLOUD . '}owner-principal' => $row['principaluri'],
 				$readOnlyPropertyName => $readOnly,
 			];
-
-			$this->addOwnerPrincipal($addressBooks[$row['id']]);
-		}
-		$result->closeCursor();
-
-		return array_values($addressBooks);
-	}
-
-	public function getUsersOwnAddressBooks($principalUri) {
-		$principalUri = $this->convertPrincipal($principalUri, true);
-		$query = $this->db->getQueryBuilder();
-		$query->select(['id', 'uri', 'displayname', 'principaluri', 'description', 'synctoken'])
-			  ->from('addressbooks')
-			  ->where($query->expr()->eq('principaluri', $query->createNamedParameter($principalUri)));
-
-		$addressBooks = [];
-
-		$result = $query->execute();
-		while($row = $result->fetch()) {
-			$addressBooks[$row['id']] = [
-				'id'  => $row['id'],
-				'uri' => $row['uri'],
-				'principaluri' => $this->convertPrincipal($row['principaluri'], false),
-				'{DAV:}displayname' => $row['displayname'],
-				'{' . Plugin::NS_CARDDAV . '}addressbook-description' => $row['description'],
-				'{http://calendarserver.org/ns/}getctag' => $row['synctoken'],
-				'{http://sabredav.org/ns}sync-token' => $row['synctoken']?$row['synctoken']:'0',
-			];
-
-			$this->addOwnerPrincipal($addressBooks[$row['id']]);
 		}
 		$result->closeCursor();
 

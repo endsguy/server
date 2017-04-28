@@ -1,9 +1,7 @@
 OC.L10N.register(
     "workflowengine",
     {
-    "Saved" : "Vistað",
     "Saving failed:" : "Vistun mistókst:",
-    "File MIME type" : "MIME-skráartegund",
     "is" : "er",
     "is not" : "er ekki",
     "matches" : "samsvarar",

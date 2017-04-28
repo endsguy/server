@@ -42,6 +42,8 @@
     "Updating...." : "Actualizare în curs....",
     "Error while updating app" : "Eroare în timpul actualizării aplicaţiei",
     "Updated" : "Actualizat",
+    "Error while uninstalling app" : "Eroare la dezinstalarea aplicației",
+    "Uninstall" : "Dezinstalați",
     "App update" : "Actualizare aplicație",
     "Approved" : "Aprobat",
     "Experimental" : "Experimental",
@@ -171,8 +173,6 @@
     "set new password" : "setează parolă nouă",
     "change email address" : "schimbă adresa email",
     "Default" : "Implicită",
-    "Enabled" : "Activat",
-    "Not enabled" : "Dezactivat",
     "Please provide an admin recovery password, otherwise all user data will be lost" : "Furnizează o parolă administrativă de recuperare, altfel toate datele utilizatorilor vor fi pierdute",
     "test email settings" : "verifică setările de e-mail",
     "Admins can't remove themself from the admin group" : "Administratorii nu se pot șterge singuri din grupul adminnistrativ",
@@ -180,8 +180,6 @@
     "Unable to remove user from group %s" : "Nu s-a putut elimina utilizatorul din grupul %s",
     "Sending..." : "Se expediază...",
     "Uninstalling ...." : "Dezinstalaza ....",
-    "Error while uninstalling app" : "Eroare la dezinstalarea aplicației",
-    "Uninstall" : "Dezinstalați",
     "The PHP module 'fileinfo' is missing. We strongly recommend to enable this module to get best results with mime-type detection." : "Modulul PHP \"Fileinfo\" lipsește. Va recomandam sa activaţi acest modul pentru a obține cele mai bune rezultate cu detectarea mime-type.",
     "Cheers!" : "Noroc!"
 },"pluralForm" :"nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"

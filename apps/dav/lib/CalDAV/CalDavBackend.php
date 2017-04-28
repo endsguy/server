@@ -321,8 +321,6 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 				$calendar[$xmlName] = $row[$dbName];
 			}
 
-			$this->addOwnerPrincipal($calendar);
-
 			$calendars[$calendar['id']] = $calendar;
 		}
 		$result->closeCursor();

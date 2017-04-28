@@ -28,12 +28,7 @@ use Sabre\VObject\Reader;
 
 class PublicCalendarTest extends CalendarTest {
 
-	/**
-	 * @dataProvider providesConfidentialClassificationData
-	 * @param int $expectedChildren
-	 * @param bool $isShared
-	 */
-	public function testPrivateClassification($expectedChildren, $isShared) {
+	public function testPrivateClassification() {
 
 		$calObject0 = ['uri' => 'event-0', 'classification' => CalDavBackend::CLASSIFICATION_PUBLIC];
 		$calObject1 = ['uri' => 'event-1', 'classification' => CalDavBackend::CLASSIFICATION_CONFIDENTIAL];
@@ -68,12 +63,7 @@ class PublicCalendarTest extends CalendarTest {
 		$this->assertFalse($c->childExists('event-2'));
 	}
 
-	/**
-	 * @dataProvider providesConfidentialClassificationData
-	 * @param int $expectedChildren
-	 * @param bool $isShared
-	 */
-	public function testConfidentialClassification($expectedChildren, $isShared) {
+	public function testConfidentialClassification() {
 		$start = '20160609';
 		$end = '20160610';
 

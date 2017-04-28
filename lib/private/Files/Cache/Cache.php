@@ -627,17 +627,9 @@ class Cache implements ICache {
 			[$this->getNumericStorageId(), $pattern]
 		);
 
-		return $this->searchResultToCacheEntries($result);
-	}
-
-	/**
-	 * @param Statement $result
-	 * @return CacheEntry[]
-	 */
-	private function searchResultToCacheEntries(Statement $result) {
 		$files = $result->fetchAll();
 
-		return array_map(function (array $data) {
+		return array_map(function(array $data) {
 			return self::cacheEntryFromData($data, $this->mimetypeLoader);
 		}, $files);
 	}
@@ -660,41 +652,11 @@ class Cache implements ICache {
 		$mimetype = $this->mimetypeLoader->getId($mimetype);
 		$result = $this->connection->executeQuery($sql, array($mimetype, $this->getNumericStorageId()));
 
-		return $this->searchResultToCacheEntries($result);
-	}
+		$files = $result->fetchAll();
 
-	public function searchQuery(ISearchQuery $searchQuery) {
-		$builder = \OC::$server->getDatabaseConnection()->getQueryBuilder();
-
-		$query = $builder->select(['fileid', 'storage', 'path', 'parent', 'name', 'mimetype', 'mimepart', 'size', 'mtime', 'storage_mtime', 'encrypted', 'etag', 'permissions', 'checksum'])
-			->from('filecache', 'file');
-
-		$query->where($builder->expr()->eq('storage', $builder->createNamedParameter($this->getNumericStorageId())));
-
-		if ($this->querySearchHelper->shouldJoinTags($searchQuery->getSearchOperation())) {
-			$query
-				->innerJoin('file', 'vcategory_to_object', 'tagmap', $builder->expr()->eq('file.fileid', 'tagmap.objid'))
-				->innerJoin('tagmap', 'vcategory', 'tag', $builder->expr()->andX(
-					$builder->expr()->eq('tagmap.type', 'tag.type'),
-					$builder->expr()->eq('tagmap.categoryid', 'tag.id')
-				))
-				->andWhere($builder->expr()->eq('tag.type', $builder->createNamedParameter('files')))
-				->andWhere($builder->expr()->eq('tag.uid', $builder->createNamedParameter($searchQuery->getUser()->getUID())));
-		}
-
-		$query->andWhere($this->querySearchHelper->searchOperatorToDBExpr($builder, $searchQuery->getSearchOperation()));
-
-		$this->querySearchHelper->addSearchOrdersToQuery($query, $searchQuery->getOrder());
-
-		if ($searchQuery->getLimit()) {
-			$query->setMaxResults($searchQuery->getLimit());
-		}
-		if ($searchQuery->getOffset()) {
-			$query->setFirstResult($searchQuery->getOffset());
-		}
-
-		$result = $query->execute();
-		return $this->searchResultToCacheEntries($result);
+		return array_map(function (array $data) {
+			return self::cacheEntryFromData($data, $this->mimetypeLoader);
+		}, $files);
 	}
 
 	/**

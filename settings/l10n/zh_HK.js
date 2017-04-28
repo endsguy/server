@@ -9,6 +9,7 @@ OC.L10N.register(
     "Enable" : "啟用",
     "Updating...." : "更新中....",
     "Updated" : "已更新",
+    "Uninstall" : "解除安裝",
     "Delete" : "刪除",
     "Groups" : "群組",
     "undo" : "復原",
@@ -42,11 +43,8 @@ OC.L10N.register(
     "Everyone" : "所有人",
     "Other" : "其他",
     "Default" : "預設",
-    "Enabled" : "啟用",
-    "Not enabled" : "未啟用",
     "test email settings" : "測試電子郵件設定",
     "Sending..." : "發送中...",
-    "Uninstalling ...." : "正在解除安裝 ....",
-    "Uninstall" : "解除安裝"
+    "Uninstalling ...." : "正在解除安裝 ...."
 },
 "nplurals=1; plural=0;");

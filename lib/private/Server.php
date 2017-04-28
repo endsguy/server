@@ -995,14 +995,6 @@ class Server extends ServerContainer implements IServerContainer {
 			});
 		});
 
-		$this->registerService(\OCP\OCS\IDiscoveryService::class, function (Server $c) {
-			return new DiscoveryService($c->getMemCacheFactory(), $c->getHTTPClientService());
-		});
-
-		$this->registerService(ICloudIdManager::class, function (Server $c) {
-			return new CloudIdManager();
-		});
-
 		/* To trick DI since we don't extend the DIContainer here */
 		$this->registerService(CleanPreviewsBackgroundJob::class, function (Server $c) {
 			return new CleanPreviewsBackgroundJob(

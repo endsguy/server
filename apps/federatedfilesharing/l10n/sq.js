@@ -39,7 +39,6 @@ OC.L10N.register(
     "Your Federated Cloud ID:" : "ID-ja juaj për Re të Federuar:",
     "Add to your website" : "Shtojeni te sajti juaj",
     "Share with me via Nextcloud" : "Ndani me mua përmes Nextcloud-it",
-    "HTML Code:" : "Kod HTML:",
-    "Share it:" : "Ndajeni:"
+    "HTML Code:" : "Kod HTML:"
 },
 "nplurals=2; plural=(n != 1);");

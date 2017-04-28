@@ -187,22 +187,21 @@ class SyncService {
 	/**
 	 * @param string $url
 	 * @param string $userName
-	 * @param string $addressBookUrl
 	 * @param string $sharedSecret
 	 * @param string $syncToken
 	 * @return array
 	 */
-	 protected function requestSyncReport($url, $userName, $addressBookUrl, $sharedSecret, $syncToken) {
-		 $client = $this->getClient($url, $userName, $sharedSecret);
+	protected function requestSyncReport($url, $userName, $sharedSecret, $syncToken) {
+		$client = $this->getClient($url, $userName, $sharedSecret);
 
-		 $body = $this->buildSyncCollectionRequestBody($syncToken);
+		$addressBookUrl = "remote.php/dav/addressbooks/system/system/system";
+		$body = $this->buildSyncCollectionRequestBody($syncToken);
 
-		 $response = $client->request('REPORT', $addressBookUrl, $body, [
-			 'Content-Type' => 'application/xml'
-		 ]);
+		return $client;
+	}
 
-		 return $this->parseMultiStatus($response['body']);
-	 }
+		return $this->parseMultiStatus($response['body']);
+	}
 
 	/**
 	 * @param string $url
@@ -211,8 +210,8 @@ class SyncService {
 	 * @param string $resourcePath
 	 * @return array
 	 */
-	protected function download($url, $userName, $sharedSecret, $resourcePath) {
-		$client = $this->getClient($url, $userName, $sharedSecret);
+	protected function download($url, $sharedSecret, $resourcePath) {
+		$client = $this->getClient($url, 'system', $sharedSecret);
 		return $client->request('GET', $resourcePath);
 	}
 

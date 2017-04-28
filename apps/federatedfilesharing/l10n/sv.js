@@ -46,7 +46,6 @@ OC.L10N.register(
     "Add to your website" : "Lägg till på din hemsida",
     "Share with me via Nextcloud" : "Dela med mig via Nextcloud",
     "HTML Code:" : "HTML Kod:",
-    "Search global and public address book for users" : "Sök global och offentlig adressbok för användare",
-    "Share it:" : "Dela detta:"
+    "Search global and public address book for users" : "Sök global och offentlig adressbok för användare"
 },
 "nplurals=2; plural=(n != 1);");

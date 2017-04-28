@@ -81,7 +81,6 @@ OC.L10N.register(
     "Verify settings" : "验证设置",
     "1. Server" : "1.服务器",
     "%s. Server:" : "%s.服务器",
-    "Add a new configuration" : "增加一个新的配置",
     "Copy current configuration into new directory binding" : "当前配置复制到新目录",
     "Delete the current configuration" : "删除当前配置",
     "Host" : "主机",

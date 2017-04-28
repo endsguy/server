@@ -67,7 +67,6 @@ OC.L10N.register(
     "_%n byte_::_%n bytes_" : ["%n byte","%n bytes"],
     "Favorited" : "Gogokoa",
     "Favorite" : "Gogokoa",
-    "Copy local link" : "Kopiatu tokiko esteka",
     "Folder" : "Karpeta",
     "New folder" : "Karpeta berria",
     "Upload" : "Igo",

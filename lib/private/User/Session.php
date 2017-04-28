@@ -573,14 +573,21 @@ class Session implements IUserSession, Emitter {
 			return false;
 		}
 
-		return $this->completeLogin(
-			$user,
-			[
-				'loginName' => $dbToken->getLoginName(),
-				'password' => $password,
-				'token' => $dbToken
-			],
-			false);
+		//login
+		$this->setUser($user);
+		$this->setLoginName($dbToken->getLoginName());
+		$this->lockdownManager->setToken($dbToken);
+		$this->manager->emit('\OC\User', 'postLogin', array($user, $password));
+
+		if ($this->isLoggedIn()) {
+			$this->prepareUserLogin(false); // token login cant be the first
+		} else {
+			// injecting l10n does not work - there is a circular dependency between session and \OCP\L10N\IFactory
+			$message = \OC::$server->getL10N('lib')->t('Login canceled by app');
+			throw new LoginException($message);
+		}
+
+		return true;
 	}
 
 	/**
@@ -784,7 +791,6 @@ class Session implements IUserSession, Emitter {
 		//login
 		$this->setUser($user);
 		$this->setLoginName($token->getLoginName());
-		$this->setToken($token->getId());
 		$this->lockdownManager->setToken($token);
 		$user->updateLastLoginTimestamp();
 		$this->manager->emit('\OC\User', 'postRememberedLogin', [$user]);

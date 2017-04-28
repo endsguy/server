@@ -48,7 +48,6 @@ OC.L10N.register(
     "Add to your website" : "Añadir a su sitio web",
     "Share with me via Nextcloud" : "Compartirlo conmigo vía Nextcloud",
     "HTML Code:" : "Código HTML:",
-    "Search global and public address book for users" : "Buscar libretas de contactos globales y públicas para usuarios",
-    "Share it:" : "Compartir:"
+    "Search global and public address book for users" : "Buscar libretas de contactos globales y públicas para usuarios"
 },
 "nplurals=2; plural=(n != 1);");

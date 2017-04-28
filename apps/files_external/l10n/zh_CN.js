@@ -49,7 +49,6 @@ OC.L10N.register(
     "Unsatisfied authentication mechanism parameters" : "无法满足认证类型条件",
     "Insufficient data: %s" : "数据不足: %s",
     "%s" : "%s",
-    "Storage with id \"%i\" is not user editable" : "无法编辑 ID 为 \"%i\" 的存储",
     "Access key" : "Access key",
     "Secret key" : "Secret key",
     "Builtin" : "内置",

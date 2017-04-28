@@ -48,7 +48,6 @@ OC.L10N.register(
     "Add to your website" : "Web sitenize ekleyin",
     "Share with me via Nextcloud" : "Benimle Nextcloud üzerinden paylaşın",
     "HTML Code:" : "HTML Kodu:",
-    "Search global and public address book for users" : "Genel ve herkese açık adres defterinde kullanıcı ara",
-    "Share it:" : "Paylaşın:"
+    "Search global and public address book for users" : "Genel ve herkese açık adres defterinde kullanıcı ara"
 },
 "nplurals=2; plural=(n > 1);");

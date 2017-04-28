@@ -204,7 +204,6 @@ OC.L10N.register(
     "See the documentation" : "See the documentation",
     "This application requires JavaScript for correct operation. Please {linkstart}enable JavaScript{linkend} and reload the page." : "This application requires JavaScript for correct operation. Please {linkstart}enable JavaScript{linkend} and reload the page.",
     "Search" : "Search",
-    "Log out" : "Log out",
     "Server side authentication failed!" : "Server side authentication failed!",
     "Please contact your administrator." : "Please contact your administrator.",
     "An internal error occurred." : "An internal error occurred.",

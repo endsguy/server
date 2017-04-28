@@ -65,7 +65,6 @@ OC.L10N.register(
     "change full name" : "পুরোনাম পরিবর্তন করুন",
     "set new password" : "নতুন কূটশব্দ নির্ধারণ করুন",
     "Default" : "পূর্বনির্ধারিত",
-    "Enabled" : "কার্যকর",
     "test email settings" : "ইমেইল নিয়ামকসমূহ পরীক্ষা করুন",
     "Admins can't remove themself from the admin group" : "প্রশাসকবৃন্দ তাদেরকে প্রশাসক গোষ্ঠী থেকে মুছে ফেলতে পারবেন না",
     "Unable to add user to group %s" : " %s গোষ্ঠীতে ব্যবহারকারী যোগ করা সম্ভব হলো না ",
