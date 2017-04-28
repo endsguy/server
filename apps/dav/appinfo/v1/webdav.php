@@ -24,10 +24,7 @@
  */
 
 // no php execution timeout for webdav
-if (strpos(@ini_get('disable_functions'), 'set_time_limit') === false) {
-	@set_time_limit(0);
-}
-ignore_user_abort(true);
+set_time_limit(0);
 
 // Turn off output buffering to prevent memory problems
 \OC_Util::obEnd();

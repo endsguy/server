@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Activat",
+    "Not enabled" : "Desactivat",
     "Wrong password" : "Contrasenya incorrecta",
     "Saved" : "Desat",
     "No user supplied" : "No heu proporcionat cap usuari",
@@ -110,6 +112,7 @@ OC.L10N.register(
     "NT LAN Manager" : "Gestor NT LAN",
     "Email server" : "Servidor de correu electrònic",
     "Open documentation" : "Obre la documentació",
+    "This is used for sending out notifications." : "S'usa per enviar notificacions.",
     "Send mode" : "Mode d'enviament",
     "Encryption" : "Xifrat",
     "From address" : "Des de l'adreça",
@@ -176,6 +179,7 @@ OC.L10N.register(
     "Hide description …" : "Amagar descripció...",
     "This app cannot be installed because the following dependencies are not fulfilled:" : "Aquesta aplicació no es pot instal·lar perquè les següents dependències no es compleixen:",
     "Enable only for specific groups" : "Activa només per grups específics",
+    "Uninstall app" : "Desinstala la app",
     "Common Name" : "Nom comú",
     "Valid until" : "Valid fins",
     "Issued By" : "Emès Per",

@@ -112,7 +112,7 @@ class OfflineUser {
 	}
 
 	/**
-	 * getter for Nextcloud internal name
+	 * getter for ownCloud internal name
 	 * @return string
 	 */
 	public function getOCName() {

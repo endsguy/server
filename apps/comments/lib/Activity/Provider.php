@@ -206,7 +206,7 @@ class Provider implements IProvider {
 			'type' => 'file',
 			'id' => $id,
 			'name' => basename($path),
-			'path' => trim($path, '/'),
+			'path' => $path,
 			'link' => $this->url->linkToRouteAbsolute('files.viewcontroller.showFile', ['fileid' => $id]),
 		];
 	}

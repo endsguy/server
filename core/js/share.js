@@ -9,7 +9,6 @@ OC.Share = _.extend(OC.Share || {}, {
 	SHARE_TYPE_LINK:3,
 	SHARE_TYPE_EMAIL:4,
 	SHARE_TYPE_REMOTE:6,
-	SHARE_TYPE_CIRCLE:7,
 
 	/**
 	 * Regular expression for splitting parts of remote share owners:
@@ -107,7 +106,7 @@ OC.Share = _.extend(OC.Share || {}, {
 		}
 		// TODO: iterating over the files might be more efficient
 		for (item in OC.Share.statuses){
-			var iconClass = 'icon-shared';
+			var iconClass = 'icon-share';
 			var data = OC.Share.statuses[item];
 			var hasLink = data.link;
 			// Links override shared in terms of icon display
@@ -115,7 +114,7 @@ OC.Share = _.extend(OC.Share || {}, {
 				iconClass = 'icon-public';
 			}
 			if (itemType !== 'file' && itemType !== 'folder') {
-				$('a.share[data-item="'+item+'"] .icon').removeClass('icon-shared icon-public').addClass(iconClass);
+				$('a.share[data-item="'+item+'"] .icon').removeClass('icon-share icon-public').addClass(iconClass);
 			} else {
 				// TODO: ultimately this part should be moved to files_sharing app
 				var file = $fileList.find('tr[data-id="'+item+'"]');
@@ -173,12 +172,12 @@ OC.Share = _.extend(OC.Share || {}, {
 					}
 				} else if (OC.Share.itemShares[index].length > 0) {
 					shares = true;
-					iconClass = 'icon-shared';
+					iconClass = 'icon-share';
 				}
 			}
 		});
 		if (itemType != 'file' && itemType != 'folder') {
-			$('a.share[data-item="'+itemSource+'"] .icon').removeClass('icon-shared icon-public').addClass(iconClass);
+			$('a.share[data-item="'+itemSource+'"] .icon').removeClass('icon-share icon-public').addClass(iconClass);
 		} else {
 			var $tr = $('tr').filterAttr('data-id', String(itemSource));
 			if ($tr.length > 0) {
@@ -262,7 +261,7 @@ OC.Share = _.extend(OC.Share || {}, {
 		var recipients;
 		var owner = $tr.attr('data-share-owner');
 		var shareFolderIcon;
-		var iconClass = 'icon-shared';
+		var iconClass = 'icon-share';
 		action.removeClass('shared-style');
 		// update folder icon
 		if (type === 'dir' && (hasShares || hasLink || owner)) {
@@ -303,7 +302,7 @@ OC.Share = _.extend(OC.Share || {}, {
 			}
 			action.html('<span> ' + message + '</span>').prepend(icon);
 			if (owner || recipients) {
-				action.find('.remoteAddress').tooltip({placement: 'top'});
+				action.find('.remoteAddress').tipsy({gravity: 's'});
 			}
 		}
 		else {
@@ -312,7 +311,7 @@ OC.Share = _.extend(OC.Share || {}, {
 		if (hasLink) {
 			iconClass = 'icon-public';
 		}
-		icon.removeClass('icon-shared icon-public').addClass(iconClass);
+		icon.removeClass('icon-share icon-public').addClass(iconClass);
 	},
 	/**
 	 *

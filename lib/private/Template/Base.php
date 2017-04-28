@@ -28,8 +28,6 @@
 
 namespace OC\Template;
 
-use OCP\Defaults;
-
 class Base {
 	private $template; // The template
 	private $vars; // Vars
@@ -37,14 +35,14 @@ class Base {
 	/** @var \OCP\IL10N */
 	private $l10n;
 
-	/** @var Defaults */
+	/** @var \OC_Defaults */
 	private $theme;
 
 	/**
 	 * @param string $template
 	 * @param string $requestToken
 	 * @param \OCP\IL10N $l10n
-	 * @param Defaults $theme
+	 * @param \OC_Defaults $theme
 	 */
 	public function __construct($template, $requestToken, $l10n, $theme ) {
 		$this->vars = array();

@@ -55,20 +55,17 @@ class AppManager implements IAppManager {
 		'prevent_group_restriction',
 	];
 
-	/** @var IUserSession */
+	/** @var \OCP\IUserSession */
 	private $userSession;
 
-	/** @var IAppConfig */
+	/** @var \OCP\IAppConfig */
 	private $appConfig;
 
-	/** @var IGroupManager */
+	/** @var \OCP\IGroupManager */
 	private $groupManager;
 
-	/** @var ICacheFactory */
+	/** @var \OCP\ICacheFactory */
 	private $memCacheFactory;
-
-	/** @var EventDispatcherInterface */
-	private $dispatcher;
 
 	/** @var string[] $appId => $enabled */
 	private $installedAppsCache;
@@ -79,12 +76,14 @@ class AppManager implements IAppManager {
 	/** @var string[] */
 	private $alwaysEnabled;
 
+	/** @var EventDispatcherInterface */
+	private $dispatcher;
+
 	/**
-	 * @param IUserSession $userSession
-	 * @param IAppConfig $appConfig
-	 * @param IGroupManager $groupManager
-	 * @param ICacheFactory $memCacheFactory
-	 * @param EventDispatcherInterface $dispatcher
+	 * @param \OCP\IUserSession $userSession
+	 * @param \OCP\IAppConfig $appConfig
+	 * @param \OCP\IGroupManager $groupManager
+	 * @param \OCP\ICacheFactory $memCacheFactory
 	 */
 	public function __construct(IUserSession $userSession,
 								IAppConfig $appConfig,
@@ -152,7 +151,7 @@ class AppManager implements IAppManager {
 		if ($this->isAlwaysEnabled($appId)) {
 			return true;
 		}
-		if ($user === null) {
+		if (is_null($user)) {
 			$user = $this->userSession->getUser();
 		}
 		$installedApps = $this->getInstalledAppsValues();
@@ -171,7 +170,7 @@ class AppManager implements IAppManager {
 	private function checkAppForUser($enabled, $user) {
 		if ($enabled === 'yes') {
 			return true;
-		} elseif ($user === null) {
+		} elseif (is_null($user)) {
 			return false;
 		} else {
 			if(empty($enabled)){
@@ -188,7 +187,7 @@ class AppManager implements IAppManager {
 
 			$userGroups = $this->groupManager->getUserGroupIds($user);
 			foreach ($userGroups as $groupId) {
-				if (in_array($groupId, $groupIds, true)) {
+				if (array_search($groupId, $groupIds) !== false) {
 					return true;
 				}
 			}
@@ -211,12 +210,8 @@ class AppManager implements IAppManager {
 	 * Enable an app for every user
 	 *
 	 * @param string $appId
-	 * @throws AppPathNotFoundException
 	 */
 	public function enableApp($appId) {
-		// Check if app exists
-		$this->getAppPath($appId);
-
 		$this->installedAppsCache[$appId] = 'yes';
 		$this->appConfig->setValue($appId, 'enabled', 'yes');
 		$this->dispatcher->dispatch(ManagerEvent::EVENT_APP_ENABLE, new ManagerEvent(
@@ -312,12 +307,12 @@ class AppManager implements IAppManager {
 	/**
 	 * Returns a list of apps that need upgrade
 	 *
-	 * @param string $version Nextcloud version as array of version components
+	 * @param array $version ownCloud version as array of version components
 	 * @return array list of app info from apps that need an upgrade
 	 *
 	 * @internal
 	 */
-	public function getAppsNeedingUpgrade($version) {
+	public function getAppsNeedingUpgrade($ocVersion) {
 		$appsToUpgrade = [];
 		$apps = $this->getInstalledApps();
 		foreach ($apps as $appId) {
@@ -326,7 +321,7 @@ class AppManager implements IAppManager {
 			if ($appDbVersion
 				&& isset($appInfo['version'])
 				&& version_compare($appInfo['version'], $appDbVersion, '>')
-				&& \OC_App::isAppCompatible($version, $appInfo)
+				&& \OC_App::isAppCompatible($ocVersion, $appInfo)
 			) {
 				$appsToUpgrade[] = $appInfo;
 			}
@@ -356,7 +351,7 @@ class AppManager implements IAppManager {
 	/**
 	 * Returns a list of apps incompatible with the given version
 	 *
-	 * @param string $version Nextcloud version as array of version components
+	 * @param array $version ownCloud version as array of version components
 	 *
 	 * @return array list of app info from incompatible apps
 	 *
@@ -379,16 +374,16 @@ class AppManager implements IAppManager {
 	 */
 	public function isShipped($appId) {
 		$this->loadShippedJson();
-		return in_array($appId, $this->shippedApps, true);
+		return in_array($appId, $this->shippedApps);
 	}
 
 	private function isAlwaysEnabled($appId) {
 		$alwaysEnabled = $this->getAlwaysEnabledApps();
-		return in_array($appId, $alwaysEnabled, true);
+		return in_array($appId, $alwaysEnabled);
 	}
 
 	private function loadShippedJson() {
-		if ($this->shippedApps === null) {
+		if (is_null($this->shippedApps)) {
 			$shippedJson = \OC::$SERVERROOT . '/core/shipped.json';
 			if (!file_exists($shippedJson)) {
 				throw new \Exception("File not found: $shippedJson");

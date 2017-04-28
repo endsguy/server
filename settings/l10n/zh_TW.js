@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "已啓用",
+    "Not enabled" : "未啟用",
     "Wrong password" : "密碼錯誤",
     "Saved" : "已儲存",
     "No user supplied" : "未提供使用者",
@@ -101,6 +103,7 @@ OC.L10N.register(
     "NT LAN Manager" : "NT LAN Manager",
     "Email server" : "郵件伺服器",
     "Open documentation" : "開啟說明文件",
+    "This is used for sending out notifications." : "用於寄送通知",
     "Send mode" : "寄送模式",
     "Encryption" : "加密",
     "From address" : "寄件地址",
@@ -171,7 +174,6 @@ OC.L10N.register(
     "Theming" : "佈景主題",
     "Hardening and security guidance" : "增強安全性",
     "Developer documentation" : "開發者說明文件",
-    "This app has an update available." : "此應用程式有可用的更新",
     "%s-licensed" : "%s 授權",
     "Documentation:" : "說明文件：",
     "User documentation" : "用戶說明文件",
@@ -180,6 +182,7 @@ OC.L10N.register(
     "Report a bug" : "回報問題",
     "Show description …" : "顯示描述",
     "Hide description …" : "隱藏描述",
+    "This app has an update available." : "此應用程式有可用的更新",
     "This app cannot be installed because the following dependencies are not fulfilled:" : "這個應用程式無法被安裝，因為欠缺下列相依套件：",
     "Enable only for specific groups" : "僅對特定的群組啟用",
     "Common Name" : "Common Name",

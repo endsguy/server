@@ -51,6 +51,7 @@ use OC\App\DependencyAnalyzer;
 use OC\App\InfoParser;
 use OC\App\Platform;
 use OC\Installer;
+use OC\OCSClient;
 use OC\Repair;
 use OCP\App\ManagerEvent;
 
@@ -133,8 +134,10 @@ class OC_App {
 	 * load a single app
 	 *
 	 * @param string $app
+	 * @param bool $checkUpgrade whether an upgrade check should be done
+	 * @throws \OC\NeedsUpdateException
 	 */
-	public static function loadApp($app) {
+	public static function loadApp($app, $checkUpgrade = true) {
 		self::$loadedApps[] = $app;
 		$appPath = self::getAppPath($app);
 		if($appPath === false) {
@@ -146,6 +149,9 @@ class OC_App {
 
 		if (is_file($appPath . '/appinfo/app.php')) {
 			\OC::$server->getEventLogger()->start('load_app_' . $app, 'Load app: ' . $app);
+			if ($checkUpgrade and self::shouldUpgrade($app)) {
+				throw new \OC\NeedsUpdateException();
+			}
 			self::requireAppFile($app);
 			if (self::isType($app, array('authentication'))) {
 				// since authentication apps affect the "is app enabled for group" check,
@@ -188,7 +194,6 @@ class OC_App {
 		self::$alreadyRegistered[$key] = true;
 		// Register on PSR-4 composer autoloader
 		$appNamespace = \OC\AppFramework\App::buildAppNamespace($app);
-		\OC::$server->registerNamespace($app, $appNamespace);
 		\OC::$composerAutoloader->addPsr4($appNamespace . '\\', $path . '/lib/', true);
 		if (defined('PHPUNIT_RUN') || defined('CLI_TEST_RUN')) {
 			\OC::$composerAutoloader->addPsr4($appNamespace . '\\Tests\\', $path . '/tests/', true);
@@ -365,8 +370,7 @@ class OC_App {
 			\OC::$server->getAppFetcher(),
 			\OC::$server->getHTTPClientService(),
 			\OC::$server->getTempManager(),
-			\OC::$server->getLogger(),
-			\OC::$server->getConfig()
+			\OC::$server->getLogger()
 		);
 		$isDownloaded = $installer->isDownloaded($appId);
 
@@ -428,8 +432,7 @@ class OC_App {
 			\OC::$server->getAppFetcher(),
 			\OC::$server->getHTTPClientService(),
 			\OC::$server->getTempManager(),
-			\OC::$server->getLogger(),
-			\OC::$server->getConfig()
+			\OC::$server->getLogger()
 		);
 		return $installer->removeApp($app);
 	}
@@ -458,8 +461,89 @@ class OC_App {
 		$appManager->disableApp($app);
 	}
 
+	/**
+	 * Returns the Settings Navigation
+	 *
+	 * @return string[]
+	 *
+	 * This function returns an array containing all settings pages added. The
+	 * entries are sorted by the key 'order' ascending.
+	 */
+	public static function getSettingsNavigation() {
+		$l = \OC::$server->getL10N('lib');
+		$urlGenerator = \OC::$server->getURLGenerator();
+
+		$settings = array();
+		// by default, settings only contain the help menu
+		if (\OC::$server->getSystemConfig()->getValue('knowledgebaseenabled', true)) {
+			$settings = array(
+				array(
+					"id" => "help",
+					"order" => 4,
+					"href" => $urlGenerator->linkToRoute('settings_help'),
+					"name" => $l->t("Help"),
+					"icon" => $urlGenerator->imagePath("settings", "help.svg")
+				)
+			);
+		}
+
+		// if the user is logged-in
+		if (OC_User::isLoggedIn()) {
+			// personal menu
+			$settings[] = array(
+				"id" => "personal",
+				"order" => 1,
+				"href" => $urlGenerator->linkToRoute('settings_personal'),
+				"name" => $l->t("Personal"),
+				"icon" => $urlGenerator->imagePath("settings", "personal.svg")
+			);
+
+			//SubAdmins are also allowed to access user management
+			$userObject = \OC::$server->getUserSession()->getUser();
+			$isSubAdmin = false;
+			if($userObject !== null) {
+				$isSubAdmin = \OC::$server->getGroupManager()->getSubAdmin()->isSubAdmin($userObject);
+			}
+			if ($isSubAdmin) {
+				// admin users menu
+				$settings[] = array(
+					"id" => "core_users",
+					"order" => 3,
+					"href" => $urlGenerator->linkToRoute('settings_users'),
+					"name" => $l->t("Users"),
+					"icon" => $urlGenerator->imagePath("settings", "users.svg")
+				);
+			}
+
+			// if the user is an admin
+			if (OC_User::isAdminUser(OC_User::getUser())) {
+				// admin settings
+				$settings[] = array(
+					"id" => "admin",
+					"order" => 2,
+					"href" => $urlGenerator->linkToRoute('settings.AdminSettings.index'),
+					"name" => $l->t("Admin"),
+					"icon" => $urlGenerator->imagePath("settings", "admin.svg")
+				);
+			}
+		}
+
+		$navigation = self::proceedNavigation($settings);
+		return $navigation;
+	}
+
 	// This is private as well. It simply works, so don't ask for more details
 	private static function proceedNavigation($list) {
+		$activeApp = OC::$server->getNavigationManager()->getActiveEntry();
+		foreach ($list as &$navEntry) {
+			if ($navEntry['id'] == $activeApp) {
+				$navEntry['active'] = true;
+			} else {
+				$navEntry['active'] = false;
+			}
+		}
+		unset($navEntry);
+
 		usort($list, function($a, $b) {
 			if (isset($a['order']) && isset($b['order'])) {
 				return ($a['order'] < $b['order']) ? -1 : 1;
@@ -469,16 +553,6 @@ class OC_App {
 				return ($a['name'] < $b['name']) ? -1 : 1;
 			}
 		});
-
-		$activeApp = OC::$server->getNavigationManager()->getActiveEntry();
-		foreach ($list as $index => &$navEntry) {
-			if ($navEntry['id'] == $activeApp) {
-				$navEntry['active'] = true;
-			} else {
-				$navEntry['active'] = false;
-			}
-		}
-		unset($navEntry);
 
 		return $list;
 	}
@@ -668,20 +742,8 @@ class OC_App {
 	 */
 	public static function getNavigation() {
 		$entries = OC::$server->getNavigationManager()->getAll();
-		return self::proceedNavigation($entries);
-	}
-
-	/**
-	 * Returns the Settings Navigation
-	 *
-	 * @return string[]
-	 *
-	 * This function returns an array containing all settings pages added. The
-	 * entries are sorted by the key 'order' ascending.
-	 */
-	public static function getSettingsNavigation() {
-		$entries = OC::$server->getNavigationManager()->getAll('settings');
-		return self::proceedNavigation($entries);
+		$navigation = self::proceedNavigation($entries);
+		return $navigation;
 	}
 
 	/**
@@ -1076,7 +1138,7 @@ class OC_App {
 		unset(self::$appVersion[$appId]);
 		// run upgrade code
 		if (file_exists($appPath . '/appinfo/update.php')) {
-			self::loadApp($appId);
+			self::loadApp($appId, false);
 			include $appPath . '/appinfo/update.php';
 		}
 		self::setupBackgroundJobs($appData['background-jobs']);
@@ -1121,7 +1183,7 @@ class OC_App {
 			return;
 		}
 		// load the app
-		self::loadApp($appId);
+		self::loadApp($appId, false);
 
 		$dispatcher = OC::$server->getEventDispatcher();
 
@@ -1165,7 +1227,7 @@ class OC_App {
 	 */
 	public static function getStorage($appId) {
 		if (OC_App::isEnabled($appId)) { //sanity check
-			if (\OC::$server->getUserSession()->isLoggedIn()) {
+			if (OC_User::isLoggedIn()) {
 				$view = new \OC\Files\View('/' . OC_User::getUser());
 				if (!$view->file_exists($appId)) {
 					$view->mkdir($appId);

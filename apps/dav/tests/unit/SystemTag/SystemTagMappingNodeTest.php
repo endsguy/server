@@ -24,6 +24,7 @@
 
 namespace OCA\DAV\Tests\unit\SystemTag;
 
+use Sabre\DAV\Exception\NotFound;
 use OC\SystemTag\SystemTag;
 use OCP\SystemTag\TagNotFoundException;
 use OCP\SystemTag\ISystemTag;

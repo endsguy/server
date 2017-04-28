@@ -133,14 +133,11 @@
 					fileInfoModel.trigger('busy', fileInfoModel, false);
 					self.$el.find('.versions').removeClass('hidden');
 					self._toggleLoading(false);
-					OC.Notification.show(t('files_version', 'Failed to revert {file} to revision {timestamp}.', 
-						{
+					OC.Notification.showTemporary(
+						t('files_version', 'Failed to revert {file} to revision {timestamp}.', {
 							file: versionModel.getFullPath(),
 							timestamp: OC.Util.formatDate(versionModel.get('timestamp') * 1000)
-						}),
-						{
-							type: 'error'
-						}
+						})
 					);
 				}
 			});
@@ -232,8 +229,8 @@
 		 */
 		render: function() {
 			this.$el.html(this.template({
-				emptyResultLabel: t('files_versions', 'No earlier versions available'),
-				moreVersionsLabel: t('files_versions', 'More versions …')
+				emptyResultLabel: t('files_versions', 'No versions available'),
+				moreVersionsLabel: t('files_versions', 'More versions...')
 			}));
 			this.$el.find('.has-tooltip').tooltip();
 			this.$versionsContainer = this.$el.find('ul.versions');

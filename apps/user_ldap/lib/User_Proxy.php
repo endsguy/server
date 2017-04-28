@@ -31,7 +31,6 @@ namespace OCA\User_LDAP;
 
 use OCA\User_LDAP\User\User;
 use OCP\IConfig;
-use OCP\Notification\IManager as INotificationManager;
 
 class User_Proxy extends Proxy implements \OCP\IUserBackend, \OCP\UserInterface, IUserLDAP {
 	private $backends = array();
@@ -41,12 +40,11 @@ class User_Proxy extends Proxy implements \OCP\IUserBackend, \OCP\UserInterface,
 	 * Constructor
 	 * @param array $serverConfigPrefixes array containing the config Prefixes
 	 */
-	public function __construct(array $serverConfigPrefixes, ILDAPWrapper $ldap, IConfig $ocConfig,
-		INotificationManager $notificationManager) {
+	public function __construct(array $serverConfigPrefixes, ILDAPWrapper $ldap, IConfig $ocConfig) {
 		parent::__construct($ldap);
 		foreach($serverConfigPrefixes as $configPrefix) {
 			$this->backends[$configPrefix] =
-				new User_LDAP($this->getAccess($configPrefix), $ocConfig, $notificationManager);
+				new User_LDAP($this->getAccess($configPrefix), $ocConfig);
 			if(is_null($this->refBackend)) {
 				$this->refBackend = &$this->backends[$configPrefix];
 			}
@@ -165,7 +163,7 @@ class User_Proxy extends Proxy implements \OCP\IUserBackend, \OCP\UserInterface,
 
 	/**
 	 * check if a user exists on LDAP
-	 * @param string|\OCA\User_LDAP\User\User $user either the Nextcloud user
+	 * @param string|\OCA\User_LDAP\User\User $user either the ownCloud user
 	 * name or an instance of that user
 	 * @return boolean
 	 */
@@ -227,8 +225,8 @@ class User_Proxy extends Proxy implements \OCP\IUserBackend, \OCP\UserInterface,
 	}
 
 	/**
-	 * checks whether the user is allowed to change his avatar in Nextcloud
-	 * @param string $uid the Nextcloud user name
+	 * checks whether the user is allowed to change his avatar in ownCloud
+	 * @param string $uid the ownCloud user name
 	 * @return boolean either the user can or cannot
 	 */
 	public function canChangeAvatar($uid) {

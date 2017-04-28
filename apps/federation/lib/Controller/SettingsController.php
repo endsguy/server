@@ -58,7 +58,7 @@ class SettingsController extends Controller {
 
 
 	/**
-	 * add server to the list of trusted Nextclouds
+	 * add server to the list of trusted ownClouds
 	 *
 	 * @param string $url
 	 * @return DataResponse
@@ -78,7 +78,7 @@ class SettingsController extends Controller {
 	}
 
 	/**
-	 * add server to the list of trusted Nextclouds
+	 * add server to the list of trusted ownClouds
 	 *
 	 * @param int $id
 	 * @return DataResponse

@@ -29,13 +29,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Test\TestCase;
 
 class SignAppTest extends TestCase {
-	/** @var Checker|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var Checker */
 	private $checker;
 	/** @var SignApp */
 	private $signApp;
-	/** @var FileAccessHelper|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var FileAccessHelper */
 	private $fileAccessHelper;
-	/** @var IURLGenerator|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var IURLGenerator */
 	private $urlGenerator;
 
 	public function setUp() {
@@ -75,7 +75,7 @@ class SignAppTest extends TestCase {
 			->method('writeln')
 			->with('This command requires the --path, --privateKey and --certificate.');
 
-		$this->assertNull(self::invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]));
+		$this->invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]);
 	}
 
 	public function testExecuteWithMissingPrivateKey() {
@@ -103,7 +103,7 @@ class SignAppTest extends TestCase {
 				->method('writeln')
 				->with('This command requires the --path, --privateKey and --certificate.');
 
-		$this->assertNull(self::invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]));
+		$this->invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]);
 	}
 
 	public function testExecuteWithMissingCertificate() {
@@ -131,7 +131,7 @@ class SignAppTest extends TestCase {
 			->method('writeln')
 			->with('This command requires the --path, --privateKey and --certificate.');
 
-		$this->assertNull(self::invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]));
+		$this->invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]);
 	}
 
 	public function testExecuteWithNotExistingPrivateKey() {
@@ -165,7 +165,7 @@ class SignAppTest extends TestCase {
 			->method('writeln')
 			->with('Private key "privateKey" does not exists.');
 
-		$this->assertNull(self::invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]));
+		$this->invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]);
 	}
 
 	public function testExecuteWithNotExistingCertificate() {
@@ -204,51 +204,7 @@ class SignAppTest extends TestCase {
 			->method('writeln')
 			->with('Certificate "certificate" does not exists.');
 
-		$this->assertNull(self::invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]));
-	}
-
-	public function testExecuteWithException() {
-		$inputInterface = $this->createMock(InputInterface::class);
-		$outputInterface = $this->createMock(OutputInterface::class);
-
-		$inputInterface
-			->expects($this->at(0))
-			->method('getOption')
-			->with('path')
-			->will($this->returnValue('AppId'));
-		$inputInterface
-			->expects($this->at(1))
-			->method('getOption')
-			->with('privateKey')
-			->will($this->returnValue('privateKey'));
-		$inputInterface
-			->expects($this->at(2))
-			->method('getOption')
-			->with('certificate')
-			->will($this->returnValue('certificate'));
-
-		$this->fileAccessHelper
-			->expects($this->at(0))
-			->method('file_get_contents')
-			->with('privateKey')
-			->will($this->returnValue(\OC::$SERVERROOT . '/tests/data/integritycheck/core.key'));
-		$this->fileAccessHelper
-			->expects($this->at(1))
-			->method('file_get_contents')
-			->with('certificate')
-			->will($this->returnValue(\OC::$SERVERROOT . '/tests/data/integritycheck/core.crt'));
-
-		$this->checker
-			->expects($this->once())
-			->method('writeAppSignature')
-			->willThrowException(new \Exception('My error message'));
-
-		$outputInterface
-			->expects($this->at(0))
-			->method('writeln')
-			->with('Error: My error message');
-
-		$this->assertSame(1, self::invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]));
+		$this->invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]);
 	}
 
 	public function testExecute() {
@@ -291,6 +247,6 @@ class SignAppTest extends TestCase {
 			->method('writeln')
 			->with('Successfully signed "AppId"');
 
-		$this->assertSame(0, self::invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]));
+		$this->invokePrivate($this->signApp, 'execute', [$inputInterface, $outputInterface]);
 	}
 }

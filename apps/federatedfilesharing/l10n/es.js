@@ -45,6 +45,7 @@ OC.L10N.register(
     "Allow users to publish their data to a global and public address book" : "Permitir a los usuarios publicar su información en la libreta de direcciones global y pública",
     "Federated Cloud" : "Nube Federada",
     "Your Federated Cloud ID:" : "Su ID Nube Federada:",
+    "Share it:" : "Compartir:",
     "Add to your website" : "Añadir a su sitio web",
     "Share with me via Nextcloud" : "Compartirlo conmigo vía Nextcloud",
     "HTML Code:" : "Código HTML:",

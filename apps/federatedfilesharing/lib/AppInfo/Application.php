@@ -45,13 +45,15 @@ class Application extends App {
 		$container->registerService('RequestHandlerController', function(SimpleContainer $c) use ($server) {
 			$addressHandler = new AddressHandler(
 				$server->getURLGenerator(),
-				$server->getL10N('federatedfilesharing'),
-				$server->getCloudIdManager()
+				$server->getL10N('federatedfilesharing')
 			);
 			$notification = new Notifications(
 				$addressHandler,
 				$server->getHTTPClientService(),
-				$server->query(\OCP\OCS\IDiscoveryService::class),
+				new \OCA\FederatedFileSharing\DiscoveryManager(
+					$server->getMemCacheFactory(),
+					$server->getHTTPClientService()
+				),
 				\OC::$server->getJobList()
 			);
 			return new RequestHandlerController(
@@ -62,8 +64,7 @@ class Application extends App {
 				$server->getShareManager(),
 				$notification,
 				$addressHandler,
-				$server->getUserManager(),
-				$server->getCloudIdManager()
+				$server->getUserManager()
 			);
 		});
 	}
@@ -93,13 +94,16 @@ class Application extends App {
 	protected function initFederatedShareProvider() {
 		$addressHandler = new \OCA\FederatedFileSharing\AddressHandler(
 			\OC::$server->getURLGenerator(),
-			\OC::$server->getL10N('federatedfilesharing'),
-			\OC::$server->getCloudIdManager()
+			\OC::$server->getL10N('federatedfilesharing')
+		);
+		$discoveryManager = new \OCA\FederatedFileSharing\DiscoveryManager(
+			\OC::$server->getMemCacheFactory(),
+			\OC::$server->getHTTPClientService()
 		);
 		$notifications = new \OCA\FederatedFileSharing\Notifications(
 			$addressHandler,
 			\OC::$server->getHTTPClientService(),
-			\OC::$server->query(\OCP\OCS\IDiscoveryService::class),
+			$discoveryManager,
 			\OC::$server->getJobList()
 		);
 		$tokenHandler = new \OCA\FederatedFileSharing\TokenHandler(
@@ -115,8 +119,7 @@ class Application extends App {
 			\OC::$server->getLogger(),
 			\OC::$server->getLazyRootFolder(),
 			\OC::$server->getConfig(),
-			\OC::$server->getUserManager(),
-			\OC::$server->getCloudIdManager()
+			\OC::$server->getUserManager()
 		);
 	}
 

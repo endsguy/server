@@ -33,25 +33,21 @@ use OCA\DAV\CardDAV\ImageExportPlugin;
 use OCA\DAV\Comments\CommentsPlugin;
 use OCA\DAV\Connector\Sabre\Auth;
 use OCA\DAV\Connector\Sabre\BlockLegacyClientPlugin;
-use OCA\DAV\Connector\Sabre\CommentPropertiesPlugin;
 use OCA\DAV\Connector\Sabre\CopyEtagHeaderPlugin;
 use OCA\DAV\Connector\Sabre\DavAclPlugin;
 use OCA\DAV\Connector\Sabre\DummyGetResponsePlugin;
 use OCA\DAV\Connector\Sabre\FakeLockerPlugin;
 use OCA\DAV\Connector\Sabre\FilesPlugin;
-use OCA\DAV\Connector\Sabre\FilesReportPlugin;
-use OCA\DAV\Connector\Sabre\SharesPlugin;
 use OCA\DAV\DAV\PublicAuth;
-use OCA\DAV\DAV\CustomPropertiesBackend;
 use OCA\DAV\Connector\Sabre\QuotaPlugin;
 use OCA\DAV\Files\BrowserErrorPagePlugin;
+use OCA\DAV\Files\CustomPropertiesBackend;
 use OCA\DAV\SystemTag\SystemTagPlugin;
 use OCP\IRequest;
 use OCP\SabrePluginEvent;
 use Sabre\CardDAV\VCFExportPlugin;
 use Sabre\DAV\Auth\Plugin;
 use OCA\DAV\Connector\Sabre\TagsPlugin;
-use SearchDAV\DAV\SearchPlugin;
 
 class Server {
 
@@ -92,6 +88,7 @@ class Server {
 
 		$this->server->addPlugin(new BlockLegacyClientPlugin(\OC::$server->getConfig()));
 		$authPlugin = new Plugin();
+		$authPlugin->addBackend($authBackend);
 		$authPlugin->addBackend(new PublicAuth());
 		$this->server->addPlugin($authPlugin);
 
@@ -173,7 +170,7 @@ class Server {
 			// custom properties plugin must be the last one
 			$userSession = \OC::$server->getUserSession();
 			$user = $userSession->getUser();
-			if ($user !== null) {
+			if (!is_null($user)) {
 				$view = \OC\Files\Filesystem::getView();
 				$this->server->addPlugin(
 					new FilesPlugin(
@@ -195,10 +192,9 @@ class Server {
 						)
 					)
 				);
-				if ($view !== null) {
-					$this->server->addPlugin(
-						new QuotaPlugin($view));
-				}
+				$this->server->addPlugin(
+					new QuotaPlugin($view)
+				);
 				$this->server->addPlugin(
 					new TagsPlugin(
 						$this->server->tree, \OC::$server->getTagManager()
@@ -206,36 +202,28 @@ class Server {
 				);
 				// TODO: switch to LazyUserFolder
 				$userFolder = \OC::$server->getUserFolder();
-				$this->server->addPlugin(new SharesPlugin(
+				$this->server->addPlugin(new \OCA\DAV\Connector\Sabre\SharesPlugin(
 					$this->server->tree,
 					$userSession,
 					$userFolder,
 					\OC::$server->getShareManager()
 				));
-				$this->server->addPlugin(new CommentPropertiesPlugin(
+				$this->server->addPlugin(new \OCA\DAV\Connector\Sabre\CommentPropertiesPlugin(
 					\OC::$server->getCommentsManager(),
 					$userSession
 				));
-				if ($view !== null) {
-					$this->server->addPlugin(new FilesReportPlugin(
-						$this->server->tree,
-						$view,
-						\OC::$server->getSystemTagManager(),
-						\OC::$server->getSystemTagObjectMapper(),
-						\OC::$server->getTagManager(),
-						$userSession,
-						\OC::$server->getGroupManager(),
-						$userFolder
-					));
-					$this->server->addPlugin(new SearchPlugin(new \OCA\DAV\Files\FileSearchBackend(
-						$this->server->tree,
-						$user,
-						\OC::$server->getRootFolder(),
-						\OC::$server->getShareManager(),
-						$view
-					)));
-				}
+				$this->server->addPlugin(new \OCA\DAV\Connector\Sabre\FilesReportPlugin(
+					$this->server->tree,
+					$view,
+					\OC::$server->getSystemTagManager(),
+					\OC::$server->getSystemTagObjectMapper(),
+					\OC::$server->getTagManager(),
+					$userSession,
+					\OC::$server->getGroupManager(),
+					$userFolder
+				));
 			}
+			$this->server->addPlugin(new \OCA\DAV\Connector\Sabre\CopyEtagHeaderPlugin());
 		});
 	}
 

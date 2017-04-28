@@ -23,17 +23,17 @@
  */
 namespace OC\Core\Command;
 
-use OC\SystemConfig;
+use OCP\IConfig;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Check extends Base {
 	/**
-	 * @var SystemConfig
+	 * @var IConfig
 	 */
 	private $config;
 
-	public function __construct(SystemConfig $config) {
+	public function __construct(IConfig $config) {
 		parent::__construct();
 		$this->config = $config;
 	}

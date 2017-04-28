@@ -25,12 +25,10 @@
 
 namespace OCA\Files_Sharing\Tests\Controller;
 
-use OC\Federation\CloudIdManager;
 use OCA\Files_Sharing\Controller\ShareesAPIController;
 use OCA\Files_Sharing\Tests\TestCase;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\OCS\OCSBadRequestException;
-use OCP\Federation\ICloudIdManager;
 use OCP\Http\Client\IClientService;
 use OCP\Share;
 
@@ -66,9 +64,6 @@ class ShareesAPIControllerTest extends TestCase {
 	/** @var IClientService|\PHPUnit_Framework_MockObject_MockObject */
 	private $clientService;
 
-	/** @var  ICloudIdManager */
-	private $cloudIdManager;
-
 	protected function setUp() {
 		parent::setUp();
 
@@ -98,8 +93,6 @@ class ShareesAPIControllerTest extends TestCase {
 
 		$this->clientService = $this->createMock(IClientService::class);
 
-		$this->cloudIdManager = new CloudIdManager();
-
 		$this->sharees = new ShareesAPIController(
 			'files_sharing',
 			$this->request,
@@ -111,8 +104,7 @@ class ShareesAPIControllerTest extends TestCase {
 			$this->getMockBuilder('OCP\IURLGenerator')->disableOriginalConstructor()->getMock(),
 			$this->getMockBuilder('OCP\ILogger')->disableOriginalConstructor()->getMock(),
 			$this->shareManager,
-			$this->clientService,
-			$this->cloudIdManager
+			$this->clientService
 		);
 	}
 
@@ -141,7 +133,7 @@ class ShareesAPIControllerTest extends TestCase {
 	 * @param string $gid
 	 * @return \OCP\IGroup|\PHPUnit_Framework_MockObject_MockObject
 	 */
-	protected function getGroupMock($gid, $displayName = null) {
+	protected function getGroupMock($gid) {
 		$group = $this->getMockBuilder('OCP\IGroup')
 			->disableOriginalConstructor()
 			->getMock();
@@ -149,15 +141,6 @@ class ShareesAPIControllerTest extends TestCase {
 		$group->expects($this->any())
 			->method('getGID')
 			->willReturn($gid);
-
-		if (is_null($displayName)) {
-			// note: this is how the Group class behaves
-			$displayName = $gid;
-		}
-
-		$group->expects($this->any())
-			->method('getDisplayName')
-			->willReturn($displayName);
 
 		return $group;
 	}
@@ -484,43 +467,12 @@ class ShareesAPIControllerTest extends TestCase {
 		return [
 			['test', false, true, [], [], [], [], true, false],
 			['test', false, false, [], [], [], [], true, false],
-			// group without display name
 			[
 				'test', false, true,
 				[$this->getGroupMock('test1')],
 				[],
 				[],
 				[['label' => 'test1', 'value' => ['shareType' => Share::SHARE_TYPE_GROUP, 'shareWith' => 'test1']]],
-				true,
-				false,
-			],
-			// group with display name, search by id
-			[
-				'test', false, true,
-				[$this->getGroupMock('test1', 'Test One')],
-				[],
-				[],
-				[['label' => 'Test One', 'value' => ['shareType' => Share::SHARE_TYPE_GROUP, 'shareWith' => 'test1']]],
-				true,
-				false,
-			],
-			// group with display name, search by display name
-			[
-				'one', false, true,
-				[$this->getGroupMock('test1', 'Test One')],
-				[],
-				[],
-				[['label' => 'Test One', 'value' => ['shareType' => Share::SHARE_TYPE_GROUP, 'shareWith' => 'test1']]],
-				true,
-				false,
-			],
-			// group with display name, search by display name, exact expected
-			[
-				'Test One', false, true,
-				[$this->getGroupMock('test1', 'Test One')],
-				[],
-				[['label' => 'Test One', 'value' => ['shareType' => Share::SHARE_TYPE_GROUP, 'shareWith' => 'test1']]],
-				[],
 				true,
 				false,
 			],
@@ -1442,8 +1394,7 @@ class ShareesAPIControllerTest extends TestCase {
 				$this->getMockBuilder('OCP\IURLGenerator')->disableOriginalConstructor()->getMock(),
 				$this->getMockBuilder('OCP\ILogger')->disableOriginalConstructor()->getMock(),
 				$this->shareManager,
-				$this->clientService,
-				$this->cloudIdManager
+				$this->clientService
 			])
 			->setMethods(array('searchSharees', 'isRemoteSharingAllowed', 'shareProviderExists'))
 			->getMock();
@@ -1535,8 +1486,7 @@ class ShareesAPIControllerTest extends TestCase {
 				$this->getMockBuilder('OCP\IURLGenerator')->disableOriginalConstructor()->getMock(),
 				$this->getMockBuilder('OCP\ILogger')->disableOriginalConstructor()->getMock(),
 				$this->shareManager,
-				$this->clientService,
-				$this->cloudIdManager
+				$this->clientService
 			])
 			->setMethods(array('searchSharees', 'isRemoteSharingAllowed'))
 			->getMock();
@@ -1576,22 +1526,20 @@ class ShareesAPIControllerTest extends TestCase {
 		return [
 			['test', 'folder', [Share::SHARE_TYPE_USER, Share::SHARE_TYPE_GROUP, Share::SHARE_TYPE_REMOTE], 1, 2, false, [], [], ['results' => [], 'exact' => [], 'exactIdMatch' => false],
 				[
-					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'circles' => [], 'emails' => []],
+					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'emails' => []],
 					'users' => [],
 					'groups' => [],
 					'remotes' => [],
 					'emails' => [],
-					'circles' => [],
 					'lookup' => [],
 				], false],
 			['test', 'folder', [Share::SHARE_TYPE_USER, Share::SHARE_TYPE_GROUP, Share::SHARE_TYPE_REMOTE], 1, 2, false, [], [], ['results' => [], 'exact' => [], 'exactIdMatch' => false],
 				[
-					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'circles' => [], 'emails' => []],
+					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'emails' => []],
 					'users' => [],
 					'groups' => [],
 					'remotes' => [],
 					'emails' => [],
-					'circles' => [],
 					'lookup' => [],
 				], false],
 			[
@@ -1603,7 +1551,7 @@ class ShareesAPIControllerTest extends TestCase {
 					'results' => [['label' => 'testz@remote', 'value' => ['shareType' => Share::SHARE_TYPE_REMOTE, 'shareWith' => 'testz@remote']]], 'exact' => [], 'exactIdMatch' => false,
 				],
 				[
-					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'circles' => [], 'emails' => []],
+					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'emails' => []],
 					'users' => [
 						['label' => 'test One', 'value' => ['shareType' => Share::SHARE_TYPE_USER, 'shareWith' => 'test1']],
 					],
@@ -1614,7 +1562,6 @@ class ShareesAPIControllerTest extends TestCase {
 						['label' => 'testz@remote', 'value' => ['shareType' => Share::SHARE_TYPE_REMOTE, 'shareWith' => 'testz@remote']],
 					],
 					'emails' => [],
-					'circles' => [],
 					'lookup' => [],
 				], true,
 			],
@@ -1626,7 +1573,7 @@ class ShareesAPIControllerTest extends TestCase {
 					'results' => [['label' => 'testz@remote', 'value' => ['shareType' => Share::SHARE_TYPE_REMOTE, 'shareWith' => 'testz@remote']]], 'exact' => [], 'exactIdMatch' => false
 				],
 				[
-					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'circles' => [], 'emails' => []],
+					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'emails' => []],
 					'users' => [
 						['label' => 'test One', 'value' => ['shareType' => Share::SHARE_TYPE_USER, 'shareWith' => 'test1']],
 					],
@@ -1635,7 +1582,6 @@ class ShareesAPIControllerTest extends TestCase {
 						['label' => 'testz@remote', 'value' => ['shareType' => Share::SHARE_TYPE_REMOTE, 'shareWith' => 'testz@remote']],
 					],
 					'emails' => [],
-					'circles' => [],
 					'lookup' => [],
 				], false,
 			],
@@ -1645,14 +1591,13 @@ class ShareesAPIControllerTest extends TestCase {
 					['label' => 'test One', 'value' => ['shareType' => Share::SHARE_TYPE_USER, 'shareWith' => 'test1']],
 				], null, null,
 				[
-					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'circles' => [], 'emails' => []],
+					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'emails' => []],
 					'users' => [
 						['label' => 'test One', 'value' => ['shareType' => Share::SHARE_TYPE_USER, 'shareWith' => 'test1']],
 					],
 					'groups' => [],
 					'remotes' => [],
 					'emails' => [],
-					'circles' => [],
 					'lookup' => [],
 				], false,
 			],
@@ -1663,7 +1608,7 @@ class ShareesAPIControllerTest extends TestCase {
 					['label' => 'test 2', 'value' => ['shareType' => Share::SHARE_TYPE_USER, 'shareWith' => 'test2']],
 				], null, null,
 				[
-					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'circles' => [], 'emails' => []],
+					'exact' => ['users' => [], 'groups' => [], 'remotes' => [], 'emails' => []],
 					'users' => [
 						['label' => 'test 1', 'value' => ['shareType' => Share::SHARE_TYPE_USER, 'shareWith' => 'test1']],
 						['label' => 'test 2', 'value' => ['shareType' => Share::SHARE_TYPE_USER, 'shareWith' => 'test2']],
@@ -1671,7 +1616,6 @@ class ShareesAPIControllerTest extends TestCase {
 					'groups' => [],
 					'remotes' => [],
 					'emails' => [],
-					'circles' => [],
 					'lookup' => [],
 				], true,
 			],
@@ -1708,8 +1652,7 @@ class ShareesAPIControllerTest extends TestCase {
 				$this->getMockBuilder('OCP\IURLGenerator')->disableOriginalConstructor()->getMock(),
 				$this->getMockBuilder('OCP\ILogger')->disableOriginalConstructor()->getMock(),
 				$this->shareManager,
-				$this->clientService,
-				$this->cloudIdManager
+				$this->clientService
 			])
 			->setMethods(array('getShareesForShareIds', 'getUsers', 'getGroups', 'getRemote'))
 			->getMock();

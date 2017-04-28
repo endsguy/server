@@ -48,9 +48,7 @@ try {
 	require_once __DIR__ . '/lib/base.php';
 
 	// set to run indefinitely if needed
-	if (strpos(@ini_get('disable_functions'), 'set_time_limit') === false) {
-		@set_time_limit(0);
-	}
+	set_time_limit(0);
 
 	if (!OC::$CLI) {
 		echo "This script can be run from the command line only" . PHP_EOL;

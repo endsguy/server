@@ -45,6 +45,7 @@ OC.L10N.register(
     "Allow users to publish their data to a global and public address book" : "Erlaube Benutzern ihre Daten an ein globales und öffentliches Adressbuche zu veröffentlichen",
     "Federated Cloud" : "Federated Cloud",
     "Your Federated Cloud ID:" : "Deine Federated-Cloud-ID:",
+    "Share it:" : "Zum Teilen:",
     "Add to your website" : "Zu deiner Webseite hinzufügen",
     "Share with me via Nextcloud" : "Teile mit mir über Nextcloud",
     "HTML Code:" : "HTML-Code:",

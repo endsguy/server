@@ -22,10 +22,7 @@
 
 namespace OC\Mail;
 
-use OCP\Defaults;
 use OCP\IConfig;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\Mail\IMailer;
 use OCP\ILogger;
 
@@ -54,30 +51,20 @@ class Mailer implements IMailer {
 	private $config;
 	/** @var ILogger */
 	private $logger;
-	/** @var Defaults */
+	/** @var \OC_Defaults */
 	private $defaults;
-	/** @var IURLGenerator */
-	private $urlGenerator;
-	/** @var IL10N */
-	private $l10n;
 
 	/**
 	 * @param IConfig $config
 	 * @param ILogger $logger
-	 * @param Defaults $defaults
-	 * @param IURLGenerator $urlGenerator
-	 * @param IL10N $l10n
+	 * @param \OC_Defaults $defaults
 	 */
-	public function __construct(IConfig $config,
+	function __construct(IConfig $config,
 						 ILogger $logger,
-						 Defaults $defaults,
-						 IURLGenerator $urlGenerator,
-						 IL10N $l10n) {
+						 \OC_Defaults $defaults) {
 		$this->config = $config;
 		$this->logger = $logger;
 		$this->defaults = $defaults;
-		$this->urlGenerator = $urlGenerator;
-		$this->l10n = $l10n;
 	}
 
 	/**
@@ -87,14 +74,6 @@ class Mailer implements IMailer {
 	 */
 	public function createMessage() {
 		return new Message(new \Swift_Message());
-	}
-
-	public function createEMailTemplate() {
-		return new EMailTemplate(
-			$this->defaults,
-			$this->urlGenerator,
-			$this->l10n
-		);
 	}
 
 	/**
@@ -111,7 +90,7 @@ class Mailer implements IMailer {
 		$debugMode = $this->config->getSystemValue('mail_smtpdebug', false);
 
 		if (sizeof($message->getFrom()) === 0) {
-			$message->setFrom([\OCP\Util::getDefaultEmailAddress($this->defaults->getName()) => $this->defaults->getName()]);
+			$message->setFrom([\OCP\Util::getDefaultEmailAddress($this->defaults->getName())]);
 		}
 
 		$failedRecipients = [];
@@ -221,7 +200,7 @@ class Mailer implements IMailer {
 	 * @return \Swift_SendmailTransport
 	 */
 	protected function getSendMailInstance() {
-		switch ($this->config->getSystemValue('mail_smtpmode', 'php')) {
+		switch ($this->config->getSystemValue('mail_smtpmode', 'sendmail')) {
 			case 'qmail':
 				$binaryPath = '/var/qmail/bin/sendmail';
 				break;

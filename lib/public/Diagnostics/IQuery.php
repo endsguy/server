@@ -59,9 +59,4 @@ interface IQuery {
 	 * @since 11.0.0
 	 */
 	public function getStacktrace();
-	/**
-	 * @return array
-	 * @since 12.0.0
-	 */
-	public function getStart();
 }

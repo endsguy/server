@@ -26,11 +26,8 @@ use Exception;
 use OC;
 use OC\App\AppManager;
 use OC\Authentication\TwoFactorAuth\Manager;
-use OCP\Activity\IEvent;
-use OCP\Activity\IManager;
 use OCP\Authentication\TwoFactorAuth\IProvider;
 use OCP\IConfig;
-use OCP\ILogger;
 use OCP\ISession;
 use OCP\IUser;
 use Test\TestCase;
@@ -52,12 +49,6 @@ class ManagerTest extends TestCase {
 	/** @var IConfig|PHPUnit_Framework_MockObject_MockObject */
 	private $config;
 
-	/** @var IManager|PHPUnit_Framework_MockObject_MockObject */
-	private $activityManager;
-
-	/** @var ILogger|PHPUnit_Framework_MockObject_MockObject */
-	private $logger;
-
 	/** @var IProvider|PHPUnit_Framework_MockObject_MockObject */
 	private $fakeProvider;
 
@@ -68,14 +59,14 @@ class ManagerTest extends TestCase {
 		parent::setUp();
 
 		$this->user = $this->createMock(IUser::class);
-		$this->appManager = $this->createMock(AppManager::class);
+		$this->appManager = $this->getMockBuilder('\OC\App\AppManager')
+			->disableOriginalConstructor()
+			->getMock();
 		$this->session = $this->createMock(ISession::class);
 		$this->config = $this->createMock(IConfig::class);
-		$this->activityManager = $this->createMock(IManager::class);
-		$this->logger = $this->createMock(ILogger::class);
 
 		$this->manager = $this->getMockBuilder('\OC\Authentication\TwoFactorAuth\Manager')
-			->setConstructorArgs([$this->appManager, $this->session, $this->config, $this->activityManager, $this->logger])
+			->setConstructorArgs([$this->appManager, $this->session, $this->config])
 			->setMethods(['loadTwoFactorApp']) // Do not actually load the apps
 			->getMock();
 
@@ -237,7 +228,6 @@ class ManagerTest extends TestCase {
 		$this->prepareProviders();
 
 		$challenge = 'passme';
-		$event = $this->createMock(IEvent::class);
 		$this->fakeProvider->expects($this->once())
 			->method('verifyChallenge')
 			->with($this->user, $challenge)
@@ -252,37 +242,6 @@ class ManagerTest extends TestCase {
 		$this->session->expects($this->at(2))
 			->method('remove')
 			->with('two_factor_remember_login');
-		$this->activityManager->expects($this->once())
-			->method('generateEvent')
-			->willReturn($event);
-		$this->user->expects($this->any())
-			->method('getUID')
-			->willReturn('jos');
-		$event->expects($this->once())
-			->method('setApp')
-			->with($this->equalTo('twofactor_generic'))
-			->willReturnSelf();
-		$event->expects($this->once())
-			->method('setType')
-			->with($this->equalTo('twofactor'))
-			->willReturnSelf();
-		$event->expects($this->once())
-			->method('setAuthor')
-			->with($this->equalTo('jos'))
-			->willReturnSelf();
-		$event->expects($this->once())
-			->method('setAffectedUser')
-			->with($this->equalTo('jos'))
-			->willReturnSelf();
-		$this->fakeProvider->expects($this->once())
-			->method('getDisplayName')
-			->willReturn('Fake 2FA');
-		$event->expects($this->once())
-			->method('setSubject')
-			->with($this->equalTo('twofactor_success'), $this->equalTo([
-				'provider' => 'Fake 2FA',
-			]))
-			->willReturnSelf();
 
 		$this->assertTrue($this->manager->verifyChallenge('email', $this->user, $challenge));
 	}
@@ -304,44 +263,12 @@ class ManagerTest extends TestCase {
 		$this->prepareProviders();
 
 		$challenge = 'dontpassme';
-		$event = $this->createMock(IEvent::class);
 		$this->fakeProvider->expects($this->once())
 			->method('verifyChallenge')
 			->with($this->user, $challenge)
 			->will($this->returnValue(false));
 		$this->session->expects($this->never())
 			->method('remove');
-		$this->activityManager->expects($this->once())
-			->method('generateEvent')
-			->willReturn($event);
-		$this->user->expects($this->any())
-			->method('getUID')
-			->willReturn('jos');
-		$event->expects($this->once())
-			->method('setApp')
-			->with($this->equalTo('twofactor_generic'))
-			->willReturnSelf();
-		$event->expects($this->once())
-			->method('setType')
-			->with($this->equalTo('twofactor'))
-			->willReturnSelf();
-		$event->expects($this->once())
-			->method('setAuthor')
-			->with($this->equalTo('jos'))
-			->willReturnSelf();
-		$event->expects($this->once())
-			->method('setAffectedUser')
-			->with($this->equalTo('jos'))
-			->willReturnSelf();
-		$this->fakeProvider->expects($this->once())
-			->method('getDisplayName')
-			->willReturn('Fake 2FA');
-		$event->expects($this->once())
-			->method('setSubject')
-			->with($this->equalTo('twofactor_failed'), $this->equalTo([
-				'provider' => 'Fake 2FA',
-			]))
-			->willReturnSelf();
 
 		$this->assertFalse($this->manager->verifyChallenge('email', $this->user, $challenge));
 	}

@@ -225,9 +225,7 @@ GroupList = {
 
 	toggleAddGroup: function (event) {
 		if (GroupList.isAddGroupButtonVisible()) {
-			if (event) {
-				event.stopPropagation();
-			}
+			event.stopPropagation();
 			$('#newgroup-form').show();
 			$('#newgroup-init').hide();
 			$('#newgroupname').focus();

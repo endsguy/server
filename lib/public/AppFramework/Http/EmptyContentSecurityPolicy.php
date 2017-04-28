@@ -22,6 +22,8 @@
 
 namespace OCP\AppFramework\Http;
 
+use OCP\AppFramework\Http;
+
 /**
  * Class EmptyContentSecurityPolicy is a simple helper which allows applications
  * to modify the Content-Security-Policy sent by ownCloud. Per default the policy
@@ -333,8 +335,6 @@ class EmptyContentSecurityPolicy {
 	 */
 	public function buildPolicy() {
 		$policy = "default-src 'none';";
-		$policy .= "base-uri 'none';";
-		$policy .= "manifest-src 'self';";
 
 		if(!empty($this->allowedScriptDomains) || $this->inlineScriptAllowed || $this->evalScriptAllowed) {
 			$policy .= 'script-src ';

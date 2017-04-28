@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Activado",
+    "Not enabled" : "Non activado",
     "Wrong password" : "Contrasinal incorrecto",
     "Saved" : "Gardado",
     "No user supplied" : "Non subministrado polo usuario",
@@ -82,6 +84,7 @@ OC.L10N.register(
     "NT LAN Manager" : "Xestor NT LAN",
     "Email server" : "Servidor de correo",
     "Open documentation" : "Abrir a documentación",
+    "This is used for sending out notifications." : "Isto utilizase para o envío de notificacións.",
     "Send mode" : "Modo de envío",
     "Encryption" : "Cifrado",
     "From address" : "Desde o enderezo",

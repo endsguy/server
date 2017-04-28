@@ -90,7 +90,7 @@ OCA = OCA || {};
 		},
 
 		/**
-		 * processes the result of the Nextcloud server
+		 * processes the result of the ownCloud server
 		 *
 		 * @param {OCA.LDAP.Wizard.ConfigModel} model
 		 * @param {WizardDetectorGeneric} detector

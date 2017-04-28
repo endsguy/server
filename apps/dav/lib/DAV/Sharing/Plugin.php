@@ -25,6 +25,7 @@ namespace OCA\DAV\DAV\Sharing;
 use OCA\DAV\Connector\Sabre\Auth;
 use OCA\DAV\DAV\Sharing\Xml\Invite;
 use OCP\IRequest;
+use Sabre\DAV\Exception\BadRequest;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\INode;
 use Sabre\DAV\PropFind;
@@ -36,7 +37,6 @@ use Sabre\HTTP\ResponseInterface;
 class Plugin extends ServerPlugin {
 
 	const NS_OWNCLOUD = 'http://owncloud.org/ns';
-	const NS_NEXTCLOUD = 'http://nextcloud.com/ns';
 
 	/** @var Auth */
 	private $auth;

@@ -224,7 +224,7 @@ describe('OCA.Versions.VersionsTabView', function() {
 			expect(changes.etag).toBeDefined();
 		});
 		it('shows notification on revert error', function() {
-			var notificationStub = sinon.stub(OC.Notification, 'show');
+			var notificationStub = sinon.stub(OC.Notification, 'showTemporary');
 
 			tabView.$el.find('.revertVersion').eq(1).click();
 

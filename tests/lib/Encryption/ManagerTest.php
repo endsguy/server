@@ -17,22 +17,22 @@ class ManagerTest extends TestCase {
 	/** @var Manager */
 	private $manager;
 
-	/** @var IConfig|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var \PHPUnit_Framework_MockObject_MockObject */
 	private $config;
 
-	/** @var ILogger|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var \PHPUnit_Framework_MockObject_MockObject */
 	private $logger;
 
-	/** @var IL10N|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var \PHPUnit_Framework_MockObject_MockObject */
 	private $l10n;
 
-	/** @var View|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var \PHPUnit_Framework_MockObject_MockObject */
 	private $view;
 
-	/** @var Util|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var \PHPUnit_Framework_MockObject_MockObject */
 	private $util;
 	
-	/** @var ArrayCache|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var  \PHPUnit_Framework_MockObject_MockObject | \OC\Memcache\ArrayCache */
 	private $arrayCache;
 
 	public function setUp() {
@@ -100,7 +100,7 @@ class ManagerTest extends TestCase {
 
 	/**
 	 * @expectedException \OC\Encryption\Exceptions\ModuleDoesNotExistsException
-	 * @expectedExceptionMessage Module with ID: unknown does not exist.
+	 * @expectedExceptionMessage Module with id: unknown does not exist.
 	 */
 	public function testGetEncryptionModuleUnknown() {
 		$this->config->expects($this->any())->method('getAppValue')->willReturn(true);
@@ -188,9 +188,9 @@ class ManagerTest extends TestCase {
 //	 * @expectedExceptionMessage Id "0" already used by encryption module "TestDummyModule0"
 //	 */
 //	public function testModuleRegistration() {
-//		$config = $this->createMock(IConfig::class);
+//		$config = $this->getMock('\OCP\IConfig');
 //		$config->expects($this->any())->method('getSystemValue')->willReturn(true);
-//		$em = $this->createMock(IEncryptionModule::class);
+//		$em = $this->getMock('\OCP\Encryption\IEncryptionModule');
 //		$em->expects($this->any())->method('getId')->willReturn(0);
 //		$em->expects($this->any())->method('getDisplayName')->willReturn('TestDummyModule0');
 //		$m = new Manager($config);
@@ -200,9 +200,9 @@ class ManagerTest extends TestCase {
 //	}
 //
 //	public function testModuleUnRegistration() {
-//		$config = $this->createMock(IConfig::class);
+//		$config = $this->getMock('\OCP\IConfig');
 //		$config->expects($this->any())->method('getSystemValue')->willReturn(true);
-//		$em = $this->createMock(IEncryptionModule::class);
+//		$em = $this->getMock('\OCP\Encryption\IEncryptionModule');
 //		$em->expects($this->any())->method('getId')->willReturn(0);
 //		$em->expects($this->any())->method('getDisplayName')->willReturn('TestDummyModule0');
 //		$m = new Manager($config);
@@ -214,12 +214,12 @@ class ManagerTest extends TestCase {
 //
 //	/**
 //	 * @expectedException \OC\Encryption\Exceptions\ModuleDoesNotExistsException
-//	 * @expectedExceptionMessage Module with ID: unknown does not exist.
+//	 * @expectedExceptionMessage Module with id: unknown does not exist.
 //	 */
 //	public function testGetEncryptionModuleUnknown() {
-//		$config = $this->createMock(IConfig::class);
+//		$config = $this->getMock('\OCP\IConfig');
 //		$config->expects($this->any())->method('getSystemValue')->willReturn(true);
-//		$em = $this->createMock(IEncryptionModule::class);
+//		$em = $this->getMock('\OCP\Encryption\IEncryptionModule');
 //		$em->expects($this->any())->method('getId')->willReturn(0);
 //		$em->expects($this->any())->method('getDisplayName')->willReturn('TestDummyModule0');
 //		$m = new Manager($config);
@@ -229,9 +229,9 @@ class ManagerTest extends TestCase {
 //	}
 //
 //	public function testGetEncryptionModule() {
-//		$config = $this->createMock(IConfig::class);
+//		$config = $this->getMock('\OCP\IConfig');
 //		$config->expects($this->any())->method('getSystemValue')->willReturn(true);
-//		$em = $this->createMock(IEncryptionModule::class);
+//		$em = $this->getMock('\OCP\Encryption\IEncryptionModule');
 //		$em->expects($this->any())->method('getId')->willReturn(0);
 //		$em->expects($this->any())->method('getDisplayName')->willReturn('TestDummyModule0');
 //		$m = new Manager($config);

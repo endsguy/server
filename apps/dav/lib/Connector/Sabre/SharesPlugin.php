@@ -22,8 +22,10 @@
 namespace OCA\DAV\Connector\Sabre;
 
 use \Sabre\DAV\PropFind;
+use \Sabre\DAV\PropPatch;
 use OCP\IUserSession;
 use OCP\Share\IShare;
+use OCA\DAV\Connector\Sabre\ShareTypeList;
 
 /**
  * Sabre Plugin to provide share-related properties
@@ -141,7 +143,7 @@ class SharesPlugin extends \Sabre\DAV\ServerPlugin {
 		$shares = $this->shareManager->getSharesInFolder(
 			$this->userId,
 			$node,
-			true
+			false
 		);
 
 		$shareTypesByFileId = [];

@@ -189,7 +189,7 @@ interface IShare {
 	/**
 	 * Set the expiration date
 	 *
-	 * @param null|\DateTime $expireDate
+	 * @param \DateTime $expireDate
 	 * @return \OCP\Share\IShare The modified object
 	 * @since 9.0.0
 	 */

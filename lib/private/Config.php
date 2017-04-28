@@ -39,9 +39,6 @@ namespace OC;
  * configuration file of ownCloud.
  */
 class Config {
-
-	const ENV_PREFIX = 'NC_';
-
 	/** @var array Associative array ($key => $value) */
 	protected $cache = array();
 	/** @var string */
@@ -74,22 +71,15 @@ class Config {
 	}
 
 	/**
-	 * Returns a config value
+	 * Gets a value from config.php
 	 *
-	 * gets its value from an `NC_` prefixed environment variable
-	 * if it doesn't exist from config.php
-	 * if this doesn't exist either, it will return the given `$default`
+	 * If it does not exist, $default will be returned.
 	 *
 	 * @param string $key key
 	 * @param mixed $default = null default value
 	 * @return mixed the value or $default
 	 */
 	public function getValue($key, $default = null) {
-		$envValue = getenv(self::ENV_PREFIX . $key);
-		if ($envValue !== false) {
-			return $envValue;
-		}
-
 		if (isset($this->cache[$key])) {
 			return $this->cache[$key];
 		}

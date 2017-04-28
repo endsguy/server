@@ -22,7 +22,10 @@
 
 namespace OC\Files\Config;
 
+use OC\Files\Filesystem;
+use OCP\Files\Config\ICachedMountInfo;
 use OCP\Files\Mount\IMountPoint;
+use OCP\Files\Node;
 use OCP\IUser;
 
 class LazyStorageMountInfo extends CachedMountInfo {

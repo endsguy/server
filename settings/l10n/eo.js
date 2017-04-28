@@ -1,6 +1,7 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Kapabligita",
     "Wrong password" : "Malĝusta pasvorto",
     "Saved" : "Konservita",
     "Unable to change password" : "Ne eblis ŝanĝi la pasvorton",

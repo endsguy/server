@@ -1,9 +1,7 @@
 <?php
 /**
- * @copyright Copyright (c) 2017, Sandro Lutz <sandro.lutz@temparus.ch>
  * @copyright Copyright (c) 2016, ownCloud, Inc.
  *
- * @author Sandro Lutz <sandro.lutz@temparus.ch>
  * @author Arthur Schiwon <blizzz@arthur-schiwon.de>
  * @author Bernhard Posselt <dev@bernhard-posselt.com>
  * @author Christoph Wurst <christoph@owncloud.com>
@@ -14,7 +12,6 @@
  * @author Robin McCorkell <robin@mccorkell.me.uk>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
- * @author Felix Rupp <kontakt@felixrupp.com>
  *
  * @license AGPL-3.0
  *
@@ -41,7 +38,6 @@ use OC\Authentication\Exceptions\PasswordLoginForbiddenException;
 use OC\Authentication\Token\IProvider;
 use OC\Authentication\Token\IToken;
 use OC\Hooks\Emitter;
-use OC\Hooks\PublicEmitter;
 use OC_User;
 use OC_Util;
 use OCA\DAV\Connector\Sabre\Auth;
@@ -73,13 +69,12 @@ use Symfony\Component\EventDispatcher\GenericEvent;
  * - preRememberedLogin(string $uid)
  * - postRememberedLogin(\OC\User\User $user)
  * - logout()
- * - postLogout()
  *
  * @package OC\User
  */
 class Session implements IUserSession, Emitter {
 
-	/** @var IUserManager|PublicEmitter $manager */
+	/** @var IUserManager $manager */
 	private $manager;
 
 	/** @var ISession $session */
@@ -157,7 +152,7 @@ class Session implements IUserSession, Emitter {
 	/**
 	 * get the manager object
 	 *
-	 * @return Manager|PublicEmitter
+	 * @return Manager
 	 */
 	public function getManager() {
 		return $this->manager;
@@ -297,19 +292,6 @@ class Session implements IUserSession, Emitter {
 	}
 
 	/**
-	 * set the token id
-	 *
-	 * @param int|null $token that was used to log in
-	 */
-	protected function setToken($token) {
-		if ($token === null) {
-			$this->session->remove('token-id');
-		} else {
-			$this->session->set('token-id', $token);
-		}
-	}
-
-	/**
 	 * try to log in with the provided credentials
 	 *
 	 * @param string $uid
@@ -323,46 +305,6 @@ class Session implements IUserSession, Emitter {
 			return $this->loginWithToken($password);
 		}
 		return $this->loginWithPassword($uid, $password);
-	}
-
-	/**
-	 * @param IUser $user
-	 * @param array $loginDetails
-	 * @param bool $regenerateSessionId
-	 * @return true returns true if login successful or an exception otherwise
-	 * @throws LoginException
-	 */
-	public function completeLogin(IUser $user, array $loginDetails, $regenerateSessionId = true) {
-		if (!$user->isEnabled()) {
-			// disabled users can not log in
-			// injecting l10n does not work - there is a circular dependency between session and \OCP\L10N\IFactory
-			$message = \OC::$server->getL10N('lib')->t('User disabled');
-			throw new LoginException($message);
-		}
-
-		if($regenerateSessionId) {
-			$this->session->regenerateId();
-		}
-
-		$this->setUser($user);
-		$this->setLoginName($loginDetails['loginName']);
-
-		if(isset($loginDetails['token']) && $loginDetails['token'] instanceof IToken) {
-			$this->setToken($loginDetails['token']->getId());
-			$this->lockdownManager->setToken($loginDetails['token']);
-			$firstTimeLogin = false;
-		} else {
-			$this->setToken(null);
-			$firstTimeLogin = $user->updateLastLoginTimestamp();
-		}
-		$this->manager->emit('\OC\User', 'postLogin', [$user, $loginDetails['password']]);
-		if($this->isLoggedIn()) {
-			$this->prepareUserLogin($firstTimeLogin);
-			return true;
-		} else {
-			$message = \OC::$server->getL10N('lib')->t('Login canceled by app');
-			throw new LoginException($message);
-		}
 	}
 
 	/**
@@ -383,11 +325,7 @@ class Session implements IUserSession, Emitter {
 								$password,
 								IRequest $request,
 								OC\Security\Bruteforce\Throttler $throttler) {
-		$currentDelay = $throttler->sleepDelay($request->getRemoteAddress(), 'login');
-
-		if ($this->manager instanceof PublicEmitter) {
-			$this->manager->emit('\OC\User', 'preLogin', array($user, $password));
-		}
+		$currentDelay = $throttler->sleepDelay($request->getRemoteAddress());
 
 		$isTokenPassword = $this->isTokenPassword($password);
 		if (!$isTokenPassword && $this->isTokenAuthEnforced()) {
@@ -404,7 +342,7 @@ class Session implements IUserSession, Emitter {
 
 			$throttler->registerAttempt('login', $request->getRemoteAddress(), ['uid' => $user]);
 			if($currentDelay === 0) {
-				$throttler->sleepDelay($request->getRemoteAddress(), 'login');
+				$throttler->sleepDelay($request->getRemoteAddress());
 			}
 			return false;
 		}
@@ -533,13 +471,31 @@ class Session implements IUserSession, Emitter {
 	 * @throws LoginException if an app canceld the login process or the user is not enabled
 	 */
 	private function loginWithPassword($uid, $password) {
+		$this->manager->emit('\OC\User', 'preLogin', array($uid, $password));
 		$user = $this->manager->checkPassword($uid, $password);
 		if ($user === false) {
 			// Password check failed
 			return false;
 		}
 
-		return $this->completeLogin($user, ['loginName' => $uid, 'password' => $password], false);
+		if ($user->isEnabled()) {
+			$this->setUser($user);
+			$this->setLoginName($uid);
+			$firstTimeLogin = $user->updateLastLoginTimestamp();
+			$this->manager->emit('\OC\User', 'postLogin', [$user, $password]);
+			if ($this->isLoggedIn()) {
+				$this->prepareUserLogin($firstTimeLogin);
+				return true;
+			} else {
+				// injecting l10n does not work - there is a circular dependency between session and \OCP\L10N\IFactory
+				$message = \OC::$server->getL10N('lib')->t('Login canceled by app');
+				throw new LoginException($message);
+			}
+		} else {
+			// injecting l10n does not work - there is a circular dependency between session and \OCP\L10N\IFactory
+			$message = \OC::$server->getL10N('lib')->t('User disabled');
+			throw new LoginException($message);
+		}
 	}
 
 	/**
@@ -547,7 +503,7 @@ class Session implements IUserSession, Emitter {
 	 *
 	 * @param string $token
 	 * @return boolean
-	 * @throws LoginException if an app canceled the login process or the user is not enabled
+	 * @throws LoginException if an app canceld the login process or the user is not enabled
 	 */
 	private function loginWithToken($token) {
 		try {
@@ -571,6 +527,12 @@ class Session implements IUserSession, Emitter {
 		if (is_null($user)) {
 			// user does not exist
 			return false;
+		}
+		if (!$user->isEnabled()) {
+			// disabled users can not log in
+			// injecting l10n does not work - there is a circular dependency between session and \OCP\L10N\IFactory
+			$message = \OC::$server->getL10N('lib')->t('User disabled');
+			throw new LoginException($message);
 		}
 
 		//login
@@ -816,15 +778,13 @@ class Session implements IUserSession, Emitter {
 			try {
 				$this->tokenProvider->invalidateToken($this->session->getId());
 			} catch (SessionNotAvailableException $ex) {
-
+				
 			}
 		}
 		$this->setUser(null);
 		$this->setLoginName(null);
-		$this->setToken(null);
 		$this->unsetMagicInCookie();
 		$this->session->clear();
-		$this->manager->emit('\OC\User', 'postLogout');
 	}
 
 	/**

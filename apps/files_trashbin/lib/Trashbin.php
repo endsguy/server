@@ -88,10 +88,6 @@ class Trashbin {
 		if (!$userManager->userExists($uid)) {
 			$uid = User::getUser();
 		}
-		if (!$uid) {
-			// no owner, usually because of share link from ext storage
-			return [null, null];
-		}
 		Filesystem::initMountPoints($uid);
 		if ($uid != User::getUser()) {
 			$info = Filesystem::getFileInfo($filename);
@@ -200,21 +196,13 @@ class Trashbin {
 	 * move file to the trash bin
 	 *
 	 * @param string $file_path path to the deleted file/directory relative to the files root directory
-	 * @param bool $ownerOnly delete for owner only (if file gets moved out of a shared folder)
-	 *
 	 * @return bool
 	 */
-	public static function move2trash($file_path, $ownerOnly = false) {
+	public static function move2trash($file_path) {
 		// get the user for which the filesystem is setup
 		$root = Filesystem::getRoot();
 		list(, $user) = explode('/', $root);
 		list($owner, $ownerPath) = self::getUidAndFilename($file_path);
-
-		// if no owner found (ex: ext storage + share link), will use the current user's trashbin then
-		if (is_null($owner)) {
-			$owner = $user;
-			$ownerPath = $file_path;
-		}
 
 		$ownerView = new View('/' . $owner);
 		// file has been deleted in between
@@ -256,11 +244,7 @@ class Trashbin {
 		}
 
 		if ($sourceStorage->file_exists($sourceInternalPath)) { // failed to delete the original file, abort
-			if ($sourceStorage->is_dir($sourceInternalPath)) {
-				$sourceStorage->rmdir($sourceInternalPath);
-			} else {
-				$sourceStorage->unlink($sourceInternalPath);
-			}
+			$sourceStorage->unlink($sourceInternalPath);
 			return false;
 		}
 
@@ -277,8 +261,8 @@ class Trashbin {
 
 			self::retainVersions($filename, $owner, $ownerPath, $timestamp);
 
-			// if owner !== user we need to also add a copy to the users trash
-			if ($user !== $owner && $ownerOnly === false) {
+			// if owner !== user we need to also add a copy to the owners trash
+			if ($user !== $owner) {
 				self::copyFilesToUser($ownerPath, $owner, $file_path, $user, $timestamp);
 			}
 		}
@@ -680,7 +664,7 @@ class Trashbin {
 	}
 
 	/**
-	 * resize trash bin if necessary after a new file was added to Nextcloud
+	 * resize trash bin if necessary after a new file was added to ownCloud
 	 *
 	 * @param string $user user id
 	 */
@@ -906,7 +890,7 @@ class Trashbin {
 	 * @return integer size of the folder
 	 */
 	private static function calculateSize($view) {
-		$root = \OC::$server->getConfig()->getSystemValue('datadirectory', \OC::$SERVERROOT . '/data') . $view->getAbsolutePath('');
+		$root = \OC::$server->getConfig()->getSystemValue('datadirectory') . $view->getAbsolutePath('');
 		if (!file_exists($root)) {
 			return 0;
 		}

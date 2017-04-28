@@ -69,7 +69,6 @@
 }
 .has-favorites:not(.hidden) ~ #searchresults td.icon {
 	width: 86px;
-	background-size: 32px;
 }
 
 #searchresults tr.template {

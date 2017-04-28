@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "啟用",
+    "Not enabled" : "未啟用",
     "Wrong password" : "密碼錯誤",
     "Saved" : "已儲存",
     "Email sent" : "郵件已傳",

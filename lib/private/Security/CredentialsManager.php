@@ -25,6 +25,7 @@ namespace OC\Security;
 use OCP\Security\ICrypto;
 use OCP\IDBConnection;
 use OCP\Security\ICredentialsManager;
+use OCP\IConfig;
 
 /**
  * Store and retrieve credentials for external services

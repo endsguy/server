@@ -1,11 +1,8 @@
 <?php
 /**
  * @copyright Copyright (c) 2016 Bjoern Schiessle <bjoern@schiessle.org>
- * @copyright Copyright (c) 2017 Lukas Reschke <lukas@statuscode.ch>
  *
  * @author Bjoern Schiessle <bjoern@schiessle.org>
- * @author Lukas Reschke <lukas@statuscode.ch>
- * @author Roger Szabo <roger.szabo@web.de>
  *
  * @license GNU AGPL version 3 or any later version
  *
@@ -24,10 +21,11 @@
  *
  */
 
+
 namespace OCA\Admin_Audit;
 
+
 use OC\Files\Filesystem;
-use OC\Files\Node\File;
 use OCA\Admin_Audit\Actions\Auth;
 use OCA\Admin_Audit\Actions\Files;
 use OCA\Admin_Audit\Actions\GroupManagement;
@@ -37,17 +35,17 @@ use OCA\Admin_Audit\Actions\UserManagement;
 use OCA\Admin_Audit\Actions\Versions;
 use OCP\IGroupManager;
 use OCP\ILogger;
-use OCP\IPreview;
 use OCP\IUserSession;
 use OCP\Util;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\EventDispatcher\GenericEvent;
 
 class AuditLogger {
+
 	/** @var ILogger */
 	private $logger;
+
 	/** @var IUserSession */
 	private $userSession;
+	
 	/** @var IGroupManager */
 	private $groupManager;
 
@@ -57,20 +55,17 @@ class AuditLogger {
 	 * @param ILogger $logger
 	 * @param IUserSession $userSession
 	 * @param IGroupManager $groupManager
-	 * @param EventDispatcherInterface $eventDispatcher
 	 */
 	public function __construct(ILogger $logger,
 								IUserSession $userSession, 
-								IGroupManager $groupManager,
-								EventDispatcherInterface $eventDispatcher) {
+								IGroupManager $groupManager) {
 		$this->logger = $logger;
 		$this->userSession = $userSession;
 		$this->groupManager = $groupManager;
-		$this->eventDispatcher = $eventDispatcher;
 	}
 
 	/**
-	 * Register hooks in order to log them
+	 * register hooks in order to log them
 	 */
 	public function registerHooks() {
 		$this->userManagementHooks();
@@ -83,14 +78,13 @@ class AuditLogger {
 	}
 
 	/**
-	 * Connect to user management hooks
+	 * connect to user management hooks
 	 */
 	private function userManagementHooks() {
 		$userActions = new UserManagement($this->logger);
 
 		Util::connectHook('OC_User', 'post_createUser',	$userActions, 'create');
 		Util::connectHook('OC_User', 'post_deleteUser',	$userActions, 'delete');
-		Util::connectHook('OC_User', 'changeUser',	$userActions, 'change');
 		$this->userSession->listen('\OC\User', 'postSetPassword', [$userActions, 'setPassword']);
 	}
 	
@@ -98,8 +92,6 @@ class AuditLogger {
 		$groupActions = new GroupManagement($this->logger);
 		$this->groupManager->listen('\OC\Group', 'postRemoveUser',  [$groupActions, 'removeUser']);
 		$this->groupManager->listen('\OC\Group', 'postAddUser',  [$groupActions, 'addUser']);
-		$this->groupManager->listen('\OC\Group', 'postDelete',  [$groupActions, 'deleteGroup']);
-		$this->groupManager->listen('\OC\Group', 'postCreate',  [$groupActions, 'createGroup']);
 	}
 
 	/**
@@ -127,25 +119,12 @@ class AuditLogger {
 		Util::connectHook('OC_User', 'logout', $authActions, 'logout');
 	}
 
+
 	/**
-	 * Connect to file hooks
+	 * connect to file hooks
 	 */
 	private function fileHooks() {
 		$fileActions = new Files($this->logger);
-		$this->eventDispatcher->addListener(
-			IPreview::EVENT,
-			function(GenericEvent $event) use ($fileActions) {
-				/** @var File $file */
-				$file = $event->getSubject();
-				$fileActions->preview([
-					'path' => substr($file->getInternalPath(), 5),
-					'width' => $event->getArguments()['width'],
-					'height' => $event->getArguments()['height'],
-					'crop' => $event->getArguments()['crop'],
-					'mode'  => $event->getArguments()['mode']
-				]);
-			}
-		);
 
 		Util::connectHook(
 			Filesystem::CLASSNAME,
@@ -198,7 +177,7 @@ class AuditLogger {
 	}
 
 	/**
-	 * Connect to trash bin hooks
+	 * connect to trash bin hooks
 	 */
 	private function trashbinHooks() {
 		$trashActions = new Trashbin($this->logger);

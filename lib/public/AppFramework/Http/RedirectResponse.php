@@ -26,6 +26,7 @@
 
 namespace OCP\AppFramework\Http;
 
+use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http;
 
 

@@ -27,13 +27,13 @@ use DOMNode;
 use OC\Command\QueueBus;
 use OC\Files\Filesystem;
 use OC\Template\Base;
+use OC_Defaults;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\Defaults;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\Security\ISecureRandom;
 
-abstract class TestCase extends \PHPUnit_Framework_TestCase {
+abstract class TestCase extends TestCasePhpUnitCompatibility {
 	/** @var \OC\Command\QueueBus */
 	private $commandBus;
 
@@ -138,7 +138,7 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase {
 			if (is_null(self::$realDatabase)) {
 				self::$realDatabase = \OC::$server->getDatabaseConnection();
 			}
-			\OC::$server->registerService(IDBConnection::class, function () {
+			\OC::$server->registerService('DatabaseConnection', function () {
 				$this->fail('Your test case is not allowed to access the database.');
 			});
 		}
@@ -152,17 +152,15 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase {
 		}
 	}
 
-	protected function onNotSuccessfulTest($e) {
+	protected function realOnNotSuccessfulTest() {
 		$this->restoreAllServices();
 
 		// restore database connection
 		if (!$this->IsDatabaseAccessAllowed()) {
-			\OC::$server->registerService(IDBConnection::class, function () {
+			\OC::$server->registerService('DatabaseConnection', function () {
 				return self::$realDatabase;
 			});
 		}
-
-		parent::onNotSuccessfulTest($e);
 	}
 
 	protected function tearDown() {
@@ -170,7 +168,7 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase {
 
 		// restore database connection
 		if (!$this->IsDatabaseAccessAllowed()) {
-			\OC::$server->registerService(IDBConnection::class, function () {
+			\OC::$server->registerService('DatabaseConnection', function () {
 				return self::$realDatabase;
 			});
 		}
@@ -186,9 +184,7 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase {
 		// fail hard if xml errors have not been cleaned up
 		$errors = libxml_get_errors();
 		libxml_clear_errors();
-		if (!empty($errors)) {
-			self::assertEquals([], $errors, "There have been xml parsing errors");
-		}
+		$this->assertEquals([], $errors);
 
 		\OC\Files\Cache\Storage::getGlobalCache()->clearCache();
 
@@ -258,7 +254,7 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase {
 		if (!self::$wasDatabaseAllowed && self::$realDatabase !== null) {
 			// in case an error is thrown in a test, PHPUnit jumps straight to tearDownAfterClass,
 			// so we need the database again
-			\OC::$server->registerService(IDBConnection::class, function () {
+			\OC::$server->registerService('DatabaseConnection', function () {
 				return self::$realDatabase;
 			});
 		}
@@ -482,13 +478,8 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase {
 		require_once __DIR__.'/../../lib/private/legacy/template/functions.php';
 
 		$requestToken = 12345;
-		/** @var Defaults|\PHPUnit_Framework_MockObject_MockObject $l10n */
-		$theme = $this->getMockBuilder('\OCP\Defaults')
-			->disableOriginalConstructor()->getMock();
-		$theme->expects($this->any())
-			->method('getName')
-			->willReturn('Nextcloud');
-		/** @var IL10N|\PHPUnit_Framework_MockObject_MockObject $l10n */
+		$theme = new OC_Defaults();
+		/** @var IL10N | \PHPUnit_Framework_MockObject_MockObject $l10n */
 		$l10n = $this->getMockBuilder('\OCP\IL10N')
 			->disableOriginalConstructor()->getMock();
 		$l10n

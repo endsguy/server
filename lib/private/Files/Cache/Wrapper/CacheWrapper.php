@@ -31,7 +31,6 @@ namespace OC\Files\Cache\Wrapper;
 use OC\Files\Cache\Cache;
 use OCP\Files\Cache\ICacheEntry;
 use OCP\Files\Cache\ICache;
-use OCP\Files\Search\ISearchQuery;
 
 class CacheWrapper extends Cache {
 	/**
@@ -227,11 +226,6 @@ class CacheWrapper extends Cache {
 	 */
 	public function searchByMime($mimetype) {
 		$results = $this->getCache()->searchByMime($mimetype);
-		return array_map(array($this, 'formatCacheEntry'), $results);
-	}
-
-	public function searchQuery(ISearchQuery $query) {
-		$results = $this->getCache()->searchQuery($query);
 		return array_map(array($this, 'formatCacheEntry'), $results);
 	}
 

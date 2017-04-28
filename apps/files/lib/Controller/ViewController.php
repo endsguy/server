@@ -35,6 +35,7 @@ use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\IConfig;
 use OCP\IL10N;
+use OCP\INavigationManager;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -54,6 +55,8 @@ class ViewController extends Controller {
 	protected $request;
 	/** @var IURLGenerator */
 	protected $urlGenerator;
+	/** @var INavigationManager */
+	protected $navigationManager;
 	/** @var IL10N */
 	protected $l10n;
 	/** @var IConfig */
@@ -71,6 +74,7 @@ class ViewController extends Controller {
 	 * @param string $appName
 	 * @param IRequest $request
 	 * @param IURLGenerator $urlGenerator
+	 * @param INavigationManager $navigationManager
 	 * @param IL10N $l10n
 	 * @param IConfig $config
 	 * @param EventDispatcherInterface $eventDispatcherInterface
@@ -81,6 +85,7 @@ class ViewController extends Controller {
 	public function __construct($appName,
 								IRequest $request,
 								IURLGenerator $urlGenerator,
+								INavigationManager $navigationManager,
 								IL10N $l10n,
 								IConfig $config,
 								EventDispatcherInterface $eventDispatcherInterface,
@@ -92,6 +97,7 @@ class ViewController extends Controller {
 		$this->appName = $appName;
 		$this->request = $request;
 		$this->urlGenerator = $urlGenerator;
+		$this->navigationManager = $navigationManager;
 		$this->l10n = $l10n;
 		$this->config = $config;
 		$this->eventDispatcher = $eventDispatcherInterface;
@@ -151,8 +157,42 @@ class ViewController extends Controller {
 		$nav = new \OCP\Template('files', 'appnavigation', '');
 
 		// Load the files we need
-		\OCP\Util::addStyle('files', 'merged');
-		\OCP\Util::addScript('files', 'merged-index');
+		\OCP\Util::addStyle('files', 'files');
+		\OCP\Util::addStyle('files', 'upload');
+		\OCP\Util::addStyle('files', 'mobile');
+		\OCP\Util::addScript('files', 'app');
+		\OCP\Util::addScript('files', 'file-upload');
+		\OCP\Util::addScript('files', 'newfilemenu');
+		\OCP\Util::addScript('files', 'jquery.fileupload');
+		\OCP\Util::addScript('files', 'jquery-visibility');
+		\OCP\Util::addScript('files', 'fileinfomodel');
+		\OCP\Util::addScript('files', 'filesummary');
+		\OCP\Util::addScript('files', 'breadcrumb');
+		\OCP\Util::addScript('files', 'filelist');
+		\OCP\Util::addScript('files', 'search');
+
+		\OCP\Util::addScript('files', 'favoritesfilelist');
+		\OCP\Util::addScript('files', 'recentfilelist');
+		\OCP\Util::addScript('files', 'tagsplugin');
+		\OCP\Util::addScript('files', 'gotoplugin');
+		\OCP\Util::addScript('files', 'favoritesplugin');
+		\OCP\Util::addScript('files', 'recentplugin');
+
+		\OCP\Util::addScript('files', 'detailfileinfoview');
+		\OCP\Util::addScript('files', 'sidebarpreviewmanager');
+		\OCP\Util::addScript('files', 'sidebarpreviewtext');
+		\OCP\Util::addScript('files', 'detailtabview');
+		\OCP\Util::addScript('files', 'mainfileinfodetailview');
+		\OCP\Util::addScript('files', 'detailsview');
+		\OCP\Util::addStyle('files', 'detailsView');
+
+		\OC_Util::addVendorScript('core', 'handlebars/handlebars');
+
+		\OCP\Util::addScript('files', 'fileactions');
+		\OCP\Util::addScript('files', 'fileactionsmenu');
+		\OCP\Util::addScript('files', 'files');
+		\OCP\Util::addScript('files', 'keyboardshortcuts');
+		\OCP\Util::addScript('files', 'navigation');
 
 		// mostly for the home storage's free space
 		// FIXME: Make non static
@@ -204,6 +244,7 @@ class ViewController extends Controller {
 		$params['fileNotFound'] = $fileNotFound ? 1 : 0;
 		$params['appNavigation'] = $nav;
 		$params['appContents'] = $contentItems;
+		$this->navigationManager->setActiveEntry('files_index');
 
 		$response = new TemplateResponse(
 			$this->appName,

@@ -32,6 +32,8 @@ namespace OC\Files;
 
 use OCP\Files\Cache\ICacheEntry;
 use OCP\Files\Mount\IMountPoint;
+use OCP\Files\Storage\IStorage;
+use OCP\Files\IHomeStorage;
 use OCP\IUser;
 
 class FileInfo implements \OCP\Files\FileInfo, \ArrayAccess {
@@ -146,12 +148,10 @@ class FileInfo implements \OCP\Files\FileInfo, \ArrayAccess {
 	}
 
 	/**
-	 * Get FileInfo ID or null in case of part file
-	 *
-	 * @return int|null
+	 * @return int
 	 */
 	public function getId() {
-		return isset($this->data['fileid']) ? (int)  $this->data['fileid'] : null;
+		return $this->data['fileid'];
 	}
 
 	/**
@@ -193,7 +193,7 @@ class FileInfo implements \OCP\Files\FileInfo, \ArrayAccess {
 	 */
 	public function getSize() {
 		$this->updateEntryfromSubMounts();
-		return isset($this->data['size']) ? (int) $this->data['size'] : 0;
+		return isset($this->data['size']) ? $this->data['size'] : 0;
 	}
 
 	/**
@@ -201,7 +201,7 @@ class FileInfo implements \OCP\Files\FileInfo, \ArrayAccess {
 	 */
 	public function getMTime() {
 		$this->updateEntryfromSubMounts();
-		return (int) $this->data['mtime'];
+		return $this->data['mtime'];
 	}
 
 	/**
@@ -224,11 +224,11 @@ class FileInfo implements \OCP\Files\FileInfo, \ArrayAccess {
 	 * @return int
 	 */
 	public function getPermissions() {
-		$perms = (int) $this->data['permissions'];
+		$perms = $this->data['permissions'];
 		if (\OCP\Util::isSharingDisabledForUser() || ($this->isShared() && !\OC\Share\Share::isResharingAllowed())) {
 			$perms = $perms & ~\OCP\Constants::PERMISSION_SHARE;
 		}
-		return (int) $perms;
+		return $perms;
 	}
 
 	/**

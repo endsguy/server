@@ -8,6 +8,17 @@
 namespace Icewind\SMB;
 
 interface IShare {
+	// https://msdn.microsoft.com/en-us/library/dn392331.aspx
+	const NOTIFY_ADDED = 1;
+	const NOTIFY_REMOVED = 2;
+	const NOTIFY_MODIFIED = 3;
+	const NOTIFY_RENAMED_OLD = 4;
+	const NOTIFY_RENAMED_NEW = 5;
+	const NOTIFY_ADDED_STREAM = 6;
+	const NOTIFY_REMOVED_STREAM = 7;
+	const NOTIFY_MODIFIED_STREAM = 8;
+	const NOTIFY_REMOVED_BY_DELETE = 9;
+
 	/**
 	 * Get the name of the share
 	 *
@@ -134,7 +145,8 @@ interface IShare {
 
 	/**
 	 * @param string $path
-	 * @return INotifyHandler
+	 * @param callable $callback callable which will be called for each received change
+	 * @return mixed
 	 */
-	public function notify($path);
+	public function notify($path, callable $callback);
 }

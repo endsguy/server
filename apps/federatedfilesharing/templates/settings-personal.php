@@ -8,7 +8,6 @@ style('federatedfilesharing', 'settings-personal');
 <?php if ($_['outgoingServer2serverShareEnabled']): ?>
 	<div id="fileSharingSettings" class="section">
 		<h2><?php p($l->t('Federated Cloud')); ?></h2>
-		<p class="settings-hint"><?php p($l->t('You can share with anyone who uses Nextcloud, ownCloud or Pydio! Just put their Federated Cloud ID in the share dialog. It looks like person@cloud.example.com')); ?></p>
 
 		<p>
 			<?php p($l->t('Your Federated Cloud ID:')); ?>
@@ -20,7 +19,7 @@ style('federatedfilesharing', 'settings-personal');
 
 		<?php if ($_['showShareIT']) {?>
 		<p>
-			<?php p($l->t('Share it so your friends can share files with you:')); ?><br>
+			<?php p($l->t('Share it:')); ?><br>
 			<button class="social-facebook pop-up"
 					data-url='https://www.facebook.com/sharer/sharer.php?u=<?php p(urlencode($_['reference'])); ?>'>
 				Facebook

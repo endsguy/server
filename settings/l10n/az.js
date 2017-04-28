@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "İşə salınıb",
+    "Not enabled" : "İşə salınıb",
     "Wrong password" : "Yalnış şifrə",
     "Saved" : "Saxlanıldı",
     "No user supplied" : "Heç bir istifadəçiyə mənimsədilmir",
@@ -69,6 +71,7 @@ OC.L10N.register(
     "Plain" : "Adi",
     "NT LAN Manager" : "NT LAN Manager",
     "Open documentation" : "Sənədləri aç",
+    "This is used for sending out notifications." : "Kənara xəbərdarlıqları ötürmək üçün bu istifadə edilir.",
     "Send mode" : "Göndərmə rejimi",
     "Encryption" : "Şifrələnmə",
     "From address" : "Ünvandan",

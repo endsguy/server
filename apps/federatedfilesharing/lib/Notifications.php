@@ -30,7 +30,6 @@ namespace OCA\FederatedFileSharing;
 use OCP\AppFramework\Http;
 use OCP\BackgroundJob\IJobList;
 use OCP\Http\Client\IClientService;
-use OCP\OCS\IDiscoveryService;
 
 class Notifications {
 	const RESPONSE_FORMAT = 'json'; // default response format for ocs calls
@@ -41,8 +40,8 @@ class Notifications {
 	/** @var IClientService */
 	private $httpClientService;
 
-	/** @var IDiscoveryService */
-	private $discoveryService;
+	/** @var DiscoveryManager */
+	private $discoveryManager;
 
 	/** @var IJobList  */
 	private $jobList;
@@ -50,18 +49,18 @@ class Notifications {
 	/**
 	 * @param AddressHandler $addressHandler
 	 * @param IClientService $httpClientService
-	 * @param IDiscoveryService $discoveryService
+	 * @param DiscoveryManager $discoveryManager
 	 * @param IJobList $jobList
 	 */
 	public function __construct(
 		AddressHandler $addressHandler,
 		IClientService $httpClientService,
-		IDiscoveryService $discoveryService,
+		DiscoveryManager $discoveryManager,
 		IJobList $jobList
 	) {
 		$this->addressHandler = $addressHandler;
 		$this->httpClientService = $httpClientService;
-		$this->discoveryService = $discoveryService;
+		$this->discoveryManager = $discoveryManager;
 		$this->jobList = $jobList;
 	}
 
@@ -288,8 +287,7 @@ class Notifications {
 			'result' => '',
 		];
 
-		$federationEndpoints = $this->discoveryService->discover($remoteDomain, 'FEDERATED_SHARING');
-		$endpoint = isset($federationEndpoints['share']) ? $federationEndpoints['share'] : '/ocs/v2.php/cloud/shares';
+		$endpoint = $this->discoveryManager->getShareEndpoint($remoteDomain);
 		try {
 			$response = $client->post($remoteDomain . $endpoint . $urlSuffix . '?format=' . self::RESPONSE_FORMAT, [
 				'body' => $fields,

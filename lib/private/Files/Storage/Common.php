@@ -53,7 +53,6 @@ use OCP\Files\InvalidPathException;
 use OCP\Files\ReservedWordException;
 use OCP\Files\Storage\ILockingStorage;
 use OCP\Lock\ILockingProvider;
-use OCP\Lock\LockedException;
 
 /**
  * Storage backend class for providing common filesystem operation methods
@@ -79,9 +78,6 @@ abstract class Common implements Storage, ILockingStorage {
 
 	protected $mountOptions = [];
 	protected $owner = null;
-
-	private $shouldLogLocks = null;
-	private $logger;
 
 	public function __construct($parameters) {
 	}
@@ -440,14 +436,10 @@ abstract class Common implements Storage, ILockingStorage {
 	 * @return bool
 	 */
 	public function test() {
-		try {
-			if ($this->stat('')) {
-				return true;
-			}
-			return false;
-		} catch (\Exception $e) {
-			return false;
+		if ($this->stat('')) {
+			return true;
 		}
+		return false;
 	}
 
 	/**
@@ -685,101 +677,25 @@ abstract class Common implements Storage, ILockingStorage {
 	 * @throws \OCP\Lock\LockedException
 	 */
 	public function acquireLock($path, $type, ILockingProvider $provider) {
-		$logger = $this->getLockLogger();
-		if ($logger) {
-			$typeString = ($type === ILockingProvider::LOCK_SHARED) ? 'shared' : 'exclusive';
-			$logger->info(
-				sprintf(
-					'acquire %s lock on "%s" on storage "%s"',
-					$typeString,
-					$path,
-					$this->getId()
-				),
-				[
-					'app' => 'locking',
-				]
-			);
-		}
-		try {
-			$provider->acquireLock('files/' . md5($this->getId() . '::' . trim($path, '/')), $type);
-		} catch (LockedException $e) {
-			if ($logger) {
-				$logger->logException($e);
-			}
-			throw $e;
-		}
+		$provider->acquireLock('files/' . md5($this->getId() . '::' . trim($path, '/')), $type);
 	}
 
 	/**
 	 * @param string $path
 	 * @param int $type \OCP\Lock\ILockingProvider::LOCK_SHARED or \OCP\Lock\ILockingProvider::LOCK_EXCLUSIVE
 	 * @param \OCP\Lock\ILockingProvider $provider
-	 * @throws \OCP\Lock\LockedException
 	 */
 	public function releaseLock($path, $type, ILockingProvider $provider) {
-		$logger = $this->getLockLogger();
-		if ($logger) {
-			$typeString = ($type === ILockingProvider::LOCK_SHARED) ? 'shared' : 'exclusive';
-			$logger->info(
-				sprintf(
-					'release %s lock on "%s" on storage "%s"',
-					$typeString,
-					$path,
-					$this->getId()
-				),
-				[
-					'app' => 'locking',
-				]
-			);
-		}
-		try {
-			$provider->releaseLock('files/' . md5($this->getId() . '::' . trim($path, '/')), $type);
-		} catch (LockedException $e) {
-			if ($logger) {
-				$logger->logException($e);
-			}
-			throw $e;
-		}
+		$provider->releaseLock('files/' . md5($this->getId() . '::' . trim($path, '/')), $type);
 	}
 
 	/**
 	 * @param string $path
 	 * @param int $type \OCP\Lock\ILockingProvider::LOCK_SHARED or \OCP\Lock\ILockingProvider::LOCK_EXCLUSIVE
 	 * @param \OCP\Lock\ILockingProvider $provider
-	 * @throws \OCP\Lock\LockedException
 	 */
 	public function changeLock($path, $type, ILockingProvider $provider) {
-		$logger = $this->getLockLogger();
-		if ($logger) {
-			$typeString = ($type === ILockingProvider::LOCK_SHARED) ? 'shared' : 'exclusive';
-			$logger->info(
-				sprintf(
-					'change lock on "%s" to %s on storage "%s"',
-					$path,
-					$typeString,
-					$this->getId()
-				),
-				[
-					'app' => 'locking',
-				]
-			);
-		}
-		try {
-			$provider->changeLock('files/' . md5($this->getId() . '::' . trim($path, '/')), $type);
-		} catch (LockedException $e) {
-			if ($logger) {
-				$logger->logException($e);
-			}
-			throw $e;
-		}
-	}
-
-	private function getLockLogger() {
-		if (is_null($this->shouldLogLocks)) {
-			$this->shouldLogLocks = \OC::$server->getConfig()->getSystemValue('filelocking.debug', false);
-			$this->logger = $this->shouldLogLocks ? \OC::$server->getLogger() : null;
-		}
-		return $this->logger;
+		$provider->changeLock('files/' . md5($this->getId() . '::' . trim($path, '/')), $type);
 	}
 
 	/**
@@ -794,12 +710,5 @@ abstract class Common implements Storage, ILockingStorage {
 	 */
 	public function setAvailability($isAvailable) {
 		$this->getStorageCache()->setAvailability($isAvailable);
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function needsPartFile() {
-		return true;
 	}
 }

@@ -23,10 +23,10 @@
 describe('OC.Share tests', function() {
 	describe('markFileAsShared', function() {
 		var $file;
-		var tooltipStub;
+		var tipsyStub;
 
 		beforeEach(function() {
-			tooltipStub = sinon.stub($.fn, 'tooltip');
+			tipsyStub = sinon.stub($.fn, 'tipsy');
 			$file = $('<tr><td class="filename"><div class="thumbnail"></div><span class="name">File name</span></td></tr>');
 			$file.find('.filename').append(
 				'<span class="fileactions">' +
@@ -38,7 +38,7 @@ describe('OC.Share tests', function() {
 		});
 		afterEach(function() {
 			$file = null;
-			tooltipStub.restore();
+			tipsyStub.restore();
 		});
 		describe('displaying the share owner', function() {
 			function checkOwner(input, output, title) {
@@ -54,8 +54,8 @@ describe('OC.Share tests', function() {
 				} else {
 					expect($action.find('.remoteAddress').attr('title')).not.toBeDefined();
 				}
-				expect(tooltipStub.calledOnce).toEqual(true);
-				tooltipStub.reset();
+				expect(tipsyStub.calledOnce).toEqual(true);
+				tipsyStub.reset();
 			}
 
 			it('displays the local share owner as is', function() {
@@ -172,8 +172,8 @@ describe('OC.Share tests', function() {
 				} else {
 						expect($action.find('.remoteAddress').attr('title')).not.toBeDefined();
 				}
-				expect(tooltipStub.calledOnce).toEqual(true);
-				tooltipStub.reset();
+				expect(tipsyStub.calledOnce).toEqual(true);
+				tipsyStub.reset();
 			}
 
 			it('displays the local share owner as is', function() {

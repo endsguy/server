@@ -22,7 +22,6 @@
 
 namespace OCA\Files_Sharing\External;
 
-use OCP\Federation\ICloudIdManager;
 use OCP\Files\Config\IMountProvider;
 use OCP\Files\Storage\IStorageFactory;
 use OCP\IDBConnection;
@@ -42,19 +41,12 @@ class MountProvider implements IMountProvider {
 	private $managerProvider;
 
 	/**
-	 * @var ICloudIdManager
-	 */
-	private $cloudIdManager;
-
-	/**
 	 * @param \OCP\IDBConnection $connection
 	 * @param callable $managerProvider due to setup order we need a callable that return the manager instead of the manager itself
-	 * @param ICloudIdManager $cloudIdManager
 	 */
-	public function __construct(IDBConnection $connection, callable $managerProvider, ICloudIdManager $cloudIdManager) {
+	public function __construct(IDBConnection $connection, callable $managerProvider) {
 		$this->connection = $connection;
 		$this->managerProvider = $managerProvider;
-		$this->cloudIdManager = $cloudIdManager;
 	}
 
 	public function getMount(IUser $user, $data, IStorageFactory $storageFactory) {
@@ -63,7 +55,6 @@ class MountProvider implements IMountProvider {
 		$data['manager'] = $manager;
 		$mountPoint = '/' . $user->getUID() . '/files/' . ltrim($data['mountpoint'], '/');
 		$data['mountpoint'] = $mountPoint;
-		$data['cloudId'] = $this->cloudIdManager->getCloudId($data['owner'], $data['remote']);
 		$data['certificateManager'] = \OC::$server->getCertificateManager($user->getUID());
 		$data['HttpClientService'] = \OC::$server->getHTTPClientService();
 		return new Mount(self::STORAGE, $mountPoint, $data, $manager, $storageFactory);

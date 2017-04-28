@@ -45,6 +45,7 @@ OC.L10N.register(
     "Allow users to publish their data to a global and public address book" : "Kullanıcıların bilgilerini genel ve herkese açık bir adres defterinde paylaşabilsin",
     "Federated Cloud" : "Birleşmiş Bulut",
     "Your Federated Cloud ID:" : "Birleşmiş Bulut Kimliğiniz:",
+    "Share it:" : "Paylaşın:",
     "Add to your website" : "Web sitenize ekleyin",
     "Share with me via Nextcloud" : "Benimle Nextcloud üzerinden paylaşın",
     "HTML Code:" : "HTML Kodu:",

@@ -6,7 +6,6 @@ OC.L10N.register(
     "Please provide a valid app key and secret." : "Geef een geldige app sleutel en geheime sleutel op.",
     "Step 1 failed. Exception: %s" : "Stap 1 is mislukt. Uitzondering: %s",
     "Step 2 failed. Exception: %s" : "Stap 2 is mislukt. Uitzondering: %s",
-    "External storages" : "Externe opslag",
     "External storage" : "Externe opslag",
     "Dropbox App Configuration" : "Dropbox app configuratie",
     "Google Drive App Configuration" : "Google Drive app configuratie",

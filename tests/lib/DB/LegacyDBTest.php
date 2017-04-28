@@ -18,13 +18,8 @@ use OC_DB;
 class LegacyDBTest extends \Test\TestCase {
 	protected $backupGlobals = FALSE;
 
-	protected static $schema_file;
+	protected static $schema_file = 'static://test_db_scheme';
 	protected $test_prefix;
-
-	public static function setUpBeforeClass() {
-		self::$schema_file = \OC::$server->getTempManager()->getTemporaryFile();
-	}
-
 
 	/**
 	 * @var string

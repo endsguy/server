@@ -23,8 +23,10 @@
 
 namespace OC\Updater;
 
+use OC_Util;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
+use OC\Setup;
 use OCP\Util;
 
 class VersionCheck {
@@ -80,12 +82,7 @@ class VersionCheck {
 		$url = $updaterUrl . '?version=' . $versionString;
 
 		$tmp = [];
-		try {
-			$xml = $this->getUrlContent($url);
-		} catch (\Exception $e) {
-			return false;
-		}
-
+		$xml = $this->getUrlContent($url);
 		if ($xml) {
 			$loadEntities = libxml_disable_entity_loader(true);
 			$data = @simplexml_load_string($xml);
@@ -111,13 +108,16 @@ class VersionCheck {
 	/**
 	 * @codeCoverageIgnore
 	 * @param string $url
-	 * @return resource|string
-	 * @throws \Exception
+	 * @return bool|resource|string
 	 */
 	protected function getUrlContent($url) {
-		$client = $this->clientService->newClient();
-		$response = $client->get($url);
-		return $response->getBody();
+		try {
+			$client = $this->clientService->newClient();
+			$response = $client->get($url);
+			return $response->getBody();
+		} catch (\Exception $e) {
+			return false;
+		}
 	}
 }
 

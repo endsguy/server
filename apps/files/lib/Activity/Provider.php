@@ -199,7 +199,7 @@ class Provider implements IProvider {
 		foreach ($parameters as $placeholder => $parameter) {
 			$placeholders[] = '{' . $placeholder . '}';
 			if ($parameter['type'] === 'file') {
-				$replacements[] = $parameter['path'];
+				$replacements[] = trim($parameter['path'], '/');
 			} else {
 				$replacements[] = $parameter['name'];
 			}

@@ -36,17 +36,19 @@ namespace OC\Files\Storage;
 use Exception;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Message\ResponseInterface;
-use Icewind\Streams\CallbackWrapper;
 use OC\Files\Filesystem;
+use OC\Files\Stream\Close;
 use Icewind\Streams\IteratorDirectory;
 use OC\MemCache\ArrayCache;
 use OCP\AppFramework\Http;
 use OCP\Constants;
+use OCP\Files;
 use OCP\Files\FileInfo;
 use OCP\Files\StorageInvalidException;
 use OCP\Files\StorageNotAvailableException;
 use OCP\Util;
 use Sabre\DAV\Client;
+use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\Xml\Property\ResourceType;
 use Sabre\HTTP\ClientException;
 use Sabre\HTTP\ClientHttpException;
@@ -62,8 +64,6 @@ class DAV extends Common {
 	/** @var string */
 	protected $user;
 	/** @var string */
-	protected $authType;
-	/** @var string */
 	protected $host;
 	/** @var bool */
 	protected $secure;
@@ -74,11 +74,13 @@ class DAV extends Common {
 	/** @var bool */
 	protected $ready;
 	/** @var Client */
-	protected $client;
+	private $client;
 	/** @var ArrayCache */
-	protected $statCache;
+	private $statCache;
+	/** @var array */
+	private static $tempFiles = [];
 	/** @var \OCP\Http\Client\IClientService */
-	protected $httpClientService;
+	private $httpClientService;
 
 	/**
 	 * @param array $params
@@ -95,9 +97,6 @@ class DAV extends Common {
 			$this->host = $host;
 			$this->user = $params['user'];
 			$this->password = $params['password'];
-			if (isset($params['authType'])) {
-				$this->authType = $params['authType'];
-			}
 			if (isset($params['secure'])) {
 				if (is_string($params['secure'])) {
 					$this->secure = ($params['secure'] === 'true');
@@ -130,20 +129,17 @@ class DAV extends Common {
 		}
 	}
 
-	protected function init() {
+	private function init() {
 		if ($this->ready) {
 			return;
 		}
 		$this->ready = true;
 
-		$settings = [
+		$settings = array(
 			'baseUri' => $this->createBaseUri(),
 			'userName' => $this->user,
 			'password' => $this->password,
-		];
-		if (isset($this->authType)) {
-			$settings['authType'] = $this->authType;
-		}
+		);
 
 		$proxy = \OC::$server->getConfig()->getSystemValue('proxy', '');
 		if($proxy !== '') {
@@ -207,15 +203,13 @@ class DAV extends Common {
 		$this->init();
 		$path = $this->cleanPath($path);
 		try {
-			$response = $this->client->propFind(
+			$response = $this->client->propfind(
 				$this->encodePath($path),
-				['{DAV:}href'],
+				array(),
 				1
 			);
-			if ($response === false) {
-				return false;
-			}
-			$content = [];
+			$id = md5('webdav' . $this->root . $path);
+			$content = array();
 			$files = array_keys($response);
 			array_shift($files); //the first entry is the current directory
 
@@ -232,6 +226,13 @@ class DAV extends Common {
 				$content[] = $file;
 			}
 			return IteratorDirectory::wrap($content);
+		} catch (ClientHttpException $e) {
+			if ($e->getHttpStatus() === 404) {
+				$this->statCache->clear($path . '/');
+				$this->statCache->set($path, false);
+				return false;
+			}
+			$this->convertException($e, $path);
 		} catch (\Exception $e) {
 			$this->convertException($e, $path);
 		}
@@ -246,18 +247,22 @@ class DAV extends Common {
 	 *
 	 * @param string $path path to propfind
 	 *
-	 * @return array|boolean propfind response or false if the entry was not found
+	 * @return array propfind response
 	 *
-	 * @throws ClientHttpException
+	 * @throws NotFound
 	 */
 	protected function propfind($path) {
 		$path = $this->cleanPath($path);
 		$cachedResponse = $this->statCache->get($path);
+		if ($cachedResponse === false) {
+			// we know it didn't exist
+			throw new NotFound();
+		}
 		// we either don't know it, or we know it exists but need more details
 		if (is_null($cachedResponse) || $cachedResponse === true) {
 			$this->init();
 			try {
-				$response = $this->client->propFind(
+				$response = $this->client->propfind(
 					$this->encodePath($path),
 					array(
 						'{DAV:}getlastmodified',
@@ -270,15 +275,11 @@ class DAV extends Common {
 					)
 				);
 				$this->statCache->set($path, $response);
-			} catch (ClientHttpException $e) {
-				if ($e->getHttpStatus() === 404) {
-					$this->statCache->clear($path . '/');
-					$this->statCache->set($path, false);
-					return false;
-				}
-				$this->convertException($e, $path);
-			} catch (\Exception $e) {
-				$this->convertException($e, $path);
+			} catch (NotFound $e) {
+				// remember that this path did not exist
+				$this->statCache->clear($path . '/');
+				$this->statCache->set($path, false);
+				throw $e;
 			}
 		} else {
 			$response = $cachedResponse;
@@ -290,15 +291,17 @@ class DAV extends Common {
 	public function filetype($path) {
 		try {
 			$response = $this->propfind($path);
-			if ($response === false) {
-				return false;
-			}
-			$responseType = [];
+			$responseType = array();
 			if (isset($response["{DAV:}resourcetype"])) {
 				/** @var ResourceType[] $response */
 				$responseType = $response["{DAV:}resourcetype"]->getValue();
 			}
 			return (count($responseType) > 0 and $responseType[0] == "{DAV:}collection") ? 'dir' : 'file';
+		} catch (ClientHttpException $e) {
+			if ($e->getHttpStatus() === 404) {
+				return false;
+			}
+			$this->convertException($e, $path);
 		} catch (\Exception $e) {
 			$this->convertException($e, $path);
 		}
@@ -317,7 +320,13 @@ class DAV extends Common {
 				return true;
 			}
 			// need to get from server
-			return ($this->propfind($path) !== false);
+			$this->propfind($path);
+			return true; //no 404 exception
+		} catch (ClientHttpException $e) {
+			if ($e->getHttpStatus() === 404) {
+				return false;
+			}
+			$this->convertException($e, $path);
 		} catch (\Exception $e) {
 			$this->convertException($e, $path);
 		}
@@ -400,19 +409,20 @@ class DAV extends Common {
 					}
 					$tmpFile = $tempManager->getTemporaryFile($ext);
 				}
-				$handle = fopen($tmpFile, $mode);
-				return CallbackWrapper::wrap($handle, null, null, function () use ($path, $tmpFile) {
-					$this->writeBack($tmpFile, $path);
-				});
+				Close::registerCallback($tmpFile, array($this, 'writeBack'));
+				self::$tempFiles[$tmpFile] = $path;
+				return fopen('close://' . $tmpFile, $mode);
 		}
 	}
 
 	/**
 	 * @param string $tmpFile
 	 */
-	public function writeBack($tmpFile, $path) {
-		$this->uploadFile($tmpFile, $path);
-		unlink($tmpFile);
+	public function writeBack($tmpFile) {
+		if (isset(self::$tempFiles[$tmpFile])) {
+			$this->uploadFile($tmpFile, self::$tempFiles[$tmpFile]);
+			unlink($tmpFile);
+		}
 	}
 
 	/** {@inheritdoc} */
@@ -421,10 +431,7 @@ class DAV extends Common {
 		$path = $this->cleanPath($path);
 		try {
 			// TODO: cacheable ?
-			$response = $this->client->propfind($this->encodePath($path), ['{DAV:}quota-available-bytes']);
-			if ($response === false) {
-				return FileInfo::SPACE_UNKNOWN;
-			}
+			$response = $this->client->propfind($this->encodePath($path), array('{DAV:}quota-available-bytes'));
 			if (isset($response['{DAV:}quota-available-bytes'])) {
 				return (int)$response['{DAV:}quota-available-bytes'];
 			} else {
@@ -450,9 +457,6 @@ class DAV extends Common {
 				$this->client->proppatch($this->encodePath($path), ['{DAV:}lastmodified' => $mtime]);
 				// non-owncloud clients might not have accepted the property, need to recheck it
 				$response = $this->client->propfind($this->encodePath($path), ['{DAV:}getlastmodified'], 0);
-				if ($response === false) {
-					return false;
-				}
 				if (isset($response['{DAV:}getlastmodified'])) {
 					$remoteMtime = strtotime($response['{DAV:}getlastmodified']);
 					if ($remoteMtime !== $mtime) {
@@ -575,13 +579,15 @@ class DAV extends Common {
 	public function stat($path) {
 		try {
 			$response = $this->propfind($path);
-			if (!$response) {
-				return false;
-			}
-			return [
+			return array(
 				'mtime' => strtotime($response['{DAV:}getlastmodified']),
 				'size' => (int)isset($response['{DAV:}getcontentlength']) ? $response['{DAV:}getcontentlength'] : 0,
-			];
+			);
+		} catch (ClientHttpException $e) {
+			if ($e->getHttpStatus() === 404) {
+				return array();
+			}
+			$this->convertException($e, $path);
 		} catch (\Exception $e) {
 			$this->convertException($e, $path);
 		}
@@ -592,10 +598,7 @@ class DAV extends Common {
 	public function getMimeType($path) {
 		try {
 			$response = $this->propfind($path);
-			if ($response === false) {
-				return false;
-			}
-			$responseType = [];
+			$responseType = array();
 			if (isset($response["{DAV:}resourcetype"])) {
 				/** @var ResourceType[] $response */
 				$responseType = $response["{DAV:}resourcetype"]->getValue();
@@ -608,6 +611,11 @@ class DAV extends Common {
 			} else {
 				return false;
 			}
+		} catch (ClientHttpException $e) {
+			if ($e->getHttpStatus() === 404) {
+				return false;
+			}
+			$this->convertException($e, $path);
 		} catch (\Exception $e) {
 			$this->convertException($e, $path);
 		}
@@ -633,7 +641,7 @@ class DAV extends Common {
 	 * @param string $path to encode
 	 * @return string encoded path
 	 */
-	protected function encodePath($path) {
+	private function encodePath($path) {
 		// slashes need to stay
 		return str_replace('%2F', '/', rawurlencode($path));
 	}
@@ -647,7 +655,7 @@ class DAV extends Common {
 	 * @throws StorageInvalidException
 	 * @throws StorageNotAvailableException
 	 */
-	protected function simpleResponse($method, $path, $body, $expected) {
+	private function simpleResponse($method, $path, $body, $expected) {
 		$path = $this->cleanPath($path);
 		try {
 			$response = $this->client->request($method, $this->encodePath($path), $body);
@@ -698,9 +706,6 @@ class DAV extends Common {
 		$this->init();
 		$path = $this->cleanPath($path);
 		$response = $this->propfind($path);
-		if ($response === false) {
-			return 0;
-		}
 		if (isset($response['{http://owncloud.org/ns}permissions'])) {
 			return $this->parsePermissions($response['{http://owncloud.org/ns}permissions']);
 		} else if ($this->is_dir($path)) {
@@ -717,9 +722,6 @@ class DAV extends Common {
 		$this->init();
 		$path = $this->cleanPath($path);
 		$response = $this->propfind($path);
-		if ($response === false) {
-			return null;
-		}
 		if (isset($response['{DAV:}getetag'])) {
 			return trim($response['{DAV:}getetag'], '"');
 		}
@@ -763,13 +765,6 @@ class DAV extends Common {
 			// force refresh for $path
 			$this->statCache->remove($path);
 			$response = $this->propfind($path);
-			if ($response === false) {
-				if ($path === '') {
-					// if root is gone it means the storage is not available
-					throw new StorageNotAvailableException(get_class($e) . ': ' . $e->getMessage());
-				}
-				return false;
-			}
 			if (isset($response['{DAV:}getetag'])) {
 				$cachedData = $this->getCache()->get($path);
 				$etag = null;
@@ -792,7 +787,7 @@ class DAV extends Common {
 				return $remoteMtime > $time;
 			}
 		} catch (ClientHttpException $e) {
-			if ($e->getHttpStatus() === 405) {
+			if ($e->getHttpStatus() === 404 || $e->getHttpStatus() === 405) {
 				if ($path === '') {
 					// if root is gone it means the storage is not available
 					throw new StorageNotAvailableException(get_class($e) . ': ' . $e->getMessage());
@@ -821,7 +816,7 @@ class DAV extends Common {
 	 * @throws StorageNotAvailableException if the storage is not available,
 	 * which might be temporary
 	 */
-	protected function convertException(Exception $e, $path = '') {
+	private function convertException(Exception $e, $path = '') {
 		\OC::$server->getLogger()->logException($e);
 		Util::writeLog('files_external', $e->getMessage(), Util::ERROR);
 		if ($e instanceof ClientHttpException) {

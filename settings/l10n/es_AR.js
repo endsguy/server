@@ -1,6 +1,7 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Habilitado",
     "Wrong password" : "Clave incorrecta",
     "Saved" : "Guardado",
     "No user supplied" : "No se ha indicado el usuario",
@@ -40,6 +41,7 @@ OC.L10N.register(
     "Login" : "Ingresar",
     "Plain" : "Plano",
     "NT LAN Manager" : "Administrador NT LAN",
+    "This is used for sending out notifications." : "Esto es usado para enviar notificaciones.",
     "Send mode" : "Modo de envio",
     "Encryption" : "Encriptación",
     "From address" : "Dirección remitente",

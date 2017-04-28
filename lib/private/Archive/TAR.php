@@ -33,8 +33,6 @@
 
 namespace OC\Archive;
 
-use Icewind\Streams\CallbackWrapper;
-
 class TAR extends Archive {
 	const PLAIN = 0;
 	const GZIP = 1;
@@ -361,19 +359,22 @@ class TAR extends Archive {
 		if ($mode == 'r' or $mode == 'rb') {
 			return fopen($tmpFile, $mode);
 		} else {
-			$handle = fopen($tmpFile, $mode);
-			return CallbackWrapper::wrap($handle, null, null, function () use ($path, $tmpFile) {
-				$this->writeBack($tmpFile, $path);
-			});
+			\OC\Files\Stream\Close::registerCallback($tmpFile, array($this, 'writeBack'));
+			self::$tempFiles[$tmpFile] = $path;
+			return fopen('close://' . $tmpFile, $mode);
 		}
 	}
+
+	private static $tempFiles = array();
 
 	/**
 	 * write back temporary files
 	 */
-	function writeBack($tmpFile, $path) {
-		$this->addFile($path, $tmpFile);
-		unlink($tmpFile);
+	function writeBack($tmpFile) {
+		if (isset(self::$tempFiles[$tmpFile])) {
+			$this->addFile(self::$tempFiles[$tmpFile], $tmpFile);
+			unlink($tmpFile);
+		}
 	}
 
 	/**

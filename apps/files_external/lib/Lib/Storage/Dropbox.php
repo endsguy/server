@@ -31,7 +31,6 @@
 namespace OCA\Files_External\Lib\Storage;
 
 use GuzzleHttp\Exception\RequestException;
-use Icewind\Streams\CallbackWrapper;
 use Icewind\Streams\IteratorDirectory;
 use Icewind\Streams\RetryWrapper;
 use OCP\Files\StorageNotAvailableException;
@@ -45,6 +44,8 @@ class Dropbox extends \OC\Files\Storage\Common {
 	private $id;
 	private $metaData = array();
 	private $oauth;
+
+	private static $tempFiles = array();
 
 	public function __construct($params) {
 		if (isset($params['configured']) && $params['configured'] == 'true'
@@ -304,26 +305,27 @@ class Dropbox extends \OC\Files\Storage\Common {
 					$ext = '';
 				}
 				$tmpFile = \OCP\Files::tmpFile($ext);
+				\OC\Files\Stream\Close::registerCallback($tmpFile, array($this, 'writeBack'));
 				if ($this->file_exists($path)) {
 					$source = $this->fopen($path, 'r');
 					file_put_contents($tmpFile, $source);
 				}
-			$handle = fopen($tmpFile, $mode);
-			return CallbackWrapper::wrap($handle, null, null, function () use ($path, $tmpFile) {
-				$this->writeBack($tmpFile, $path);
-			});
+				self::$tempFiles[$tmpFile] = $path;
+				return fopen('close://'.$tmpFile, $mode);
 		}
 		return false;
 	}
 
-	public function writeBack($tmpFile, $path) {
-		$handle = fopen($tmpFile, 'r');
-		try {
-			$this->dropbox->putFile($path, $handle);
-			unlink($tmpFile);
-			$this->deleteMetaData($path);
-		} catch (\Exception $exception) {
-			\OCP\Util::writeLog('files_external', $exception->getMessage(), \OCP\Util::ERROR);
+	public function writeBack($tmpFile) {
+		if (isset(self::$tempFiles[$tmpFile])) {
+			$handle = fopen($tmpFile, 'r');
+			try {
+				$this->dropbox->putFile(self::$tempFiles[$tmpFile], $handle);
+				unlink($tmpFile);
+				$this->deleteMetaData(self::$tempFiles[$tmpFile]);
+			} catch (\Exception $exception) {
+				\OCP\Util::writeLog('files_external', $exception->getMessage(), \OCP\Util::ERROR);
+			}
 		}
 	}
 

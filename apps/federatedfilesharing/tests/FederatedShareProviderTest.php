@@ -25,12 +25,10 @@
 namespace OCA\FederatedFileSharing\Tests;
 
 
-use OC\Federation\CloudIdManager;
 use OCA\FederatedFileSharing\AddressHandler;
 use OCA\FederatedFileSharing\FederatedShareProvider;
 use OCA\FederatedFileSharing\Notifications;
 use OCA\FederatedFileSharing\TokenHandler;
-use OCP\Federation\ICloudIdManager;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -53,7 +51,7 @@ class FederatedShareProviderTest extends \Test\TestCase {
 	protected $addressHandler;
 	/** @var Notifications | \PHPUnit_Framework_MockObject_MockObject */
 	protected $notifications;
-	/** @var TokenHandler|\PHPUnit_Framework_MockObject_MockObject */
+	/** @var TokenHandler */
 	protected $tokenHandler;
 	/** @var IL10N */
 	protected $l;
@@ -70,9 +68,6 @@ class FederatedShareProviderTest extends \Test\TestCase {
 	protected $shareManager;
 	/** @var FederatedShareProvider */
 	protected $provider;
-
-	/** @var  ICloudIdManager */
-	private $cloudIdManager;
 
 
 	public function setUp() {
@@ -99,8 +94,6 @@ class FederatedShareProviderTest extends \Test\TestCase {
 
 		$this->userManager->expects($this->any())->method('userExists')->willReturn(true);
 
-		$this->cloudIdManager = new CloudIdManager();
-
 		$this->provider = new FederatedShareProvider(
 			$this->connection,
 			$this->addressHandler,
@@ -110,8 +103,7 @@ class FederatedShareProviderTest extends \Test\TestCase {
 			$this->logger,
 			$this->rootFolder,
 			$this->config,
-			$this->userManager,
-			$this->cloudIdManager
+			$this->userManager
 		);
 
 		$this->shareManager = \OC::$server->getShareManager();
@@ -408,8 +400,7 @@ class FederatedShareProviderTest extends \Test\TestCase {
 					$this->logger,
 					$this->rootFolder,
 					$this->config,
-					$this->userManager,
-					$this->cloudIdManager
+					$this->userManager
 				]
 			)->setMethods(['sendPermissionUpdate'])->getMock();
 
@@ -705,38 +696,6 @@ class FederatedShareProviderTest extends \Test\TestCase {
 		);
 	}
 
-	/**
-	 * @dataProvider dataTestFederatedSharingSettings
-	 *
-	 * @param string $isEnabled
-	 * @param bool $expected
-	 */
-	public function testIsLookupServerQueriesEnabled($isEnabled, $expected) {
-		$this->config->expects($this->once())->method('getAppValue')
-			->with('files_sharing', 'lookupServerEnabled', 'no')
-			->willReturn($isEnabled);
-
-		$this->assertSame($expected,
-			$this->provider->isLookupServerQueriesEnabled()
-		);
-	}
-
-	/**
-	 * @dataProvider dataTestFederatedSharingSettings
-	 *
-	 * @param string $isEnabled
-	 * @param bool $expected
-	 */
-	public function testIsLookupServerUploadEnabled($isEnabled, $expected) {
-		$this->config->expects($this->once())->method('getAppValue')
-			->with('files_sharing', 'lookupServerUploadEnabled', 'yes')
-			->willReturn($isEnabled);
-
-		$this->assertSame($expected,
-			$this->provider->isLookupServerUploadEnabled()
-		);
-	}
-
 	public function dataTestFederatedSharingSettings() {
 		return [
 			['yes', true],
@@ -787,61 +746,5 @@ class FederatedShareProviderTest extends \Test\TestCase {
 
 		$u1->delete();
 		$u2->delete();
-	}
-
-	public function testGetAccessList() {
-		$userManager = \OC::$server->getUserManager();
-		$rootFolder = \OC::$server->getRootFolder();
-
-		$u1 = $userManager->createUser('testFed', md5(time()));
-
-		$folder1 = $rootFolder->getUserFolder($u1->getUID())->newFolder('foo');
-		$file1 = $folder1->newFile('bar1');
-
-		$this->tokenHandler->expects($this->exactly(2))
-			->method('generateToken')
-			->willReturnOnConsecutiveCalls('token1', 'token2');
-		$this->notifications->expects($this->atLeastOnce())
-			->method('sendRemoteShare')
-			->willReturn(true);
-
-		$result = $this->provider->getAccessList([$file1], true);
-		$this->assertEquals(['remote' => []], $result);
-
-		$result = $this->provider->getAccessList([$file1], false);
-		$this->assertEquals(['remote' => false], $result);
-
-		$share1 = $this->shareManager->newShare();
-		$share1->setSharedWith('user@server.com')
-			->setSharedBy($u1->getUID())
-			->setShareOwner($u1->getUID())
-			->setPermissions(\OCP\Constants::PERMISSION_READ)
-			->setNode($file1);
-		$this->provider->create($share1);
-
-		$share2 = $this->shareManager->newShare();
-		$share2->setSharedWith('foobar@localhost')
-			->setSharedBy($u1->getUID())
-			->setShareOwner($u1->getUID())
-			->setPermissions(\OCP\Constants::PERMISSION_READ)
-			->setNode($file1);
-		$this->provider->create($share2);
-
-		$result = $this->provider->getAccessList([$file1], true);
-		$this->assertEquals(['remote' => [
-			'user@server.com' => [
-				'token' => 'token1',
-				'node_id' => $file1->getId(),
-			],
-			'foobar@localhost' => [
-				'token' => 'token2',
-				'node_id' => $file1->getId(),
-			],
-		]], $result);
-
-		$result = $this->provider->getAccessList([$file1], false);
-		$this->assertEquals(['remote' => true], $result);
-
-		$u1->delete();
 	}
 }

@@ -101,10 +101,7 @@
 				throw t('files', '"{name}" is an invalid file name.', {name: name});
 			} else if (trimmedName.length === 0) {
 				throw t('files', 'File name cannot be empty.');
-			} else if (OC.fileIsBlacklisted(trimmedName)) {
-				throw t('files', '"{name}" is not an allowed filetype', {name: name});
 			}
-
 			return true;
 		},
 		displayStorageWarnings: function() {
@@ -117,34 +114,21 @@
 				ownerDisplayName = $('#ownerDisplayName').val();
 			if (usedSpacePercent > 98) {
 				if (owner !== oc_current_user) {
-					OC.Notification.show(t('files', 'Storage of {owner} is full, files can not be updated or synced anymore!', 
-						{owner: ownerDisplayName}), {type: 'error'}
-					);
+					OC.Notification.showTemporary(t('files', 'Storage of {owner} is full, files can not be updated or synced anymore!',
+						{ owner: ownerDisplayName }));
 					return;
 				}
-				OC.Notification.show(t('files', 
-					'Your storage is full, files can not be updated or synced anymore!'), 
-					{type : 'error'}
-				);
+				OC.Notification.show(t('files', 'Your storage is full, files can not be updated or synced anymore!'));
 				return;
 			}
 			if (usedSpacePercent > 90) {
 				if (owner !== oc_current_user) {
-					OC.Notification.show(t('files', 'Storage of {owner} is almost full ({usedSpacePercent}%)', 
-						{
-							usedSpacePercent: usedSpacePercent,  
-							owner: ownerDisplayName
-						}),
-						{  
-							type: 'error'
-						}
-					);
+					OC.Notification.showTemporary(t('files', 'Storage of {owner} is almost full ({usedSpacePercent}%)',
+						{ usedSpacePercent: usedSpacePercent,  owner: ownerDisplayName }));
 					return;
 				}
 				OC.Notification.show(t('files', 'Your storage is almost full ({usedSpacePercent}%)',
-					{usedSpacePercent: usedSpacePercent}), 
-					{type : 'error'}
-				);
+					{usedSpacePercent: usedSpacePercent}));
 			}
 		},
 

@@ -23,7 +23,7 @@ namespace OCA\Comments\Notification;
 
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException;
-use OCP\Files\IRootFolder;
+use OCP\Files\Folder;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\L10N\IFactory;
@@ -35,8 +35,8 @@ class Notifier implements INotifier {
 	/** @var IFactory */
 	protected $l10nFactory;
 
-	/** @var IRootFolder  */
-	protected $rootFolder;
+	/** @var Folder  */
+	protected $userFolder;
 
 	/** @var ICommentsManager  */
 	protected $commentsManager;
@@ -49,13 +49,13 @@ class Notifier implements INotifier {
 
 	public function __construct(
 		IFactory $l10nFactory,
-		IRootFolder $rootFolder,
+		Folder $userFolder,
 		ICommentsManager $commentsManager,
 		IURLGenerator $url,
 		IUserManager $userManager
 	) {
 		$this->l10nFactory = $l10nFactory;
-		$this->rootFolder = $rootFolder;
+		$this->userFolder = $userFolder;
 		$this->commentsManager = $commentsManager;
 		$this->url = $url;
 		$this->userManager = $userManager;
@@ -93,8 +93,7 @@ class Notifier implements INotifier {
 				if($parameters[0] !== 'files') {
 					throw new \InvalidArgumentException('Unsupported comment object');
 				}
-				$userFolder = $this->rootFolder->getUserFolder($notification->getUser());
-				$nodes = $userFolder->getById($parameters[1]);
+				$nodes = $this->userFolder->getById($parameters[1]);
 				if(empty($nodes)) {
 					throw new \InvalidArgumentException('Cannot resolve file id to Node instance');
 				}
@@ -140,11 +139,7 @@ class Notifier implements INotifier {
 							]
 						);
 				}
-				$notification->setIcon($this->url->getAbsoluteURL($this->url->imagePath('core', 'actions/comment.svg')))
-					->setLink($this->url->linkToRouteAbsolute(
-						'comments.Notifications.view',
-						['id' => $comment->getId()])
-					);
+				$notification->setIcon($this->url->getAbsoluteURL($this->url->imagePath('core', 'actions/comment.svg')));
 
 				return $notification;
 				break;

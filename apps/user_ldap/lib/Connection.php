@@ -12,7 +12,6 @@
  * @author Robin Appelman <robin@icewind.nl>
  * @author Robin McCorkell <robin@mccorkell.me.uk>
  * @author Roger Szabo <roger.szabo@web.de>
- * @author Xuanwo <xuanwo@yunify.com>
  *
  * @license AGPL-3.0
  *
@@ -64,11 +63,6 @@ class Connection extends LDAPUtility {
 	 * @var bool runtime flag that indicates whether supported primary groups are available
 	 */
 	public $hasPrimaryGroups = true;
-
-	/**
-	 * @var bool runtime flag that indicates whether supported POSIX gidNumber are available
-	 */
-	public $hasGidNumber = true;
 
 	//cache handler
 	protected $cache;
@@ -335,6 +329,11 @@ class Connection extends LDAPUtility {
 		foreach(array('ldapBaseUsers', 'ldapBaseGroups') as $keyBase) {
 			$val = $this->configuration->$keyBase;
 			if(empty($val)) {
+				$obj = strpos('Users', $keyBase) !== false ? 'Users' : 'Groups';
+				\OCP\Util::writeLog('user_ldap',
+									'Base tree for '.$obj.
+									' is empty, using Base DN',
+									\OCP\Util::INFO);
 				$this->configuration->$keyBase = $this->configuration->ldapBase;
 			}
 		}
@@ -347,7 +346,7 @@ class Connection extends LDAPUtility {
 				$this->configuration->$effectiveSetting = $uuidOverride;
 			} else {
 				$uuidAttributes = array('auto', 'entryuuid', 'nsuniqueid',
-										'objectguid', 'guid', 'ipauniqueid');
+										'objectguid', 'guid');
 				if(!in_array($this->configuration->$effectiveSetting,
 							$uuidAttributes)
 					&& (!is_null($this->configID))) {

@@ -50,7 +50,7 @@ class EncryptAll extends Command {
 	protected $wasTrashbinEnabled;
 
 	/** @var  bool */
-	protected $wasMaintenanceModeEnabled;
+	protected $wasSingleUserModeEnabled;
 
 	/**
 	 * @param IManager $encryptionManager
@@ -72,20 +72,20 @@ class EncryptAll extends Command {
 	}
 
 	/**
-	 * Set maintenance mode and disable the trashbin app
+	 * Set single user mode and disable the trashbin app
 	 */
-	protected function forceMaintenanceAndTrashbin() {
+	protected function forceSingleUserAndTrashbin() {
 		$this->wasTrashbinEnabled = $this->appManager->isEnabledForUser('files_trashbin');
-		$this->wasMaintenanceModeEnabled = $this->config->getSystemValue('maintenance', false);
-		$this->config->setSystemValue('maintenance', true);
+		$this->wasSingleUserModeEnabled = $this->config->getSystemValue('singleuser', false);
+		$this->config->setSystemValue('singleuser', true);
 		$this->appManager->disableApp('files_trashbin');
 	}
 
 	/**
-	 * Reset the maintenance mode and re-enable the trashbin app
+	 * Reset the single user mode and re-enable the trashbin app
 	 */
-	protected function resetMaintenanceAndTrashbin() {
-		$this->config->setSystemValue('maintenance', $this->wasMaintenanceModeEnabled);
+	protected function resetSingleUserAndTrashbin() {
+		$this->config->setSystemValue('singleuser', $this->wasSingleUserModeEnabled);
 		if ($this->wasTrashbinEnabled) {
 			$this->appManager->enableApp('files_trashbin');
 		}
@@ -109,24 +109,24 @@ class EncryptAll extends Command {
 		}
 
 		$output->writeln("\n");
-		$output->writeln('You are about to encrypt all files stored in your Nextcloud installation.');
-		$output->writeln('Depending on the number of available files, and their size, this may take quite some time.');
-		$output->writeln('Please ensure that no user accesses their files during this time!');
-		$output->writeln('Note: The encryption module you use determines which files get encrypted.');
+		$output->writeln('You are about to start to encrypt all files stored in your ownCloud.');
+		$output->writeln('It will depend on the encryption module you use which files get encrypted.');
+		$output->writeln('Depending on the number and size of your files this can take some time');
+		$output->writeln('Please make sure that no user access his files during this process!');
 		$output->writeln('');
 		$question = new ConfirmationQuestion('Do you really want to continue? (y/n) ', false);
 		if ($this->questionHelper->ask($input, $output, $question)) {
-			$this->forceMaintenanceAndTrashbin();
+			$this->forceSingleUserAndTrashbin();
 
 			try {
 				$defaultModule = $this->encryptionManager->getEncryptionModule();
 				$defaultModule->encryptAll($input, $output);
 			} catch (\Exception $ex) {
-				$this->resetMaintenanceAndTrashbin();
+				$this->resetSingleUserAndTrashbin();
 				throw $ex;
 			}
 
-			$this->resetMaintenanceAndTrashbin();
+			$this->resetSingleUserAndTrashbin();
 		} else {
 			$output->writeln('aborted');
 		}

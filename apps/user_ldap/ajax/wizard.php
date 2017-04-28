@@ -58,8 +58,7 @@ $userManager = new \OCA\User_LDAP\User\Manager(
 	\OC::$server->getAvatarManager(),
 	new \OCP\Image(),
 	\OC::$server->getDatabaseConnection(),
-	\OC::$server->getUserManager(),
-	\OC::$server->getNotificationManager());
+	\OC::$server->getUserManager());
 
 $access = new \OCA\User_LDAP\Access($con, $ldapWrapper, $userManager, new \OCA\User_LDAP\Helper(
 	\OC::$server->getConfig()

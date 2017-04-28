@@ -167,14 +167,11 @@ EOF
 	fi
 	if [ -z "$NOCOVERAGE" ]; then
 		"$PHPUNIT" --configuration phpunit-autotest-external.xml --log-junit "autotest-external-results-$1.xml" --coverage-clover "autotest-external-clover-$1.xml" --coverage-html "coverage-external-html-$1"
+		RESULT=$?
 	else
 		echo "No coverage"
 		"$PHPUNIT" --configuration phpunit-autotest-external.xml --log-junit "autotest-external-results-$1.xml"
-	fi
-
-	if [[ $? -ne 0 ]]; then
-	    echo "Error during phpunit execution ... terminating"
-	    exit 1
+		RESULT=$?
 	fi
 
 	if [ -n "$2" -a "$2" == "common-tests" ]; then
@@ -210,17 +207,14 @@ EOF
 				rm -rf "coverage-external-html-$1-$name"
 				mkdir "coverage-external-html-$1-$name"
 				"$PHPUNIT" --configuration phpunit-autotest-external.xml --log-junit "autotest-external-results-$1-$name.xml" --coverage-clover "autotest-external-clover-$1-$name.xml" --coverage-html "coverage-external-html-$1-$name" "$FILES_EXTERNAL_BACKEND_PATH/$testToRun"
+				RESULT=$?
 			else
 				echo "No coverage"
 				"$PHPUNIT" --configuration phpunit-autotest-external.xml --log-junit "autotest-external-results-$1-$name.xml" "$FILES_EXTERNAL_BACKEND_PATH/$testToRun"
+				RESULT=$?
 			fi
 		else
 		    DOEXIT=1
-		fi
-
-		if [[ $? -ne 0 ]]; then
-		    echo "Error during phpunit execution ... terminating"
-		    exit 1
 		fi
 
 		# calculate stop file

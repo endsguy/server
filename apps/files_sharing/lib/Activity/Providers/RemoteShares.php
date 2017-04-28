@@ -24,37 +24,16 @@ namespace OCA\Files_Sharing\Activity\Providers;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager;
 use OCP\Activity\IProvider;
-use OCP\Federation\ICloudIdManager;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\IUserManager;
 use OCP\L10N\IFactory;
 
 class RemoteShares extends Base {
-
-	protected $cloudIdManager;
 
 	const SUBJECT_REMOTE_SHARE_ACCEPTED = 'remote_share_accepted';
 	const SUBJECT_REMOTE_SHARE_DECLINED = 'remote_share_declined';
 	const SUBJECT_REMOTE_SHARE_RECEIVED = 'remote_share_received';
 	const SUBJECT_REMOTE_SHARE_UNSHARED = 'remote_share_unshared';
-
-	/**
-	 * @param IFactory $languageFactory
-	 * @param IURLGenerator $url
-	 * @param IManager $activityManager
-	 * @param IUserManager $userManager
-	 * @param ICloudIdManager $cloudIdManager
-	 */
-	public function __construct(IFactory $languageFactory,
-								IURLGenerator $url,
-								IManager $activityManager,
-								IUserManager $userManager,
-								ICloudIdManager $cloudIdManager
-	) {
-		parent::__construct($languageFactory, $url, $activityManager, $userManager);
-		$this->cloudIdManager = $cloudIdManager;
-	}
 
 	/**
 	 * @param IEvent $event
@@ -136,12 +115,12 @@ class RemoteShares extends Base {
 	 * @return array
 	 */
 	protected function getFederatedUser($cloudId) {
-		$remoteUser = $this->cloudIdManager->resolveCloudId($cloudId);
+		$remoteUser = explode('@', $cloudId, 2);
 		return [
 			'type' => 'user',
-			'id' => $remoteUser->getUser(),
+			'id' => $remoteUser[0],
 			'name' => $cloudId,// Todo display name from contacts
-			'server' => $remoteUser->getRemote(),
+			'server' => $remoteUser[1],
 		];
 	}
 }

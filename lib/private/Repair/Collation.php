@@ -67,7 +67,7 @@ class Collation implements IRepairStep {
 	 */
 	public function run(IOutput $output) {
 		if (!$this->connection->getDatabasePlatform() instanceof MySqlPlatform) {
-			$output->info('Not a mysql database -> nothing to do');
+			$output->info('Not a mysql database -> nothing to no');
 			return;
 		}
 
@@ -88,11 +88,6 @@ class Collation implements IRepairStep {
 			}
 
 			$output->info("Change collation for $table ...");
-			if ($characterSet === 'utf8mb4') {
-				// need to set row compression first
-				$query = $this->connection->prepare('ALTER TABLE `' . $table . '` ROW_FORMAT=COMPRESSED;');
-				$query->execute();
-			}
 			$query = $this->connection->prepare('ALTER TABLE `' . $table . '` CONVERT TO CHARACTER SET ' . $characterSet . ' COLLATE ' . $characterSet . '_bin;');
 			try {
 				$query->execute();
@@ -104,21 +99,16 @@ class Collation implements IRepairStep {
 				}
 			}
 		}
-		if (empty($tables)) {
-			$output->info('All tables already have the correct collation -> nothing to do');
-		}
 	}
 
 	/**
-	 * @param IDBConnection $connection
+	 * @param \Doctrine\DBAL\Connection $connection
 	 * @return string[]
 	 */
-	protected function getAllNonUTF8BinTables(IDBConnection $connection) {
+	protected function getAllNonUTF8BinTables($connection) {
 		$dbName = $this->config->getSystemValue("dbname");
 		$characterSet = $this->config->getSystemValue('mysql.utf8mb4', false) ? 'utf8mb4' : 'utf8';
-
-		// fetch tables by columns
-		$statement = $connection->executeQuery(
+		$rows = $connection->fetchAll(
 			"SELECT DISTINCT(TABLE_NAME) AS `table`" .
 			"	FROM INFORMATION_SCHEMA . COLUMNS" .
 			"	WHERE TABLE_SCHEMA = ?" .
@@ -126,27 +116,11 @@ class Collation implements IRepairStep {
 			"	AND TABLE_NAME LIKE \"*PREFIX*%\"",
 			array($dbName)
 		);
-		$rows = $statement->fetchAll();
-		$result = [];
+		$result = array();
 		foreach ($rows as $row) {
-			$result[$row['table']] = true;
+			$result[] = $row['table'];
 		}
-
-		// fetch tables by collation
-		$statement = $connection->executeQuery(
-			"SELECT DISTINCT(TABLE_NAME) AS `table`" .
-			"	FROM INFORMATION_SCHEMA . TABLES" .
-			"	WHERE TABLE_SCHEMA = ?" .
-			"	AND TABLE_COLLATION <> '" . $characterSet . "_bin'" .
-			"	AND TABLE_NAME LIKE \"*PREFIX*%\"",
-			[$dbName]
-		);
-		$rows = $statement->fetchAll();
-		foreach ($rows as $row) {
-			$result[$row['table']] = true;
-		}
-
-		return array_keys($result);
+		return $result;
 	}
 }
 

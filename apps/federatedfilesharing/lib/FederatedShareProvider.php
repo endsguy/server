@@ -27,8 +27,6 @@
 namespace OCA\FederatedFileSharing;
 
 use OC\Share20\Share;
-use OCP\Federation\ICloudIdManager;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;
@@ -82,9 +80,6 @@ class FederatedShareProvider implements IShareProvider {
 	/** @var IUserManager */
 	private $userManager;
 
-	/** @var ICloudIdManager */
-	private $cloudIdManager;
-
 	/**
 	 * DefaultShareProvider constructor.
 	 *
@@ -97,7 +92,6 @@ class FederatedShareProvider implements IShareProvider {
 	 * @param IRootFolder $rootFolder
 	 * @param IConfig $config
 	 * @param IUserManager $userManager
-	 * @param ICloudIdManager $cloudIdManager
 	 */
 	public function __construct(
 			IDBConnection $connection,
@@ -108,8 +102,7 @@ class FederatedShareProvider implements IShareProvider {
 			ILogger $logger,
 			IRootFolder $rootFolder,
 			IConfig $config,
-			IUserManager $userManager,
-			ICloudIdManager $cloudIdManager
+			IUserManager $userManager
 	) {
 		$this->dbConnection = $connection;
 		$this->addressHandler = $addressHandler;
@@ -120,7 +113,6 @@ class FederatedShareProvider implements IShareProvider {
 		$this->rootFolder = $rootFolder;
 		$this->config = $config;
 		$this->userManager = $userManager;
-		$this->cloudIdManager = $cloudIdManager;
 	}
 
 	/**
@@ -161,18 +153,17 @@ class FederatedShareProvider implements IShareProvider {
 
 
 		// don't allow federated shares if source and target server are the same
-		$cloudId = $this->cloudIdManager->resolveCloudId($shareWith);
+		list($user, $remote) = $this->addressHandler->splitUserRemote($shareWith);
 		$currentServer = $this->addressHandler->generateRemoteURL();
 		$currentUser = $sharedBy;
-		if ($this->addressHandler->compareAddresses($cloudId->getUser(), $cloudId->getRemote(), $currentUser, $currentServer)) {
+		if ($this->addressHandler->compareAddresses($user, $remote, $currentUser, $currentServer)) {
 			$message = 'Not allowed to create a federated share with the same user.';
 			$message_t = $this->l->t('Not allowed to create a federated share with the same user');
 			$this->logger->debug($message, ['app' => 'Federated File Sharing']);
 			throw new \Exception($message_t);
 		}
 
-
-		$share->setSharedWith($cloudId->getId());
+		$share->setSharedWith($user . '@' . $remote);
 
 		try {
 			$remoteShare = $this->getShareFromExternalShareTable($share);
@@ -182,8 +173,8 @@ class FederatedShareProvider implements IShareProvider {
 
 		if ($remoteShare) {
 			try {
-				$ownerCloudId = $this->cloudIdManager->getCloudId($remoteShare['owner'], $remoteShare['remote']);
-				$shareId = $this->addShareToDB($itemSource, $itemType, $shareWith, $sharedBy, $ownerCloudId->getId(), $permissions, 'tmp_token_' . time());
+				$uidOwner = $remoteShare['owner'] . '@' . $remoteShare['remote'];
+				$shareId = $this->addShareToDB($itemSource, $itemType, $shareWith, $sharedBy, $uidOwner, $permissions, 'tmp_token_' . time());
 				$share->setId($shareId);
 				list($token, $remoteId) = $this->askOwnerToReShare($shareWith, $share, $shareId);
 				// remote share was create successfully if we get a valid token as return
@@ -236,17 +227,15 @@ class FederatedShareProvider implements IShareProvider {
 		try {
 			$sharedByFederatedId = $share->getSharedBy();
 			if ($this->userManager->userExists($sharedByFederatedId)) {
-				$cloudId = $this->cloudIdManager->getCloudId($sharedByFederatedId, $this->addressHandler->generateRemoteURL());
-				$sharedByFederatedId = $cloudId->getId();
+				$sharedByFederatedId = $sharedByFederatedId . '@' . $this->addressHandler->generateRemoteURL();
 			}
-			$ownerCloudId = $this->cloudIdManager->getCloudId($share->getShareOwner(), $this->addressHandler->generateRemoteURL());
 			$send = $this->notifications->sendRemoteShare(
 				$token,
 				$share->getSharedWith(),
 				$share->getNode()->getName(),
 				$shareId,
 				$share->getShareOwner(),
-				$ownerCloudId->getId(),
+				$share->getShareOwner() . '@' . $this->addressHandler->generateRemoteURL(),
 				$share->getSharedBy(),
 				$sharedByFederatedId
 			);
@@ -609,7 +598,7 @@ class FederatedShareProvider implements IShareProvider {
 			);
 		}
 
-		$qb->innerJoin('s', 'filecache' ,'f', $qb->expr()->eq('s.file_source', 'f.fileid'));
+		$qb->innerJoin('s', 'filecache' ,'f', 's.file_source = f.fileid');
 		$qb->andWhere($qb->expr()->eq('f.parent', $qb->createNamedParameter($node->getId())));
 
 		$qb->orderBy('id');
@@ -942,17 +931,17 @@ class FederatedShareProvider implements IShareProvider {
 	 */
 	public function isOutgoingServer2serverShareEnabled() {
 		$result = $this->config->getAppValue('files_sharing', 'outgoing_server2server_share_enabled', 'yes');
-		return ($result === 'yes');
+		return ($result === 'yes') ? true : false;
 	}
 
 	/**
-	 * check if users are allowed to mount public links from other Nextclouds
+	 * check if users are allowed to mount public links from other ownClouds
 	 *
 	 * @return bool
 	 */
 	public function isIncomingServer2serverShareEnabled() {
 		$result = $this->config->getAppValue('files_sharing', 'incoming_server2server_share_enabled', 'yes');
-		return ($result === 'yes');
+		return ($result === 'yes') ? true : false;
 	}
 
 	/**
@@ -962,56 +951,6 @@ class FederatedShareProvider implements IShareProvider {
 	 */
 	public function isLookupServerQueriesEnabled() {
 		$result = $this->config->getAppValue('files_sharing', 'lookupServerEnabled', 'no');
-		return ($result === 'yes');
-	}
-
-
-	/**
-	 * Check if it is allowed to publish user specific data to the lookup server
-	 *
-	 * @return bool
-	 */
-	public function isLookupServerUploadEnabled() {
-		$result = $this->config->getAppValue('files_sharing', 'lookupServerUploadEnabled', 'yes');
-		return ($result === 'yes');
-	}
-
-	/**
-	 * @inheritdoc
-	 */
-	public function getAccessList($nodes, $currentAccess) {
-		$ids = [];
-		foreach ($nodes as $node) {
-			$ids[] = $node->getId();
-		}
-
-		$qb = $this->dbConnection->getQueryBuilder();
-		$qb->select('share_with', 'token', 'file_source')
-			->from('share')
-			->where($qb->expr()->eq('share_type', $qb->createNamedParameter(\OCP\Share::SHARE_TYPE_REMOTE)))
-			->andWhere($qb->expr()->in('file_source', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)))
-			->andWhere($qb->expr()->orX(
-				$qb->expr()->eq('item_type', $qb->createNamedParameter('file')),
-				$qb->expr()->eq('item_type', $qb->createNamedParameter('folder'))
-			));
-		$cursor = $qb->execute();
-
-		if ($currentAccess === false) {
-			$remote = $cursor->fetch() !== false;
-			$cursor->closeCursor();
-
-			return ['remote' => $remote];
-		}
-
-		$remote = [];
-		while ($row = $cursor->fetch()) {
-			$remote[$row['share_with']] = [
-				'node_id' => $row['file_source'],
-				'token' => $row['token'],
-			];
-		}
-		$cursor->closeCursor();
-
-		return ['remote' => $remote];
+		return ($result === 'yes') ? true : false;
 	}
 }

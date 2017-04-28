@@ -1,6 +1,7 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Bật",
     "Saved" : "Đã lưu",
     "Authentication error" : "Lỗi xác thực",
     "Invalid request" : "Yêu cầu không hợp lệ",

@@ -8,8 +8,11 @@
  *
  */
 #app-content-trashbin tbody tr[data-type="file"] td a.name,
-#app-content-trashbin tbody tr[data-type="file"] td a.name span.nametext,
-#app-content-trashbin tbody tr[data-type="file"] td a.name span.nametext span {
+#app-content-trashbin tbody tr[data-type="file"] td a.name {
+    cursor: default;
+}
+
+span.nametext, span.innernametext, span.extension {
 	cursor: default;
 }
 

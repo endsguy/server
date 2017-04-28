@@ -120,15 +120,7 @@
 		}
 
 		var parts = url.split('/');
-		var result;
-		do {
-			result = parts[parts.length - 1];
-			parts.pop();
-			// note: first result can be empty when there is a trailing slash,
-			// so we take the part before that
-		} while (!result && parts.length > 0);
-
-		return result;
+		return parts[parts.length - 1];
 	}
 
 	function isSuccessStatus(status) {
@@ -198,25 +190,6 @@
 
 	}
 
-	function callMkCol(client, options, model, headers) {
-		// call MKCOL without data, followed by PROPPATCH
-		return client.request(
-			options.type,
-			options.url,
-			headers,
-			null
-		).then(function(result) {
-			if (!isSuccessStatus(result.status)) {
-				if (_.isFunction(options.error)) {
-					options.error(result);
-				}
-				return;
-			}
-
-			callPropPatch(client, options, model, headers);
-		});
-	}
-
 	function callMethod(client, options, model, headers) {
 		headers['Content-Type'] = 'application/json';
 		return client.request(
@@ -233,7 +206,7 @@
 			}
 
 			if (_.isFunction(options.success)) {
-				if (options.type === 'PUT' || options.type === 'POST' || options.type === 'MKCOL') {
+				if (options.type === 'PUT' || options.type === 'POST') {
 					// pass the object's own values because the server
 					// does not return anything
 					var responseJson = result.body || model.toJSON();
@@ -274,8 +247,6 @@
 			return callPropFind(client, options, model, headers);
 		} else if (options.type === 'PROPPATCH') {
 			return callPropPatch(client, options, model, headers);
-		} else if (options.type === 'MKCOL') {
-			return callMkCol(client, options, model, headers);
 		} else {
 			return callMethod(client, options, model, headers);
 		}
@@ -288,16 +259,9 @@
 		var params = {type: methodMap[method] || method};
 		var isCollection = (model instanceof Backbone.Collection);
 
-		if (method === 'update') {
-			// if a model has an inner collection, it must define an
-			// attribute "hasInnerCollection" that evaluates to true
-			if (model.hasInnerCollection) {
-				// if the model itself is a Webdav collection, use MKCOL
-				params.type = 'MKCOL';
-			} else if (model.usePUT || (model.collection && model.collection.usePUT)) {
-				// use PUT instead of PROPPATCH
-				params.type = 'PUT';
-			}
+		if (method === 'update' && (model.usePUT || (model.collection && model.collection.usePUT))) {
+			// use PUT instead of PROPPATCH
+			params.type = 'PUT';
 		}
 
 		// Ensure that we have a URL.

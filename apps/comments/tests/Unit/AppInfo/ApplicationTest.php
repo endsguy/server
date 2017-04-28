@@ -22,7 +22,6 @@
 namespace OCA\Comments\Tests\Unit\AppInfo;
 
 use OCA\Comments\AppInfo\Application;
-use OCA\Comments\Notification\Notifier;
 use Test\TestCase;
 
 /**
@@ -57,8 +56,7 @@ class ApplicationTest extends TestCase {
 			'OCA\Comments\Activity\Listener',
 			'OCA\Comments\Activity\Provider',
 			'OCA\Comments\Activity\Setting',
-			'OCA\Comments\Notification\Listener',
-			Notifier::class,
+			'OCA\Comments\Notification\Listener'
 		];
 
 		foreach($services as $service) {

@@ -97,11 +97,11 @@ class TimestampFormatter implements OutputFormatterInterface {
 	 */
 	public function format($message) {
 
-		$timeZone = $this->config->getSystemValue('logtimezone', 'UTC');
+		$timeZone = $this->config->getSystemValue('logtimezone', null);
 		$timeZone = $timeZone !== null ? new \DateTimeZone($timeZone) : null;
 
 		$time = new \DateTime('now', $timeZone);
-		$timestampInfo = $time->format($this->config->getSystemValue('logdateformat', \DateTime::ATOM));
+		$timestampInfo = $time->format($this->config->getSystemValue('logdateformat', 'c'));
 
 		return $timestampInfo . ' ' . $this->formatter->format($message);
 	}

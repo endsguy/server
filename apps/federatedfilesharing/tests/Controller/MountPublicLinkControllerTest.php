@@ -25,13 +25,11 @@
 
 namespace OCA\FederatedFileSharing\Tests\Controller;
 
-use OC\Federation\CloudIdManager;
 use OC\HintException;
 use OCA\FederatedFileSharing\AddressHandler;
 use OCA\FederatedFileSharing\Controller\MountPublicLinkController;
 use OCA\FederatedFileSharing\FederatedShareProvider;
 use OCP\AppFramework\Http;
-use OCP\Federation\ICloudIdManager;
 use OCP\Files\IRootFolder;
 use OCP\Http\Client\IClientService;
 use OCP\IL10N;
@@ -79,9 +77,6 @@ class MountPublicLinkControllerTest extends \Test\TestCase {
 	/** @var  IShare */
 	private $share;
 
-	/** @var  ICloudIdManager */
-	private $cloudIdManager;
-
 	public function setUp() {
 		parent::setUp();
 
@@ -98,7 +93,6 @@ class MountPublicLinkControllerTest extends \Test\TestCase {
 		$this->l10n = $this->getMockBuilder('OCP\IL10N')->disableOriginalConstructor()->getMock();
 		$this->userSession = $this->getMockBuilder('OCP\IUserSession')->disableOriginalConstructor()->getMock();
 		$this->clientService = $this->getMockBuilder('OCP\Http\Client\IClientService')->disableOriginalConstructor()->getMock();
-		$this->cloudIdManager = new CloudIdManager();
 
 		$this->controller = new MountPublicLinkController(
 			'federatedfilesharing', $this->request,
@@ -108,8 +102,7 @@ class MountPublicLinkControllerTest extends \Test\TestCase {
 			$this->session,
 			$this->l10n,
 			$this->userSession,
-			$this->clientService,
-			$this->cloudIdManager
+			$this->clientService
 		);
 	}
 

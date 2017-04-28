@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Aktiveret",
+    "Not enabled" : "Slået fra",
     "Wrong password" : "Forkert kodeord",
     "Saved" : "Gemt",
     "No user supplied" : "Intet brugernavn givet",
@@ -82,6 +84,7 @@ OC.L10N.register(
     "NT LAN Manager" : "NT LAN Manager",
     "Email server" : "E-mailserver",
     "Open documentation" : "Åben dokumentation",
+    "This is used for sending out notifications." : "Dette anvendes til udsendelse af notifikationer.",
     "Send mode" : "Tilstand for afsendelse",
     "Encryption" : "Kryptering",
     "From address" : "Fra adresse",

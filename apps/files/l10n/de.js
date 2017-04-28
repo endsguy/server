@@ -135,7 +135,7 @@ OC.L10N.register(
     "{minutes}:{seconds}m" : "{minutes}:{seconds}m",
     "_{seconds} second left_::_{seconds} seconds left_" : ["{seconds} Sekunde verbleibend","{seconds} Sekunden verbleibend"],
     "{seconds}s" : "{seconds}n",
-    "Any moment now..." : "Gleich fertig...",
+    "Any moment now..." : "Jeden Augenblick...",
     "Soon..." : "Bald...",
     "File upload is in progress. Leaving the page now will cancel the upload." : "Dateiupload läuft. Wenn die Seite jetzt verlassen wird, bricht der Upload ab.",
     "Copy local link" : "Kopiere lokale Verknüpfung",

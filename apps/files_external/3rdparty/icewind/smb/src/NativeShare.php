@@ -60,7 +60,6 @@ class NativeShare extends AbstractShare {
 	}
 
 	private function buildUrl($path) {
-		$this->connect();
 		$this->verifyPath($path);
 		$url = sprintf('smb://%s/%s', $this->server->getHost(), $this->name);
 		if ($path) {
@@ -81,6 +80,7 @@ class NativeShare extends AbstractShare {
 	 * @throws \Icewind\SMB\Exception\InvalidTypeException
 	 */
 	public function dir($path) {
+		$this->connect();
 		$files = array();
 
 		$dh = $this->state->opendir($this->buildUrl($path));
@@ -97,13 +97,14 @@ class NativeShare extends AbstractShare {
 
 	/**
 	 * @param string $path
-	 * @return \Icewind\SMB\IFileInfo
+	 * @return \Icewind\SMB\IFileInfo[]
 	 */
 	public function stat($path) {
 		return new NativeFileInfo($this, $path, basename($path), $this->getStat($path));
 	}
 
 	public function getStat($path) {
+		$this->connect();
 		return $this->state->stat($this->buildUrl($path));
 	}
 
@@ -117,6 +118,7 @@ class NativeShare extends AbstractShare {
 	 * @throws \Icewind\SMB\Exception\AlreadyExistsException
 	 */
 	public function mkdir($path) {
+		$this->connect();
 		return $this->state->mkdir($this->buildUrl($path));
 	}
 
@@ -130,6 +132,7 @@ class NativeShare extends AbstractShare {
 	 * @throws \Icewind\SMB\Exception\InvalidTypeException
 	 */
 	public function rmdir($path) {
+		$this->connect();
 		return $this->state->rmdir($this->buildUrl($path));
 	}
 
@@ -143,6 +146,7 @@ class NativeShare extends AbstractShare {
 	 * @throws \Icewind\SMB\Exception\InvalidTypeException
 	 */
 	public function del($path) {
+		$this->connect();
 		return $this->state->unlink($this->buildUrl($path));
 	}
 
@@ -157,6 +161,7 @@ class NativeShare extends AbstractShare {
 	 * @throws \Icewind\SMB\Exception\AlreadyExistsException
 	 */
 	public function rename($from, $to) {
+		$this->connect();
 		return $this->state->rename($this->buildUrl($from), $this->buildUrl($to));
 	}
 
@@ -171,6 +176,7 @@ class NativeShare extends AbstractShare {
 	 * @throws \Icewind\SMB\Exception\InvalidTypeException
 	 */
 	public function put($source, $target) {
+		$this->connect();
 		$sourceHandle = fopen($source, 'rb');
 		$targetHandle = $this->state->create($this->buildUrl($target));
 
@@ -208,6 +214,7 @@ class NativeShare extends AbstractShare {
 			throw new InvalidResourceException('Failed opening local file "' . $target . '" for writing: ' . $reason);
 		}
 
+		$this->connect();
 		$sourceHandle = $this->state->open($this->buildUrl($source), 'r');
 		if (!$sourceHandle) {
 			fclose($targetHandle);
@@ -231,6 +238,7 @@ class NativeShare extends AbstractShare {
 	 * @throws \Icewind\SMB\Exception\InvalidTypeException
 	 */
 	public function read($source) {
+		$this->connect();
 		$url = $this->buildUrl($source);
 		$handle = $this->state->open($url, 'r');
 		return NativeStream::wrap($this->state, $handle, 'r', $url);
@@ -246,6 +254,7 @@ class NativeShare extends AbstractShare {
 	 * @throws \Icewind\SMB\Exception\InvalidTypeException
 	 */
 	public function write($source) {
+		$this->connect();
 		$url = $this->buildUrl($source);
 		$handle = $this->state->create($url);
 		return NativeStream::wrap($this->state, $handle, 'w', $url);
@@ -259,7 +268,10 @@ class NativeShare extends AbstractShare {
 	 * @return string the attribute value
 	 */
 	public function getAttribute($path, $attribute) {
-		return $this->state->getxattr($this->buildUrl($path), $attribute);
+		$this->connect();
+
+		$result = $this->state->getxattr($this->buildUrl($path), $attribute);
+		return $result;
 	}
 
 	/**
@@ -271,6 +283,7 @@ class NativeShare extends AbstractShare {
 	 * @return string the attribute value
 	 */
 	public function setAttribute($path, $attribute, $value) {
+		$this->connect();
 
 		if ($attribute === 'system.dos_attr.mode' and is_int($value)) {
 			$value = '0x' . dechex($value);
@@ -290,13 +303,14 @@ class NativeShare extends AbstractShare {
 
 	/**
 	 * @param string $path
-	 * @return INotifyHandler
+	 * @param callable $callback callable which will be called for each received change
+	 * @return mixed
 	 */
-	public function notify($path) {
+	public function notify($path, callable $callback) {
 		// php-smbclient does support notify (https://github.com/eduardok/libsmbclient-php/issues/29)
 		// so we use the smbclient based backend for this
 		$share = new Share($this->server, $this->getName());
-		return $share->notify($path);
+		$share->notify($path, $callback);
 	}
 
 	public function __destruct() {

@@ -4,8 +4,6 @@
  *
  * @author Morris Jobke <hey@morrisjobke.de>
  * @author Robin Appelman <robin@icewind.nl>
- * @author Thomas Müller <thomas.mueller@tmit.eu>
- * @author Piotr Mrowczynski <piotr@owncloud.com>
  *
  * @license AGPL-3.0
  *
@@ -48,17 +46,12 @@ class QueryLogger implements IQueryLogger {
 
 
 	/**
-	 * @var bool - Module needs to be activated by some app
-	 */
-	private $activated = false;
-
-	/**
-	 * @inheritdoc
+	 * @param string $sql
+	 * @param array $params
+	 * @param array $types
 	 */
 	public function startQuery($sql, array $params = null, array $types = null) {
-		if ($this->activated) {
-			$this->activeQuery = new Query($sql, $params, microtime(true), $this->getStack());
-		}
+		$this->activeQuery = new Query($sql, $params, microtime(true), $this->getStack());
 	}
 
 	private function getStack() {
@@ -69,11 +62,8 @@ class QueryLogger implements IQueryLogger {
 		return $stack;
 	}
 
-	/**
-	 * @inheritdoc
-	 */
 	public function stopQuery() {
-		if ($this->activated && $this->activeQuery) {
+		if ($this->activeQuery) {
 			$this->activeQuery->end(microtime(true));
 			$this->queries[] = $this->activeQuery;
 			$this->activeQuery = null;
@@ -81,16 +71,9 @@ class QueryLogger implements IQueryLogger {
 	}
 
 	/**
-	 * @inheritdoc
+	 * @return Query[]
 	 */
 	public function getQueries() {
 		return $this->queries->getData();
-	}
-
-	/**
-	 * @inheritdoc
-	 */
-	public function activate() {
-		$this->activated = true;
 	}
 }

@@ -106,7 +106,7 @@ class CapabilitiesTest extends TestCase  {
 			->method('getSlogan')
 			->willReturn($slogan);
 		$this->theming->expects($this->once())
-			->method('getColorPrimary')
+			->method('getMailHeaderColor')
 			->willReturn($color);
 		$this->theming->expects($this->once())
 			->method('getLogo')

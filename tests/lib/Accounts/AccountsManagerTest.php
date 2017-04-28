@@ -24,9 +24,9 @@ namespace Test\Accounts;
 
 
 use OC\Accounts\AccountManager;
+use OC\Mail\Mailer;
 use OCP\IUser;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\EventDispatcher\GenericEvent;
 use Test\TestCase;
 
 /**
@@ -75,11 +75,12 @@ class AccountsManagerTest extends TestCase {
 
 	/**
 	 * @dataProvider dataTrueFalse
+	 *
+	 * @param bool $userAlreadyExists
 	 */
 	public function testUpdateUser($newData, $oldData, $insertNew, $updateExisitng) {
 		$accountManager = $this->getInstance(['getUser', 'insertNewUser', 'updateExistingUser']);
-		/** @var IUser $user */
-		$user = $this->createMock(IUser::class);
+		$user = $this->getMockBuilder('OCP\IUser')->getMock();
 
 		$accountManager->expects($this->once())->method('getUser')->with($user)->willReturn($oldData);
 
@@ -101,12 +102,9 @@ class AccountsManagerTest extends TestCase {
 		} else {
 			$this->eventDispatcher->expects($this->once())->method('dispatch')
 				->willReturnCallback(
-					function ($eventName, $event) use ($user, $newData) {
+					function ($eventName, $event) use ($user) {
 						$this->assertSame('OC\AccountManager::userUpdated', $eventName);
-						$this->assertInstanceOf(GenericEvent::class, $event);
-						/** @var GenericEvent $event */
-						$this->assertSame($user, $event->getSubject());
-						$this->assertSame($newData, $event->getArguments());
+						$this->assertInstanceOf('Symfony\Component\EventDispatcher\GenericEvent', $event);
 					}
 				);
 		}

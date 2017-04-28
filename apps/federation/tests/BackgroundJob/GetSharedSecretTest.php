@@ -36,7 +36,6 @@ use OCP\Http\Client\IClient;
 use OCP\Http\Client\IResponse;
 use OCP\ILogger;
 use OCP\IURLGenerator;
-use OCP\OCS\IDiscoveryService;
 
 /**
  * Class GetSharedSecretTest
@@ -68,9 +67,6 @@ class GetSharedSecretTest extends TestCase {
 	/** @var \PHPUnit_Framework_MockObject_MockObject | IResponse */
 	private $response;
 
-	/** @var  \PHPUnit_Framework_MockObject_MockObject | IDiscoveryService */
-	private $discoverService;
-
 	/** @var GetSharedSecret */
 	private $getSharedSecret;
 
@@ -86,9 +82,6 @@ class GetSharedSecretTest extends TestCase {
 			->disableOriginalConstructor()->getMock();
 		$this->logger = $this->getMockBuilder(ILogger::class)->getMock();
 		$this->response = $this->getMockBuilder(IResponse::class)->getMock();
-		$this->discoverService = $this->getMockBuilder(IDiscoveryService::class)->getMock();
-
-		$this->discoverService->expects($this->any())->method('discover')->willReturn([]);
 
 		$this->getSharedSecret = new GetSharedSecret(
 			$this->httpClient,
@@ -96,8 +89,7 @@ class GetSharedSecretTest extends TestCase {
 			$this->jobList,
 			$this->trustedServers,
 			$this->logger,
-			$this->dbHandler,
-			$this->discoverService
+			$this->dbHandler
 		);
 	}
 
@@ -117,8 +109,7 @@ class GetSharedSecretTest extends TestCase {
 					$this->jobList,
 					$this->trustedServers,
 					$this->logger,
-					$this->dbHandler,
-					$this->discoverService
+					$this->dbHandler
 				]
 			)->setMethods(['parentExecute'])->getMock();
 		$this->invokePrivate($getSharedSecret, 'argument', [['url' => 'url']]);

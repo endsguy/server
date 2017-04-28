@@ -27,26 +27,22 @@
 
 namespace OCA\Theming\Controller;
 
-use OC\Files\AppData\Factory;
-use OC\Template\SCSSCacher;
 use OCA\Theming\ThemingDefaults;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
-use OCP\AppFramework\Http\FileDisplayResponse;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\NotFoundResponse;
+use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\File;
-use OCP\Files\IAppData;
+use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\IConfig;
 use OCP\IL10N;
-use OCP\ILogger;
 use OCP\IRequest;
 use OCA\Theming\Util;
 use OCP\ITempManager;
-use OCP\IURLGenerator;
 
 /**
  * Class ThemingController
@@ -57,21 +53,19 @@ use OCP\IURLGenerator;
  */
 class ThemingController extends Controller {
 	/** @var ThemingDefaults */
-	private $themingDefaults;
+	private $template;
 	/** @var Util */
 	private $util;
 	/** @var ITimeFactory */
 	private $timeFactory;
 	/** @var IL10N */
-	private $l10n;
+	private $l;
 	/** @var IConfig */
 	private $config;
+	/** @var IRootFolder */
+	private $rootFolder;
 	/** @var ITempManager */
 	private $tempManager;
-	/** @var IAppData */
-	private $appData;
-	/** @var SCSSCacher */
-	private $scssCacher;
 
 	/**
 	 * ThemingController constructor.
@@ -79,36 +73,33 @@ class ThemingController extends Controller {
 	 * @param string $appName
 	 * @param IRequest $request
 	 * @param IConfig $config
-	 * @param ThemingDefaults $themingDefaults
+	 * @param ThemingDefaults $template
 	 * @param Util $util
 	 * @param ITimeFactory $timeFactory
 	 * @param IL10N $l
+	 * @param IRootFolder $rootFolder
 	 * @param ITempManager $tempManager
-	 * @param IAppData $appData
-	 * @param SCSSCacher $scssCacher
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		IConfig $config,
-		ThemingDefaults $themingDefaults,
+		ThemingDefaults $template,
 		Util $util,
 		ITimeFactory $timeFactory,
 		IL10N $l,
-		ITempManager $tempManager,
-		IAppData $appData,
-		SCSSCacher $scssCacher
+		IRootFolder $rootFolder,
+		ITempManager $tempManager
 	) {
 		parent::__construct($appName, $request);
 
-		$this->themingDefaults = $themingDefaults;
+		$this->template = $template;
 		$this->util = $util;
 		$this->timeFactory = $timeFactory;
-		$this->l10n = $l;
+		$this->l = $l;
 		$this->config = $config;
+		$this->rootFolder = $rootFolder;
 		$this->tempManager = $tempManager;
-		$this->appData = $appData;
-		$this->scssCacher = $scssCacher;
 	}
 
 	/**
@@ -124,7 +115,7 @@ class ThemingController extends Controller {
 				if (strlen($value) > 250) {
 					return new DataResponse([
 						'data' => [
-							'message' => $this->l10n->t('The given name is too long'),
+							'message' => $this->l->t('The given name is too long'),
 						],
 						'status' => 'error'
 					]);
@@ -134,7 +125,7 @@ class ThemingController extends Controller {
 				if (strlen($value) > 500) {
 					return new DataResponse([
 						'data' => [
-							'message' => $this->l10n->t('The given web address is too long'),
+							'message' => $this->l->t('The given web address is too long'),
 						],
 						'status' => 'error'
 					]);
@@ -144,7 +135,7 @@ class ThemingController extends Controller {
 				if (strlen($value) > 500) {
 					return new DataResponse([
 						'data' => [
-							'message' => $this->l10n->t('The given slogan is too long'),
+							'message' => $this->l->t('The given slogan is too long'),
 						],
 						'status' => 'error'
 					]);
@@ -154,7 +145,7 @@ class ThemingController extends Controller {
 				if (!preg_match('/^\#([0-9a-f]{3}|[0-9a-f]{6})$/i', $value)) {
 					return new DataResponse([
 						'data' => [
-							'message' => $this->l10n->t('The given color is invalid'),
+							'message' => $this->l->t('The given color is invalid'),
 						],
 						'status' => 'error'
 					]);
@@ -162,12 +153,12 @@ class ThemingController extends Controller {
 				break;
 		}
 
-		$this->themingDefaults->set($setting, $value);
+		$this->template->set($setting, $value);
 		return new DataResponse(
 			[
 				'data' =>
 					[
-						'message' => $this->l10n->t('Saved')
+						'message' => $this->l->t('Saved')
 					],
 				'status' => 'success'
 			]
@@ -186,34 +177,28 @@ class ThemingController extends Controller {
 			return new DataResponse(
 				[
 					'data' => [
-						'message' => $this->l10n->t('No file uploaded')
+						'message' => $this->l->t('No file uploaded')
 					]
 				],
 				Http::STATUS_UNPROCESSABLE_ENTITY
 			);
 		}
-
 		$name = '';
-		try {
-			$folder = $this->appData->getFolder('images');
-		} catch (NotFoundException $e) {
-			$folder = $this->appData->newFolder('images');
-		}
-
-		if (!empty($newLogo)) {
-			$target = $folder->newFile('logo');
-			$target->putContent(file_get_contents($newLogo['tmp_name'], 'r'));
-			$this->themingDefaults->set('logoMime', $newLogo['type']);
+		if(!empty($newLogo)) {
+			$target = $this->rootFolder->newFile('themedinstancelogo');
+			stream_copy_to_stream(fopen($newLogo['tmp_name'], 'r'), $target->fopen('w'));
+			$this->template->set('logoMime', $newLogo['type']);
 			$name = $newLogo['name'];
 		}
-		if (!empty($newBackgroundLogo)) {
-			$target = $folder->newFile('background');
+		if(!empty($newBackgroundLogo)) {
+			$target = $this->rootFolder->newFile('themedbackgroundlogo');
+
 			$image = @imagecreatefromstring(file_get_contents($newBackgroundLogo['tmp_name'], 'r'));
-			if ($image === false) {
+			if($image === false) {
 				return new DataResponse(
 					[
 						'data' => [
-							'message' => $this->l10n->t('Unsupported image type'),
+							'message' => $this->l->t('Unsupported image type'),
 						],
 						'status' => 'failure',
 					],
@@ -224,18 +209,18 @@ class ThemingController extends Controller {
 			// Optimize the image since some people may upload images that will be
 			// either to big or are not progressive rendering.
 			$tmpFile = $this->tempManager->getTemporaryFile();
-			if (function_exists('imagescale')) {
+			if(function_exists('imagescale')) {
 				// FIXME: Once PHP 5.5.0 is a requirement the above check can be removed
 				// Workaround for https://bugs.php.net/bug.php?id=65171
-				$newHeight = imagesy($image) / (imagesx($image) / 1920);
+				$newHeight = imagesy($image)/(imagesx($image)/1920);
 				$image = imagescale($image, 1920, $newHeight);
 			}
 			imageinterlace($image, 1);
 			imagejpeg($image, $tmpFile, 75);
 			imagedestroy($image);
 
-			$target->putContent(file_get_contents($tmpFile, 'r'));
-			$this->themingDefaults->set('backgroundMime', $newBackgroundLogo['type']);
+			stream_copy_to_stream(fopen($tmpFile, 'r'), $target->fopen('w'));
+			$this->template->set('backgroundMime', $newBackgroundLogo['type']);
 			$name = $newBackgroundLogo['name'];
 		}
 
@@ -244,7 +229,7 @@ class ThemingController extends Controller {
 				'data' =>
 					[
 						'name' => $name,
-						'message' => $this->l10n->t('Saved')
+						'message' => $this->l->t('Saved')
 					],
 				'status' => 'success'
 			]
@@ -258,13 +243,13 @@ class ThemingController extends Controller {
 	 * @return DataResponse
 	 */
 	public function undo($setting) {
-		$value = $this->themingDefaults->undo($setting);
+		$value = $this->template->undo($setting);
 		return new DataResponse(
 			[
 				'data' =>
 					[
 						'value' => $value,
-						'message' => $this->l10n->t('Saved')
+						'message' => $this->l->t('Saved')
 					],
 				'status' => 'success'
 			]
@@ -275,24 +260,22 @@ class ThemingController extends Controller {
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 *
-	 * @return FileDisplayResponse|NotFoundResponse
+	 * @return StreamResponse|NotFoundResponse
 	 */
 	public function getLogo() {
 		try {
 			/** @var File $file */
-			$file = $this->appData->getFolder('images')->getFile('logo');
+			$file = $this->rootFolder->get('themedinstancelogo');
 		} catch (NotFoundException $e) {
 			return new NotFoundResponse();
 		}
 
-		$response = new FileDisplayResponse($file);
+		$response = new Http\StreamResponse($file->fopen('r'));
 		$response->cacheFor(3600);
-		$expires = new \DateTime();
-		$expires->setTimestamp($this->timeFactory->getTime());
-		$expires->add(new \DateInterval('PT24H'));
-		$response->addHeader('Expires', $expires->format(\DateTime::RFC2822));
-		$response->addHeader('Pragma', 'cache');
+		$response->addHeader('Expires', date(\DateTime::RFC2822, $this->timeFactory->getTime()));
+		$response->addHeader('Content-Disposition', 'attachment');
 		$response->addHeader('Content-Type', $this->config->getAppValue($this->appName, 'logoMime', ''));
+		$response->addHeader('Pragma', 'cache');
 		return $response;
 	}
 
@@ -300,24 +283,22 @@ class ThemingController extends Controller {
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 *
-	 * @return FileDisplayResponse|NotFoundResponse
+	 * @return StreamResponse|NotFoundResponse
 	 */
 	public function getLoginBackground() {
 		try {
 			/** @var File $file */
-			$file = $this->appData->getFolder('images')->getFile('background');
+			$file = $this->rootFolder->get('themedbackgroundlogo');
 		} catch (NotFoundException $e) {
 			return new NotFoundResponse();
 		}
 
-		$response = new FileDisplayResponse($file);
+		$response = new StreamResponse($file->fopen('r'));
 		$response->cacheFor(3600);
-		$expires = new \DateTime();
-		$expires->setTimestamp($this->timeFactory->getTime());
-		$expires->add(new \DateInterval('PT24H'));
-		$response->addHeader('Expires', $expires->format(\DateTime::RFC2822));
-		$response->addHeader('Pragma', 'cache');
+		$response->addHeader('Expires', date(\DateTime::RFC2822, $this->timeFactory->getTime()));
+		$response->addHeader('Content-Disposition', 'attachment');
 		$response->addHeader('Content-Type', $this->config->getAppValue($this->appName, 'backgroundMime', ''));
+		$response->addHeader('Pragma', 'cache');
 		return $response;
 	}
 
@@ -325,34 +306,127 @@ class ThemingController extends Controller {
 	 * @NoCSRFRequired
 	 * @PublicPage
 	 *
-	 * @return FileDisplayResponse|NotFoundResponse
+	 * @return DataDownloadResponse
 	 */
 	public function getStylesheet() {
-		$appPath = substr(\OC::$server->getAppManager()->getAppPath('theming'), strlen(\OC::$SERVERROOT) + 1);
-		/* SCSSCacher is required here
-		 * We cannot rely on automatic caching done by \OC_Util::addStyle,
-		 * since we need to add the cacheBuster value to the url
-		 */
-		$cssCached = $this->scssCacher->process(\OC::$SERVERROOT, $appPath . '/css/theming.scss', 'theming');
-		if(!$cssCached) {
-			return new NotFoundResponse();
+		$cacheBusterValue = $this->config->getAppValue('theming', 'cachebuster', '0');
+		$responseCss = '';
+		$color = $this->config->getAppValue($this->appName, 'color');
+		$elementColor = $this->util->elementColor($color);
+
+		if($this->util->invertTextColor($color)) {
+			$textColor = '#000000';
+		} else {
+			$textColor = '#ffffff';
 		}
 
-		try {
-			$cssFile = $this->scssCacher->getCachedCSS('theming', 'theming.css');
-			$response = new FileDisplayResponse($cssFile, Http::STATUS_OK, ['Content-Type' => 'text/css']);
-			$response->cacheFor(86400);
-			$expires = new \DateTime();
-			$expires->setTimestamp($this->timeFactory->getTime());
-			$expires->add(new \DateInterval('PT24H'));
-			$response->addHeader('Expires', $expires->format(\DateTime::RFC1123));
-			$response->addHeader('Pragma', 'cache');
-			return $response;
-		} catch (NotFoundException $e) {
-			return new NotFoundResponse();
+		if($color !== '') {
+			$responseCss .= sprintf(
+				'#body-user #header,#body-settings #header,#body-public #header,#body-login,.searchbox input[type="search"]:focus,.searchbox input[type="search"]:active,.searchbox input[type="search"]:valid {background-color: %s}' . "\n",
+				$color
+			);
+			$responseCss .= sprintf('input[type="checkbox"].checkbox:checked:enabled:not(.checkbox--white) + label:before {' .
+				'background-image:url(\'%s/core/img/actions/checkmark-white.svg\');' .
+				'background-color: %s; background-position: center center; background-size:contain;' .
+				'width:12px; height:12px; padding:0; margin:2px 6px 6px 2px; border-radius:1px;' .
+				"}\n",
+				\OC::$WEBROOT,
+				$elementColor
+			);
+			$responseCss .= 'input[type="radio"].radio:checked:not(.radio--white):not(:disabled) + label:before {' .
+				'background-image: url(\'data:image/svg+xml;base64,'.$this->util->generateRadioButton($elementColor).'\');' .
+				"}\n";
+			$responseCss .= '.primary, input[type="submit"].primary, input[type="button"].primary, button.primary, .button.primary,' .
+				'.primary:active, input[type="submit"].primary:active, input[type="button"].primary:active, button.primary:active, .button.primary:active {' .
+				'border: 1px solid '.$elementColor.';'.
+				'background-color: '.$elementColor.';'.
+				'color: ' . $textColor . ';'.
+				"}\n" .
+				'.primary:hover, input[type="submit"].primary:hover, input[type="button"].primary:hover, button.primary:hover, .button.primary:hover,' .
+				'.primary:focus, input[type="submit"].primary:focus, input[type="button"].primary:focus, button.primary:focus, .button.primary:focus {' .
+				'border: 1px solid '.$elementColor.';'.
+				'background-color: '.$elementColor.';'.
+				'color: ' . $textColor . ';'.
+				"}\n" .
+				'.primary:disabled, input[type="submit"].primary:disabled, input[type="button"].primary:disabled, button.primary:disabled, .button.primary:disabled,' .
+				'.primary:disabled:hover, input[type="submit"].primary:disabled:hover, input[type="button"].primary:disabled:hover, button.primary:disabled:hover, .button.primary:disabled:hover,' .
+				'.primary:disabled:focus, input[type="submit"].primary:disabled:focus, input[type="button"].primary:disabled:focus, button.primary:disabled:focus, .button.primary:disabled:focus {' .
+				'border: 1px solid '.$elementColor.';'.
+				'background-color: '.$elementColor.';'.
+				'opacity: 0.4;' .
+				'color: '.$textColor.';'.
+				"}\n";
+			$responseCss .= '.ui-widget-header { border: 1px solid ' . $color . '; background: '. $color . '; color: #ffffff;' . "}\n";
+			$responseCss .= '.ui-state-active, .ui-widget-content .ui-state-active, .ui-widget-header .ui-state-active {' .
+				'border: 1px solid ' . $color . ';' .
+				'color: ' . $elementColor . ';' .
+				"}\n";
+			$responseCss .= '.ui-state-active a, .ui-state-active a:link, .ui-state-active a:visited {' .
+				'color: ' . $elementColor . ';' .
+				"}\n";
+			$responseCss .= '
+				#firstrunwizard .firstrunwizard-header {
+					background-color: ' . $color . ';
+				}
+				#firstrunwizard p a {
+					color: ' . $color . ';
+				}
+				';
+			$responseCss .= sprintf('.nc-theming-main-background {background-color: %s}' . "\n", $color);
+			$responseCss .= sprintf('.nc-theming-main-text {color: %s}' . "\n", $color);
+
 		}
+		$logo = $this->config->getAppValue($this->appName, 'logoMime');
+		if($logo !== '') {
+			$responseCss .= sprintf(
+				'#header .logo {' .
+				'background-image: url(\'./logo?v='.$cacheBusterValue.'\');' .
+				'background-size: contain;' .
+				'}' . "\n" .
+				'#header .logo-icon {' .
+				'background-image: url(\'./logo?v='.$cacheBusterValue.'\');' .
+				'background-size: contain;' .
+				'}' . "\n" .
+				'#firstrunwizard .firstrunwizard-header .logo {' .
+				'background-image: url(\'./logo?v='.$cacheBusterValue.'\');' .
+				'background-size: contain;' .
+				'}' . "\n"
+			);
+		}
+		$backgroundLogo = $this->config->getAppValue($this->appName, 'backgroundMime');
+		if($backgroundLogo !== '') {
+			$responseCss .= '#body-login {background-image: url(\'./loginbackground?v='.$cacheBusterValue.'\');}' . "\n";
+			$responseCss .= '#firstrunwizard .firstrunwizard-header {' .
+				'background-image: url(\'./loginbackground?v='.$cacheBusterValue.'\');' .
+			'}' . "\n";
+		}
+		if($this->util->invertTextColor($color)) {
+			$responseCss .= '#header .header-appname, #expandDisplayName { color: #000000; }' . "\n";
+			$responseCss .= '#header .icon-caret { background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/caret-dark.svg\'); }' . "\n";
+			$responseCss .= '.searchbox input[type="search"] { background: transparent url(\'' . \OC::$WEBROOT . '/core/img/actions/search.svg\') no-repeat 6px center; color: #000; }' . "\n";
+			$responseCss .= '.searchbox input[type="search"]:focus,.searchbox input[type="search"]:active,.searchbox input[type="search"]:valid { color: #000; border: 1px solid rgba(0, 0, 0, .5); }' . "\n";
+			$responseCss .= '#body-login input.login { background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/confirm.svg?v=2\'); }' . "\n";
+			$responseCss .= '.nc-theming-contrast {color: #000000}' . "\n";
+			$responseCss .= '.ui-widget-header { color: #000000; }' . "\n";
+		} else {
+			$responseCss .= '.nc-theming-contrast {color: #ffffff}' . "\n";
+		}
+
+		if($logo !== '' or $color !== '') {
+			$responseCss .= '.icon-file,.icon-filetype-text {' .
+				'background-image: url(\'./img/core/filetypes/text.svg?v='.$cacheBusterValue.'\');' . "}\n" .
+				'.icon-folder, .icon-filetype-folder {' .
+				'background-image: url(\'./img/core/filetypes/folder.svg?v='.$cacheBusterValue.'\');' . "}\n" .
+				'.icon-filetype-folder-drag-accept {' .
+				'background-image: url(\'./img/core/filetypes/folder-drag-accept.svg?v='.$cacheBusterValue.'\')!important;' . "}\n";
+		}
+
+		$response = new DataDownloadResponse($responseCss, 'style', 'text/css');
+		$response->addHeader('Expires', date(\DateTime::RFC2822, $this->timeFactory->getTime()));
+		$response->addHeader('Pragma', 'cache');
+		$response->cacheFor(3600);
+		return $response;
 	}
-
 	/**
 	 * @NoCSRFRequired
 	 * @PublicPage
@@ -363,15 +437,16 @@ class ThemingController extends Controller {
 		$cacheBusterValue = $this->config->getAppValue('theming', 'cachebuster', '0');
 		$responseJS = '(function() {
 	OCA.Theming = {
-		name: ' . json_encode($this->themingDefaults->getName()) . ',
-		url: ' . json_encode($this->themingDefaults->getBaseUrl()) . ',
-		slogan: ' . json_encode($this->themingDefaults->getSlogan()) . ',
-		color: ' . json_encode($this->themingDefaults->getColorPrimary()) . ',
-		inverted: ' . json_encode($this->util->invertTextColor($this->themingDefaults->getColorPrimary())) . ',
-		cacheBuster: ' . json_encode($cacheBusterValue) . '
+		name: ' . json_encode($this->template->getName()) . ',
+		url: ' . json_encode($this->template->getBaseUrl()) . ',
+		slogan: ' . json_encode($this->template->getSlogan()) . ',
+		color: ' . json_encode($this->template->getMailHeaderColor()) . ',
+		inverted: ' . json_encode($this->util->invertTextColor($this->template->getMailHeaderColor())) . ',
+		cacheBuster: ' . json_encode($cacheBusterValue). '
 	};
 })();';
-		$response = new DataDownloadResponse($responseJS, 'javascript', 'text/javascript');
+		$response = new Http\DataDisplayResponse($responseJS);
+		$response->addHeader('Content-type', 'text/javascript');
 		$response->addHeader('Expires', date(\DateTime::RFC2822, $this->timeFactory->getTime()));
 		$response->addHeader('Pragma', 'cache');
 		$response->cacheFor(3600);

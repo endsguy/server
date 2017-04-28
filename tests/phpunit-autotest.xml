@@ -2,7 +2,6 @@
 <phpunit bootstrap="bootstrap.php"
 		 strict="true"
 		 verbose="true"
-		 backupGlobals="false"
 		 timeoutForSmallTests="900"
 		 timeoutForMediumTests="900"
 		 timeoutForLargeTests="900"

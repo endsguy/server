@@ -40,7 +40,7 @@ OC_Util::checkSubAdminUser();
 \OC::$server->getNavigationManager()->setActiveEntry('core_users');
 
 $userManager = \OC::$server->getUserManager();
-$groupManager = \OC::$server->getGroupManager();
+$groupManager = \OC_Group::getManager();
 
 // Set the sort option: SORT_USERCOUNT or SORT_GROUPNAME
 $sortGroupsBy = \OC\Group\MetaData::SORT_USERCOUNT;
@@ -118,6 +118,7 @@ $tmpl->assign('quota_preset', $quotaPreset);
 $tmpl->assign('default_quota', $defaultQuota);
 $tmpl->assign('defaultQuotaIsUserDefined', $defaultQuotaIsUserDefined);
 $tmpl->assign('recoveryAdminEnabled', $recoveryAdminEnabled);
+$tmpl->assign('enableAvatars', \OC::$server->getConfig()->getSystemValue('enable_avatars', true) === true);
 
 $tmpl->assign('show_storage_location', $config->getAppValue('core', 'umgmt_show_storage_location', 'false'));
 $tmpl->assign('show_last_login', $config->getAppValue('core', 'umgmt_show_last_login', 'false'));

@@ -43,6 +43,7 @@ describe('OCA.Comments.CommentsTabView tests', function() {
 		clock = sinon.useFakeTimers(Date.UTC(2016, 1, 3, 10, 5, 9));
 		fetchStub = sinon.stub(OCA.Comments.CommentCollection.prototype, 'fetchNext');
 		view = new OCA.Comments.CommentsTabView();
+		view._avatarsEnabled = false;
 		fileInfoModel = new OCA.Files.FileInfoModel({
 			id: 5,
 			name: 'One.txt',
@@ -145,6 +146,7 @@ describe('OCA.Comments.CommentsTabView tests', function() {
 		});
 
 		it('renders mentioned user id to avatar and displayname', function() {
+			view._avatarsEnabled = true;
 			view.collection.set(testComments);
 
 			var $comment = view.$el.find('.comment[data-id=3] .message');
@@ -153,7 +155,19 @@ describe('OCA.Comments.CommentsTabView tests', function() {
 			expect($comment.find('strong:first').text()).toEqual('Thane of Cawdor');
 
 			expect($comment.find('.avatar[data-user=banquo]').length).toEqual(1);
-			expect($comment.find('.avatar-name-wrapper:last-child strong').text()).toEqual('Lord Banquo');
+			expect($comment.find('strong:last-child').text()).toEqual('Lord Banquo');
+		});
+
+		it('renders mentioned user id to displayname, avatars disabled', function() {
+			view.collection.set(testComments);
+
+			var $comment = view.$el.find('.comment[data-id=3] .message');
+			expect($comment.length).toEqual(1);
+			expect($comment.find('.avatar[data-user=macbeth]').length).toEqual(0);
+			expect($comment.find('strong:first-child').text()).toEqual('Thane of Cawdor');
+
+			expect($comment.find('.avatar[data-user=banquo]').length).toEqual(0);
+			expect($comment.find('strong:last-child').text()).toEqual('Lord Banquo');
 		});
 
 	});
@@ -302,13 +316,11 @@ describe('OCA.Comments.CommentsTabView tests', function() {
 	describe('editing comments', function() {
 		var saveStub;
 		var fetchStub;
-		var avatarStub;
 		var currentUserStub;
 
 		beforeEach(function() {
 			saveStub = sinon.stub(OCA.Comments.CommentModel.prototype, 'save');
 			fetchStub = sinon.stub(OCA.Comments.CommentModel.prototype, 'fetch');
-			avatarStub = sinon.stub($.fn, 'avatar');
 			currentUserStub = sinon.stub(OC, 'getCurrentUser');
 			currentUserStub.returns({
 				uid: 'testuser',
@@ -336,7 +348,6 @@ describe('OCA.Comments.CommentsTabView tests', function() {
 		afterEach(function() {
 			saveStub.restore();
 			fetchStub.restore();
-			avatarStub.restore();
 			currentUserStub.restore();
 		});
 

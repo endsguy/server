@@ -82,8 +82,7 @@ class CardDavBackendTest extends TestCase {
 			->getMock();
 		$this->principal->method('getPrincipalByPath')
 			->willReturn([
-				'uri' => 'principals/best-friend',
-				'{DAV:}displayname' => 'User\'s displayname',
+				'uri' => 'principals/best-friend'
 			]);
 		$this->principal->method('getGroupMembership')
 			->withAnyParameters()
@@ -124,7 +123,6 @@ class CardDavBackendTest extends TestCase {
 		$books = $this->backend->getAddressBooksForUser(self::UNIT_TEST_USER);
 		$this->assertEquals(1, count($books));
 		$this->assertEquals('Example', $books[0]['{DAV:}displayname']);
-		$this->assertEquals('User\'s displayname', $books[0]['{http://nextcloud.com/ns}owner-displayname']);
 
 		// update it's display name
 		$patch = new PropPatch([

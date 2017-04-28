@@ -1,6 +1,7 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "কার্যকর",
     "Wrong password" : "ভুল কুটশব্দ",
     "Saved" : "সংরক্ষণ করা হলো",
     "No user supplied" : "ব্যবহারকারী দেয়া হয়নি",

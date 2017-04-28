@@ -135,11 +135,32 @@ class Server {
 		$connection = new RawConnection($command);
 		$connection->writeAuthentication($this->getUser(), $this->getPassword());
 		$output = $connection->readAll();
-		$parser = new Parser($this->timezoneProvider);
 
-		$parser->checkConnectionError($output[0]);
+		$line = $output[0];
 
-		$shareNames = $parser->parseListShares($output);
+		$line = rtrim($line, ')');
+		if (substr($line, -23) === ErrorCodes::LogonFailure) {
+			throw new AuthenticationException();
+		}
+		if (substr($line, -26) === ErrorCodes::BadHostName) {
+			throw new InvalidHostException();
+		}
+		if (substr($line, -22) === ErrorCodes::Unsuccessful) {
+			throw new InvalidHostException();
+		}
+		if (substr($line, -28) === ErrorCodes::ConnectionRefused) {
+			throw new InvalidHostException();
+		}
+
+		$shareNames = array();
+		foreach ($output as $line) {
+			if (strpos($line, '|')) {
+				list($type, $name, $description) = explode('|', $line);
+				if (strtolower($type) === 'disk') {
+					$shareNames[$name] = $description;
+				}
+			}
+		}
 
 		$shares = array();
 		foreach ($shareNames as $name => $description) {
@@ -153,7 +174,7 @@ class Server {
 	 * @return \Icewind\SMB\IShare
 	 */
 	public function getShare($name) {
-		return new Share($this, $name, $this->system);
+		return new Share($this, $name);
 	}
 
 	/**

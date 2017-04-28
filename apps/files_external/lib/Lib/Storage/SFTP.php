@@ -33,6 +33,7 @@
  */
 namespace OCA\Files_External\Lib\Storage;
 use Icewind\Streams\IteratorDirectory;
+
 use Icewind\Streams\RetryWrapper;
 use phpseclib\Net\SFTP\Stream;
 
@@ -206,7 +207,7 @@ class SFTP extends \OC\Files\Storage\Common {
 		try {
 			$storage_view = \OCP\Files::getStorage('files_external');
 			if ($storage_view) {
-				return \OC::$server->getConfig()->getSystemValue('datadirectory', \OC::$SERVERROOT . '/data') .
+				return \OC::$server->getConfig()->getSystemValue('datadirectory') .
 					$storage_view->getAbsolutePath('') .
 					'ssh_hostKeys';
 			}

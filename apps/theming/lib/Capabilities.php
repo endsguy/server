@@ -60,7 +60,7 @@ class Capabilities implements ICapability {
 				'name' => $this->theming->getName(),
 				'url' => $this->theming->getBaseUrl(),
 				'slogan' => $this->theming->getSlogan(),
-				'color' => $this->theming->getColorPrimary(),
+				'color' => $this->theming->getMailHeaderColor(),
 				'logo' => $this->url->getAbsoluteURL($this->theming->getLogo()),
 				'background' => $this->url->getAbsoluteURL($this->theming->getBackground()),
 			],

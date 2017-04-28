@@ -101,13 +101,8 @@ class SignApp extends Command {
 		$x509 = new X509();
 		$x509->loadX509($keyBundle);
 		$x509->setPrivateKey($rsa);
-		try {
-			$this->checker->writeAppSignature($path, $x509, $rsa);
-			$output->writeln('Successfully signed "'.$path.'"');
-		} catch (\Exception $e){
-			$output->writeln('Error: ' . $e->getMessage());
-			return 1;
-		}
-		return 0;
+		$this->checker->writeAppSignature($path, $x509, $rsa);
+
+		$output->writeln('Successfully signed "'.$path.'"');
 	}
 }

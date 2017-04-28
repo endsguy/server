@@ -35,8 +35,7 @@ $ocConfig = \OC::$server->getConfig();
 $uBackend = new User_Proxy(
 	$helper->getServerConfigurationPrefixes(true),
 	new LDAP(),
-	$ocConfig,
-	\OC::$server->getNotificationManager()
+	$ocConfig
 );
 $deletedUsersIndex = new DeletedUsersIndex(
 	$ocConfig, $dbConnection, $userMapping

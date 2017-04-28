@@ -85,7 +85,6 @@ class ChangePasswordController extends Controller {
 	/**
 	 * @NoAdminRequired
 	 * @NoSubadminRequired
-	 * @BruteForceProtection(action=changePersonalPassword)
 	 *
 	 * @param string $oldpassword
 	 * @param string $newpassword
@@ -96,14 +95,12 @@ class ChangePasswordController extends Controller {
 		/** @var IUser $user */
 		$user = $this->userManager->checkPassword($this->userId, $oldpassword);
 		if ($user === false) {
-			$response = new JSONResponse([
+			return new JSONResponse([
 				'status' => 'error',
 				'data' => [
 					'message' => $this->l->t('Wrong password'),
 				],
 			]);
-			$response->throttle();
-			return $response;
 		}
 
 		try {
@@ -220,7 +217,7 @@ class ChangePasswordController extends Controller {
 				return new JSONResponse([
 					'status' => 'error',
 					'data' => [
-						'message' => $this->l->t('Please provide an admin recovery password; otherwise, all user data will be lost.'),
+						'message' => $this->l->t('Please provide an admin recovery password, otherwise all user data will be lost'),
 					]
 				]);
 			} elseif ($recoveryEnabledForUser && ! $validRecoveryPassword) {
@@ -246,7 +243,7 @@ class ChangePasswordController extends Controller {
 					return new JSONResponse([
 						'status' => 'error',
 						'data' => [
-							'message' => $this->l->t('Backend doesn\'t support password change, but the user\'s encryption key was updated.'),
+							'message' => $this->l->t('Backend doesn\'t support password change, but the user\'s encryption key was successfully updated.'),
 						]
 					]);
 				} elseif (!$result && !$recoveryEnabledForUser) {

@@ -1,6 +1,7 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "مفعلة",
     "Wrong password" : "كلمة مرور خاطئة",
     "Saved" : "حفظ",
     "No user supplied" : "لم يتم توفير مستخدم ",

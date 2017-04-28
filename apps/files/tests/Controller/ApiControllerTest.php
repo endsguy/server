@@ -26,6 +26,7 @@
 
 namespace OCA\Files\Controller;
 
+use OC\Files\FileInfo;
 use OCP\AppFramework\Http;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -41,6 +42,7 @@ use OCP\IRequest;
 use OCA\Files\Service\TagService;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\IPreview;
+use OCP\Image;
 
 /**
  * Class ApiController

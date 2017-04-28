@@ -9,13 +9,11 @@
 namespace Test;
 
 
-use OC\App\AppStore\Bundles\Bundle;
 use OC\App\AppStore\Fetcher\AppFetcher;
 use OC\Archive\ZIP;
 use OC\Installer;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
-use OCP\IConfig;
 use OCP\ILogger;
 use OCP\ITempManager;
 
@@ -31,8 +29,6 @@ class InstallerTest extends TestCase {
 	private $tempManager;
 	/** @var ILogger|\PHPUnit_Framework_MockObject_MockObject */
 	private $logger;
-	/** @var IConfig|\PHPUnit_Framework_MockObject_MockObject */
-	private $config;
 
 	/** @var Installer */
 	private $installer;
@@ -44,13 +40,11 @@ class InstallerTest extends TestCase {
 		$this->clientService = $this->createMock(IClientService::class);
 		$this->tempManager = $this->createMock(ITempManager::class);
 		$this->logger = $this->createMock(ILogger::class);
-		$this->config = $this->createMock(IConfig::class);
 		$this->installer = new Installer(
 			$this->appFetcher,
 			$this->clientService,
 			$this->tempManager,
-			$this->logger,
-			$this->config
+			$this->logger
 		);
 
 		$config = \OC::$server->getConfig();
@@ -60,8 +54,7 @@ class InstallerTest extends TestCase {
 			\OC::$server->getAppFetcher(),
 			\OC::$server->getHTTPClientService(),
 			\OC::$server->getTempManager(),
-			\OC::$server->getLogger(),
-			$config
+			\OC::$server->getLogger()
 		);
 		$installer->removeApp(self::$appid);
 	}
@@ -71,8 +64,7 @@ class InstallerTest extends TestCase {
 			\OC::$server->getAppFetcher(),
 			\OC::$server->getHTTPClientService(),
 			\OC::$server->getTempManager(),
-			\OC::$server->getLogger(),
-			\OC::$server->getConfig()
+			\OC::$server->getLogger()
 		);
 		$installer->removeApp(self::$appid);
 		\OC::$server->getConfig()->setSystemValue('appstoreenabled', $this->appstore);
@@ -94,8 +86,7 @@ class InstallerTest extends TestCase {
 			\OC::$server->getAppFetcher(),
 			\OC::$server->getHTTPClientService(),
 			\OC::$server->getTempManager(),
-			\OC::$server->getLogger(),
-			\OC::$server->getConfig()
+			\OC::$server->getLogger()
 		);
 		$installer->installApp(self::$appid);
 		$isInstalled = Installer::isInstalled(self::$appid);

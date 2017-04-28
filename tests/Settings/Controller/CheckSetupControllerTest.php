@@ -68,6 +68,8 @@ class CheckSetupControllerTest extends TestCase {
 			->disableOriginalConstructor()->getMock();
 		$this->config = $this->getMockBuilder('\OCP\IConfig')
 			->disableOriginalConstructor()->getMock();
+		$this->config = $this->getMockBuilder('\OCP\IConfig')
+			->disableOriginalConstructor()->getMock();
 		$this->clientService = $this->getMockBuilder('\OCP\Http\Client\IClientService')
 			->disableOriginalConstructor()->getMock();
 		$this->util = $this->getMockBuilder('\OC_Util')
@@ -96,7 +98,7 @@ class CheckSetupControllerTest extends TestCase {
 				$this->checker,
 				$this->logger
 				])
-			->setMethods(['getCurlVersion', 'isPhpOutdated', 'isOpcacheProperlySetup'])->getMock();
+			->setMethods(['getCurlVersion', 'isPhpOutdated'])->getMock();
 	}
 
 	public function testIsInternetConnectionWorkingDisabledViaConfig() {
@@ -305,22 +307,10 @@ class CheckSetupControllerTest extends TestCase {
 			->expects($this->once())
 			->method('isPhpOutdated')
 			->willReturn(true);
-		$this->checkSetupController
-			->expects($this->once())
-			->method('isOpcacheProperlySetup')
-			->willReturn(false);
 		$this->urlGenerator->expects($this->at(2))
 			->method('linkToDocs')
 			->with('admin-reverse-proxy')
 			->willReturn('reverse-proxy-doc-link');
-		$this->urlGenerator->expects($this->at(3))
-			->method('linkToDocs')
-			->with('admin-code-integrity')
-			->willReturn('http://doc.owncloud.org/server/go.php?to=admin-code-integrity');
-		$this->urlGenerator->expects($this->at(4))
-			->method('linkToDocs')
-			->with('admin-php-opcache')
-			->willReturn('http://doc.owncloud.org/server/go.php?to=admin-php-opcache');
 
 		$expected = new DataResponse(
 			[
@@ -338,10 +328,7 @@ class CheckSetupControllerTest extends TestCase {
 				'reverseProxyDocs' => 'reverse-proxy-doc-link',
 				'isCorrectMemcachedPHPModuleInstalled' => true,
 				'hasPassedCodeIntegrityCheck' => null,
-				'codeIntegrityCheckerDocumentation' => 'http://doc.owncloud.org/server/go.php?to=admin-code-integrity',
-				'isOpcacheProperlySetup' => false,
-				'phpOpcacheDocumentation' => 'http://doc.owncloud.org/server/go.php?to=admin-php-opcache',
-				'isSettimelimitAvailable' => true,
+				'codeIntegrityCheckerDocumentation' => null,
 			]
 		);
 		$this->assertEquals($expected, $this->checkSetupController->check());

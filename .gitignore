@@ -40,6 +40,7 @@
 /apps/files_external/tests/config.*.php
 
 
+
 # ignore themes except the example and the README
 /themes/*
 !/themes/example

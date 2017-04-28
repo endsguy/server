@@ -94,7 +94,7 @@ class AccountManager {
 		if ($updated) {
 			$this->eventDispatcher->dispatch(
 				'OC\AccountManager::userUpdated',
-				new GenericEvent($user, $data)
+				new GenericEvent($user)
 			);
 		}
 	}

@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Įjungta",
+    "Not enabled" : "Neįjungta",
     "Wrong password" : "Neteisingas slaptažodis",
     "Saved" : "Įrašyta",
     "No user supplied" : "Nepateiktas naudotojas",
@@ -116,7 +118,6 @@ OC.L10N.register(
     "days" : "dienos",
     "Allow resharing" : "Leisti dalintis",
     "Tips & tricks" : "Patarimai ir gudrybės",
-    "This app has an update available." : "Šiai programėlei yra prieinamas atnaujinimas.",
     "Documentation:" : "Dokumentacija:",
     "Report a bug" : "Pranešti apie klaidą",
     "Show description …" : "Rodyti aprašą …",

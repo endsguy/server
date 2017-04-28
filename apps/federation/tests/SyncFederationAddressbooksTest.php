@@ -24,7 +24,6 @@
  */
 namespace OCA\Federation\Tests;
 
-use OC\OCS\DiscoveryService;
 use OCA\Federation\DbHandler;
 use OCA\Federation\SyncFederationAddressBooks;
 
@@ -33,18 +32,7 @@ class SyncFederationAddressbooksTest extends \Test\TestCase {
 	/** @var array */
 	private $callBacks = [];
 
-	/** @var  \PHPUnit_Framework_MockObject_MockObject | DiscoveryService */
-	private $discoveryService;
-
-	public function setUp() {
-		parent::setUp();
-
-		$this->discoveryService = $this->getMockBuilder(DiscoveryService::class)
-			->disableOriginalConstructor()->getMock();
-		$this->discoveryService->expects($this->any())->method('discover')->willReturn([]);
-	}
-
-	public function testSync() {
+	function testSync() {
 		/** @var DbHandler | \PHPUnit_Framework_MockObject_MockObject $dbHandler */
 		$dbHandler = $this->getMockBuilder('OCA\Federation\DbHandler')->
 			disableOriginalConstructor()->
@@ -67,14 +55,14 @@ class SyncFederationAddressbooksTest extends \Test\TestCase {
 			->willReturn(1);
 
 		/** @var \OCA\DAV\CardDAV\SyncService $syncService */
-		$s = new SyncFederationAddressBooks($dbHandler, $syncService, $this->discoveryService);
+		$s = new SyncFederationAddressBooks($dbHandler, $syncService);
 		$s->syncThemAll(function($url, $ex) {
 			$this->callBacks[] = [$url, $ex];
 		});
 		$this->assertEquals(1, count($this->callBacks));
 	}
 
-	public function testException() {
+	function testException() {
 		/** @var DbHandler | \PHPUnit_Framework_MockObject_MockObject $dbHandler */
 		$dbHandler = $this->getMockBuilder('OCA\Federation\DbHandler')->
 		disableOriginalConstructor()->
@@ -95,7 +83,7 @@ class SyncFederationAddressbooksTest extends \Test\TestCase {
 			->willThrowException(new \Exception('something did not work out'));
 
 		/** @var \OCA\DAV\CardDAV\SyncService $syncService */
-		$s = new SyncFederationAddressBooks($dbHandler, $syncService, $this->discoveryService);
+		$s = new SyncFederationAddressBooks($dbHandler, $syncService);
 		$s->syncThemAll(function($url, $ex) {
 			$this->callBacks[] = [$url, $ex];
 		});

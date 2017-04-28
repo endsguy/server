@@ -27,6 +27,7 @@ namespace OCA\FederatedFileSharing\BackgroundJob;
 use OC\BackgroundJob\Job;
 use OC\BackgroundJob\JobList;
 use OCA\FederatedFileSharing\AddressHandler;
+use OCA\FederatedFileSharing\DiscoveryManager;
 use OCA\FederatedFileSharing\Notifications;
 use OCP\BackgroundJob\IJobList;
 use OCP\ILogger;
@@ -64,13 +65,16 @@ class RetryJob extends Job {
 		} else {
 			$addressHandler = new AddressHandler(
 				\OC::$server->getURLGenerator(),
-				\OC::$server->getL10N('federatedfilesharing'),
-				\OC::$server->getCloudIdManager()
+				\OC::$server->getL10N('federatedfilesharing')
+			);
+			$discoveryManager = new DiscoveryManager(
+				\OC::$server->getMemCacheFactory(),
+				\OC::$server->getHTTPClientService()
 			);
 			$this->notifications = new Notifications(
 				$addressHandler,
 				\OC::$server->getHTTPClientService(),
-				\OC::$server->query(\OCP\OCS\IDiscoveryService::class),
+				$discoveryManager,
 				\OC::$server->getJobList()
 			);
 		}
@@ -103,7 +107,7 @@ class RetryJob extends Job {
 		$try = (int)$argument['try'] + 1;
 
 		$result = $this->notifications->sendUpdateToRemote($remote, $remoteId, $token, $action, $data, $try);
-
+		
 		if ($result === true || $try > $this->maxTry) {
 			$this->retainJob = false;
 		}

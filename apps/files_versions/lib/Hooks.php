@@ -163,6 +163,9 @@ class Hooks {
 	 * Load additional scripts when the files app is visible
 	 */
 	public static function onLoadFilesAppScripts() {
-		\OCP\Util::addScript('files_versions', 'merged');
+		\OCP\Util::addScript('files_versions', 'versionmodel');
+		\OCP\Util::addScript('files_versions', 'versioncollection');
+		\OCP\Util::addScript('files_versions', 'versionstabview');
+		\OCP\Util::addScript('files_versions', 'filesplugin');
 	}
 }

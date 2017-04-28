@@ -32,7 +32,6 @@ interface IScanner {
 	const SCAN_RECURSIVE = true;
 	const SCAN_SHALLOW = false;
 
-	const REUSE_NONE = 0;
 	const REUSE_ETAG = 1;
 	const REUSE_SIZE = 2;
 

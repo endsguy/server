@@ -1,7 +1,6 @@
 <?php
 
 namespace Test\Comments;
-use OCP\IUser;
 
 /**
  * Class FakeManager
@@ -45,6 +44,4 @@ class FakeManager implements \OCP\Comments\ICommentsManager {
 	public function registerDisplayNameResolver($type, \Closure $closure) {}
 
 	public function resolveDisplayName($type, $id) {}
-
-	public function getNumberOfUnreadCommentsForFolder($folderId, IUser $user) {}
 }

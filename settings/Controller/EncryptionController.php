@@ -105,9 +105,7 @@ class EncryptionController extends Controller {
 	 */
 	public function startMigration() {
         // allow as long execution on the web server as possible
-		if (strpos(@ini_get('disable_functions'), 'set_time_limit') === false) {
-			@set_time_limit(0);
-		}
+		set_time_limit(0);
 
 		try {
 

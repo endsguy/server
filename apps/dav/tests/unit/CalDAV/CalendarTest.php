@@ -109,7 +109,7 @@ class CalendarTest extends TestCase {
 			['user1', 'user2', [], true],
 			['user1', 'user2', [
 				'{http://owncloud.org/ns}calendar-enabled' => true,
-			], true],
+			], false],
 			['user1', 'user2', [
 				'{DAV:}displayname' => true,
 			], true],
@@ -134,7 +134,7 @@ class CalendarTest extends TestCase {
 	/**
 	 * @dataProvider dataPropPatch
 	 */
-	public function testPropPatch($ownerPrincipal, $principalUri, $mutations, $shared) {
+	public function testPropPatch($ownerPrincipal, $principalUri, $mutations, $throws) {
 		/** @var \PHPUnit_Framework_MockObject_MockObject | CalDavBackend $backend */
 		$backend = $this->getMockBuilder(CalDavBackend::class)->disableOriginalConstructor()->getMock();
 		$calendarInfo = [
@@ -144,15 +144,14 @@ class CalendarTest extends TestCase {
 			'uri' => 'default'
 		];
 		$c = new Calendar($backend, $calendarInfo, $this->l10n);
-		$propPatch = new PropPatch($mutations);
 
-		if (!$shared) {
-			$backend->expects($this->once())
-				->method('updateCalendar')
-				->with(666, $propPatch);
+		if ($throws) {
+			$this->setExpectedException('\Sabre\DAV\Exception\Forbidden');
 		}
-		$c->propPatch($propPatch);
-		$this->assertTrue(true);
+		$c->propPatch(new PropPatch($mutations));
+		if (!$throws) {
+			$this->assertTrue(true);
+		}
 	}
 
 	/**
@@ -225,8 +224,8 @@ class CalendarTest extends TestCase {
 
 	/**
 	 * @dataProvider providesConfidentialClassificationData
-	 * @param int $expectedChildren
-	 * @param bool $isShared
+	 * @param $expectedChildren
+	 * @param $isShared
 	 */
 	public function testPrivateClassification($expectedChildren, $isShared) {
 
@@ -268,8 +267,8 @@ class CalendarTest extends TestCase {
 
 	/**
 	 * @dataProvider providesConfidentialClassificationData
-	 * @param int $expectedChildren
-	 * @param bool $isShared
+	 * @param $expectedChildren
+	 * @param $isShared
 	 */
 	public function testConfidentialClassification($expectedChildren, $isShared) {
 		$start = '20160609';

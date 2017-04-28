@@ -24,13 +24,17 @@
 
 namespace OCA\Federation\AppInfo;
 
+use OCA\Federation\API\OCSAuthAPI;
 use OCA\Federation\Controller\SettingsController;
 use OCA\Federation\DAV\FedAuth;
 use OCA\Federation\DbHandler;
 use OCA\Federation\Hooks;
 use OCA\Federation\Middleware\AddServerMiddleware;
 use OCA\Federation\SyncFederationAddressBooks;
+use OCA\Federation\SyncJob;
 use OCA\Federation\TrustedServers;
+use OCP\API;
+use OCP\App;
 use OCP\AppFramework\IAppContainer;
 use OCP\SabrePluginEvent;
 use OCP\Util;
@@ -131,8 +135,7 @@ class Application extends \OCP\AppFramework\App {
 	public function getSyncService() {
 		$syncService = \OC::$server->query('CardDAVSyncService');
 		$dbHandler = $this->getContainer()->query('DbHandler');
-		$discoveryService = \OC::$server->query(\OCP\OCS\IDiscoveryService::class);
-		return new SyncFederationAddressBooks($dbHandler, $syncService, $discoveryService);
+		return new SyncFederationAddressBooks($dbHandler, $syncService);
 	}
 
 }

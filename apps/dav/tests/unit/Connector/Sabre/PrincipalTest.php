@@ -25,8 +25,6 @@
 
 namespace OCA\DAV\Tests\unit\Connector\Sabre;
 
-use OC\User\User;
-use OCP\IGroup;
 use OCP\IGroupManager;
 use \Sabre\DAV\PropPatch;
 use OCP\IUserManager;
@@ -41,8 +39,10 @@ class PrincipalTest extends TestCase {
 	private $groupManager;
 
 	public function setUp() {
-		$this->userManager = $this->createMock(IUserManager::class);
-		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->userManager = $this->getMockBuilder('\OCP\IUserManager')
+			->disableOriginalConstructor()->getMock();
+		$this->groupManager = $this->getMockBuilder('\OCP\IGroupManager')
+			->disableOriginalConstructor()->getMock();
 
 		$this->connector = new \OCA\DAV\Connector\Sabre\Principal(
 			$this->userManager,
@@ -56,7 +56,8 @@ class PrincipalTest extends TestCase {
 	}
 
 	public function testGetPrincipalsByPrefixWithUsers() {
-		$fooUser = $this->createMock(User::class);
+		$fooUser = $this->getMockBuilder('\OC\User\User')
+			->disableOriginalConstructor()->getMock();
 		$fooUser
 				->expects($this->exactly(1))
 				->method('getUID')
@@ -69,7 +70,8 @@ class PrincipalTest extends TestCase {
 				->expects($this->exactly(1))
 				->method('getEMailAddress')
 				->will($this->returnValue(''));
-		$barUser = $this->createMock(User::class);
+		$barUser = $this->getMockBuilder('\OC\User\User')
+			->disableOriginalConstructor()->getMock();
 		$barUser
 			->expects($this->exactly(1))
 			->method('getUID')
@@ -111,7 +113,8 @@ class PrincipalTest extends TestCase {
 	}
 
 	public function testGetPrincipalsByPathWithoutMail() {
-		$fooUser = $this->createMock(User::class);
+		$fooUser = $this->getMockBuilder('\OC\User\User')
+			->disableOriginalConstructor()->getMock();
 		$fooUser
 			->expects($this->exactly(1))
 			->method('getUID')
@@ -131,7 +134,8 @@ class PrincipalTest extends TestCase {
 	}
 
 	public function testGetPrincipalsByPathWithMail() {
-		$fooUser = $this->createMock(User::class);
+		$fooUser = $this->getMockBuilder('\OC\User\User')
+			->disableOriginalConstructor()->getMock();
 		$fooUser
 				->expects($this->exactly(1))
 				->method('getEMailAddress')
@@ -167,7 +171,8 @@ class PrincipalTest extends TestCase {
 	}
 
 	public function testGetGroupMemberSet() {
-		$fooUser = $this->createMock(User::class);
+		$fooUser = $this->getMockBuilder('\OC\User\User')
+			->disableOriginalConstructor()->getMock();
 		$fooUser
 			->expects($this->exactly(1))
 			->method('getUID')
@@ -197,15 +202,13 @@ class PrincipalTest extends TestCase {
 	}
 
 	public function testGetGroupMembership() {
-		$fooUser = $this->createMock(User::class);
-		$group1 = $this->createMock(IGroup::class);
-		$group1->expects($this->once())
+		$fooUser = $this->getMockBuilder('\OC\User\User')
+			->disableOriginalConstructor()->getMock();
+		$group = $this->getMockBuilder('\OCP\IGroup')
+			->disableOriginalConstructor()->getMock();
+		$group->expects($this->once())
 			->method('getGID')
 			->willReturn('group1');
-		$group2 = $this->createMock(IGroup::class);
-		$group2->expects($this->once())
-			->method('getGID')
-			->willReturn('foo/bar');
 		$this->userManager
 			->expects($this->once())
 			->method('get')
@@ -214,15 +217,12 @@ class PrincipalTest extends TestCase {
 		$this->groupManager
 			->expects($this->once())
 			->method('getUserGroups')
-			->with($fooUser)
 			->willReturn([
-				$group1,
-				$group2,
+				$group
 			]);
 
 		$expectedResponse = [
-			'principals/groups/group1',
-			'principals/groups/foo%2Fbar',
+			'principals/groups/group1'
 		];
 		$response = $this->connector->getGroupMembership('principals/users/foo');
 		$this->assertSame($expectedResponse, $response);
@@ -259,7 +259,8 @@ class PrincipalTest extends TestCase {
 	}
 
 	public function testFindByUri() {
-		$fooUser = $this->createMock(User::class);
+		$fooUser = $this->getMockBuilder('\OC\User\User')
+			->disableOriginalConstructor()->getMock();
 		$fooUser
 			->expects($this->exactly(1))
 			->method('getUID')

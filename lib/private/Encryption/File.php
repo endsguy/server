@@ -25,20 +25,11 @@
 namespace OC\Encryption;
 
 use OC\Cache\CappedMemoryCache;
-use OCP\Files\IRootFolder;
-use OCP\Files\NotFoundException;
-use OCP\Share\IManager;
 
 class File implements \OCP\Encryption\IFile {
 
 	/** @var Util */
 	protected $util;
-
-	/** @var IRootFolder */
-	private $rootFolder;
-
-	/** @var IManager */
-	private $shareManager;
 
 	/**
 	 * cache results of already checked folders
@@ -47,13 +38,9 @@ class File implements \OCP\Encryption\IFile {
 	 */
 	protected $cache;
 
-	public function __construct(Util $util,
-								IRootFolder $rootFolder,
-								IManager $shareManager) {
+	public function __construct(Util $util) {
 		$this->util = $util;
 		$this->cache = new CappedMemoryCache();
-		$this->rootFolder = $rootFolder;
-		$this->shareManager = $shareManager;
 	}
 
 
@@ -76,34 +63,26 @@ class File implements \OCP\Encryption\IFile {
 		}
 
 		$ownerPath = substr($ownerPath, strlen('/files'));
-		$userFolder = $this->rootFolder->getUserFolder($owner);
-		try {
-			$file = $userFolder->get($ownerPath);
-		} catch (NotFoundException $e) {
-			$file = null;
-		}
 		$ownerPath = $this->util->stripPartialFileExtension($ownerPath);
+
 
 		// first get the shares for the parent and cache the result so that we don't
 		// need to check all parents for every file
 		$parent = dirname($ownerPath);
-		$parentNode = $userFolder->get($parent);
 		if (isset($this->cache[$parent])) {
 			$resultForParents = $this->cache[$parent];
 		} else {
-			$resultForParents = $this->shareManager->getAccessList($parentNode);
+			$resultForParents = \OCP\Share::getUsersSharingFile($parent, $owner);
 			$this->cache[$parent] = $resultForParents;
 		}
-		$userIds = array_merge($userIds, $resultForParents['users']);
+		$userIds = \array_merge($userIds, $resultForParents['users']);
 		$public = $resultForParents['public'] || $resultForParents['remote'];
 
 
 		// Find out who, if anyone, is sharing the file
-		if ($file !== null) {
-			$resultForFile = $this->shareManager->getAccessList($file, false);
-			$userIds = array_merge($userIds, $resultForFile['users']);
-			$public = $resultForFile['public'] || $resultForFile['remote'] || $public;
-		}
+		$resultForFile = \OCP\Share::getUsersSharingFile($ownerPath, $owner, false, false, false);
+		$userIds = \array_merge($userIds, $resultForFile['users']);
+		$public = $resultForFile['public'] || $resultForFile['remote'] || $public;
 
 		// check if it is a group mount
 		if (\OCP\App::isEnabled("files_external")) {

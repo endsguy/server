@@ -1,6 +1,5 @@
 <?php
 /**
- * @copyright Copyright (c) 2017, Joas Schilling <coding@schilljs.com>
  * @copyright Copyright (c) 2016, ownCloud, Inc.
  *
  * @author Arthur Schiwon <blizzz@arthur-schiwon.de>
@@ -43,9 +42,6 @@ class AppConfig implements IAppConfig {
 
 	/** @var array[] */
 	protected $sensitiveValues = [
-		'spreed' => [
-			'turn_server_secret',
-		],
 		'user_ldap' => [
 			'ldap_agent_password',
 		],

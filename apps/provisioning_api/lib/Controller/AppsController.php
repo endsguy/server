@@ -26,7 +26,6 @@
 namespace OCA\Provisioning_API\Controller;
 
 use \OC_App;
-use OCP\App\AppPathNotFoundException;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\OCS\OCSException;
@@ -100,14 +99,9 @@ class AppsController extends OCSController {
 	 * @PasswordConfirmationRequired
 	 * @param string $app
 	 * @return DataResponse
-	 * @throws OCSException
 	 */
 	public function enable($app) {
-		try {
-			$this->appManager->enableApp($app);
-		} catch (AppPathNotFoundException $e) {
-			throw new OCSException('The request app was not found', \OCP\API::RESPOND_NOT_FOUND);
-		}
+		$this->appManager->enableApp($app);
 		return new DataResponse();
 	}
 

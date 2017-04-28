@@ -332,20 +332,25 @@ class OC_API {
 		$userSession = \OC::$server->getUserSession();
 		$request = \OC::$server->getRequest();
 		try {
-			if ($userSession->tryTokenLogin($request)
-				|| $userSession->tryBasicAuthLogin($request, \OC::$server->getBruteForceThrottler())) {
-				self::$logoutRequired = true;
-			} else {
-				return false;
+			$loginSuccess = $userSession->tryTokenLogin($request);
+			if (!$loginSuccess) {
+				$loginSuccess = $userSession->tryBasicAuthLogin($request, \OC::$server->getBruteForceThrottler());
 			}
+		} catch (\OC\User\LoginException $e) {
+			return false;
+		}
+	
+		if ($loginSuccess === true) {
+			self::$logoutRequired = true;
+
 			// initialize the user's filesystem
 			\OC_Util::setupFS(\OC_User::getUser());
 			self::$isLoggedIn = true;
 
 			return \OC_User::getUser();
-		} catch (\OC\User\LoginException $e) {
-			return false;
 		}
+
+		return false;
 	}
 
 	/**

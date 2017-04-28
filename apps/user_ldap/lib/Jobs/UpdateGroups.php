@@ -185,8 +185,7 @@ class UpdateGroups extends \OC\BackgroundJob\TimedJob {
 				\OC::$server->getAvatarManager(),
 				new \OCP\Image(),
 				$dbc,
-				\OC::$server->getUserManager(),
-				\OC::$server->getNotificationManager());
+				\OC::$server->getUserManager());
 			$connector = new Connection($ldapWrapper, $configPrefixes[0]);
 			$ldapAccess = new Access($connector, $ldapWrapper, $userManager, $helper);
 			$groupMapper = new GroupMapping($dbc);

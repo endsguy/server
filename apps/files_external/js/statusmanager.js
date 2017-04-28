@@ -157,9 +157,7 @@ OCA.External.StatusManager = {
 				},
 				error: function (jqxhr, state, error) {
 					self.mountPointList = [];
-					OC.Notification.show(t('files_external', 'Couldn\'t get the list of external mount points: {type}', 
-						{type: error}), {type: 'error'}
-					);
+					OC.Notification.showTemporary(t('files_external', 'Couldn\'t get the list of external mount points: {type}', {type: error}));
 				},
 				complete: function () {
 					self.isGetMountPointListRunning = false;
@@ -267,9 +265,7 @@ OCA.External.StatusManager = {
 			// check if we have a list first
 			if (list === undefined && !self.emptyWarningShown) {
 				self.emptyWarningShown = true;
-				OC.Notification.show(t('files_external', 'Couldn\'t get the list of Windows network drive mount points: empty response from the server'), 
-					{type: 'error'}
-				);
+				OC.Notification.showTemporary(t('files_external', 'Couldn\'t get the list of Windows network drive mount points: empty response from the server'));
 				return;
 			}
 			if (list && list.length > 0) {
@@ -299,9 +295,7 @@ OCA.External.StatusManager = {
 							}
 						});
 						if (showNotification) {
-							OC.Notification.show(t('files_external', 'Some of the configured external mount points are not connected. Please click on the red row(s) for more information'), 
-								{type: 'error'}
-							);
+							OC.Notification.showTemporary(t('files_external', 'Some of the configured external mount points are not connected. Please click on the red row(s) for more information'));
 						}
 					}
 				});
@@ -420,14 +414,14 @@ OCA.External.StatusManager = {
 					}
 				},
 				success: function (data) {
-					OC.Notification.show(t('files_external', 'Credentials saved'), {type: 'error'});
+					OC.Notification.showTemporary(t('files_external', 'Credentials saved'));
 					dialog.ocdialog('close');
 					/* Trigger status check again */
 					OCA.External.StatusManager.recheckConnectivityForMount([OC.basename(data.mountPoint)], true);
 				},
 				error: function () {
 					$('.oc-dialog-close').show();
-					OC.Notification.show(t('files_external', 'Credentials saving failed'), {type: 'error'});
+					OC.Notification.showTemporary(t('files_external', 'Credentials saving failed'));
 				}
 			});
 			return false;

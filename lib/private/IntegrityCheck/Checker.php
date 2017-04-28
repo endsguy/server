@@ -96,8 +96,12 @@ class Checker {
 	 * @return bool
 	 */
 	public function isCodeCheckEnforced() {
-		$notSignedChannels = [ '', 'git'];
-		if (in_array($this->environmentHelper->getChannel(), $notSignedChannels, true)) {
+		$signedChannels = [
+			'daily',
+			'testing',
+			'stable',
+		];
+		if(!in_array($this->environmentHelper->getChannel(), $signedChannels, true)) {
 			return false;
 		}
 
@@ -111,7 +115,7 @@ class Checker {
 		} else {
 			$isIntegrityCheckDisabled = false;
 		}
-		if ($isIntegrityCheckDisabled === true) {
+		if($isIntegrityCheckDisabled === true) {
 			return false;
 		}
 
@@ -267,23 +271,16 @@ class Checker {
 	public function writeAppSignature($path,
 									  X509 $certificate,
 									  RSA $privateKey) {
-		$appInfoDir = $path . '/appinfo';
-		try {
-			$this->fileAccessHelper->assertDirectoryExists($appInfoDir);
-
-			$iterator = $this->getFolderIterator($path);
-			$hashes = $this->generateHashes($iterator, $path);
-			$signature = $this->createSignatureData($hashes, $certificate, $privateKey);
-				$this->fileAccessHelper->file_put_contents(
-					$appInfoDir . '/signature.json',
-				json_encode($signature, JSON_PRETTY_PRINT)
-			);
-		} catch (\Exception $e){
-			if (!$this->fileAccessHelper->is_writable($appInfoDir)) {
-				throw new \Exception($appInfoDir . ' is not writable');
-			}
-			throw $e;
+		if(!is_dir($path)) {
+			throw new \Exception('Directory does not exist.');
 		}
+		$iterator = $this->getFolderIterator($path);
+		$hashes = $this->generateHashes($iterator, $path);
+		$signature = $this->createSignatureData($hashes, $certificate, $privateKey);
+		$this->fileAccessHelper->file_put_contents(
+				$path . '/appinfo/signature.json',
+				json_encode($signature, JSON_PRETTY_PRINT)
+		);
 	}
 
 	/**
@@ -292,28 +289,17 @@ class Checker {
 	 * @param X509 $certificate
 	 * @param RSA $rsa
 	 * @param string $path
-	 * @throws \Exception
 	 */
 	public function writeCoreSignature(X509 $certificate,
 									   RSA $rsa,
 									   $path) {
-		$coreDir = $path . '/core';
-		try {
-
-			$this->fileAccessHelper->assertDirectoryExists($coreDir);
-			$iterator = $this->getFolderIterator($path, $path);
-			$hashes = $this->generateHashes($iterator, $path);
-			$signatureData = $this->createSignatureData($hashes, $certificate, $rsa);
-			$this->fileAccessHelper->file_put_contents(
-				$coreDir . '/signature.json',
+		$iterator = $this->getFolderIterator($path, $path);
+		$hashes = $this->generateHashes($iterator, $path);
+		$signatureData = $this->createSignatureData($hashes, $certificate, $rsa);
+		$this->fileAccessHelper->file_put_contents(
+				$path . '/core/signature.json',
 				json_encode($signatureData, JSON_PRETTY_PRINT)
-			);
-		} catch (\Exception $e){
-			if (!$this->fileAccessHelper->is_writable($coreDir)) {
-				throw new \Exception($coreDir . ' is not writable');
-			}
-			throw $e;
-		}
+		);
 	}
 
 	/**
@@ -347,7 +333,14 @@ class Checker {
 		$x509->loadCA($rootCertificatePublicKey);
 		$x509->loadX509($certificate);
 		if(!$x509->validateSignature()) {
-			throw new InvalidSignatureException('Certificate is not valid.');
+			// FIXME: Once Nextcloud has it's own appstore we should remove the ownCloud Root Authority from here
+			$x509 = new \phpseclib\File\X509();
+			$rootCertificatePublicKey = $this->fileAccessHelper->file_get_contents($this->environmentHelper->getServerRoot().'/resources/codesigning/owncloud.crt');
+			$x509->loadCA($rootCertificatePublicKey);
+			$x509->loadX509($certificate);
+			if(!$x509->validateSignature()) {
+				throw new InvalidSignatureException('Certificate is not valid.');
+			}
 		}
 		// Verify if certificate has proper CN. "core" CN is always trusted.
 		if($x509->getDN(X509::DN_OPENSSL)['CN'] !== $certificateCN && $x509->getDN(X509::DN_OPENSSL)['CN'] !== 'core') {

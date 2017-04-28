@@ -58,9 +58,7 @@ describe('OCA.Files.Files tests', function() {
 				' ..',
 				'.. ',
 				'. ',
-				' .',
-				'foo.part',
-				'bar.filepart'
+				' .'
 			];
 			for ( var i = 0; i < fileNames.length; i++ ) {
 				var threwException = false;

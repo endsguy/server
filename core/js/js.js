@@ -225,14 +225,6 @@ var OCP = {},
 	},
 
 	/**
-	 * Check if a user file is allowed to be handled.
-	 * @param {string} file to check
-	 */
-	fileIsBlacklisted: function(file) {
-		return !!(file.match(oc_config.blacklist_files_regex));
-	},
-
-	/**
 	 * Redirect to the target URL, can also be used for downloads.
 	 * @param {string} targetURL URL to redirect to
 	 */
@@ -366,20 +358,15 @@ var OCP = {},
 	 */
 	addScript:function(app,script,ready){
 		var deferred, path=OC.filePath(app,'js',script+'.js');
-		if(!OC.addScript.loaded[path]) {
-			deferred = jQuery.ajax({
-				url: path,
-				cache: true,
-				success: function (content) {
-					eval(content);
-					if(ready) {
-						ready();
-					}
-				}
-			});
-			OC.addScript.loaded[path] = deferred;
-		} else {
-			if (ready) {
+		if(!OC.addScript.loaded[path]){
+			if(ready){
+				deferred=$.getScript(path,ready);
+			}else{
+				deferred=$.getScript(path);
+			}
+			OC.addScript.loaded[path]=deferred;
+		}else{
+			if(ready){
 				ready();
 			}
 		}
@@ -654,13 +641,8 @@ var OCP = {},
 	/**
 	 * For menu toggling
 	 * @todo Write documentation
-	 *
-	 * @param {jQuery} $toggle
-	 * @param {jQuery} $menuEl
-	 * @param {function|undefined} toggle callback invoked everytime the menu is opened
-	 * @returns {undefined}
 	 */
-	registerMenu: function($toggle, $menuEl, toggle) {
+	registerMenu: function($toggle, $menuEl) {
 		var self = this;
 		$menuEl.addClass('menu');
 		$toggle.on('click.menu', function(event) {
@@ -676,7 +658,7 @@ var OCP = {},
 				// close it
 				self.hideMenus();
 			}
-			$menuEl.slideToggle(OC.menuSpeed, toggle);
+			$menuEl.slideToggle(OC.menuSpeed);
 			OC._currentMenu = $menuEl;
 			OC._currentMenuToggle = $toggle;
 		});
@@ -798,18 +780,8 @@ var OCP = {},
 			// sometimes "beforeunload" happens later, so need to defer the reload a bit
 			setTimeout(function() {
 				if (!self._userIsNavigatingAway && !self._reloadCalled) {
-					var timer = 0;
-					var seconds = 5;
-					var interval = setInterval( function() {
-						OC.Notification.showUpdate(n('core', 'Problem loading page, reloading in %n second', 'Problem loading page, reloading in %n seconds', seconds - timer));
-						if (timer >= seconds) {
-							clearInterval(interval);
-							OC.reload();
-						}
-						timer++;
-						}, 1000 // 1 second interval
-					);
-
+					OC.Notification.show(t('core', 'Problem loading page, reloading in 5 seconds'));
+					setTimeout(OC.reload, 5000);
 					// only call reload once
 					self._reloadCalled = true;
 				}
@@ -1202,30 +1174,6 @@ OC.Notification={
 	},
 
 	/**
-	 * Updates (replaces) a sanitized notification.
-	 * 
-	 * @param {string} text Message to display
-	 * @return {jQuery} JQuery element for notificaiton row
-	 */
-	showUpdate: function(text) {
-		var $notification = $('#notification');
-		// sanitise
-		var $html = $('<div/>').text(text).html();
-
-		// new notification
-		if (text && $notification.find('.row').length == 0) {
-			return this.showHtml($html);
-		}
-
-		var $row = $('<div class="row"></div>').prepend($html);
-
-		// just update html in notification
-		$notification.html($row);
-
-		return $row;
-	},
-
-	/**
 	 * Shows a notification that disappears after x seconds, default is
 	 * 7 seconds
 	 *
@@ -1281,15 +1229,6 @@ function initCore() {
 			script: false
 		}
 	});
-
-	/**
-	 * Disable execution of eval in jQuery. We do require an allowed eval CSP
-	 * configuration at the moment for handlebars et al. But for jQuery there is
-	 * not much of a reason to execute JavaScript directly via eval.
-	 *
-	 * This thus mitigates some unexpected XSS vectors.
-	 */
-	jQuery.globalEval = function(){};
 
 	/**
 	 * Set users locale to moment.js as soon as possible
@@ -1361,7 +1300,7 @@ function initCore() {
 		var url = OC.generateUrl('/heartbeat');
 		var heartBeatTimeout = null;
 		var heartBeat = function() {
-			clearInterval(heartBeatTimeout);
+			clearTimeout(heartBeatTimeout);
 			heartBeatTimeout = setInterval(function() {
 				$.post(url);
 			}, interval * 1000);
@@ -1396,14 +1335,9 @@ function initCore() {
 	 * If the screen is bigger, the main menu is not a toggle any more.
 	 */
 	function setupMainMenu() {
-
-		// init the more-apps menu
-		OC.registerMenu($('#more-apps'), $('#navigation'));
-
 		// toggle the navigation
 		var $toggle = $('#header .header-appname-container');
 		var $navigation = $('#navigation');
-		var $appmenu = $('#appmenu');
 
 		// init the menu
 		OC.registerMenu($toggle, $navigation);
@@ -1430,20 +1364,6 @@ function initCore() {
 			if(event.which === 2) {
 				// Close navigation when opening app in
 				// a new tab via middle click
-				OC.hideMenus(function(){return false});
-			}
-		});
-
-		$appmenu.delegate('a', 'click', function(event) {
-			var $app = $(event.target);
-			if(!$app.is('a')) {
-				$app = $app.closest('a');
-			}
-			if(event.which === 1 && !event.ctrlKey && !event.metaKey) {
-				$app.addClass('app-loading');
-			} else {
-				// Close navigation when opening app in
-				// a new tab
 				OC.hideMenus(function(){return false});
 			}
 		});
@@ -1478,83 +1398,22 @@ function initCore() {
 		});
 	}
 
-	function setupContactsMenu() {
-		new OC.ContactsMenu({
-			el: $('#contactsmenu .menu'),
-			trigger: $('#contactsmenu .menutoggle')
-		});
-	}
-
 	setupMainMenu();
 	setupUserMenu();
-	setupContactsMenu();
 
 	// move triangle of apps dropdown to align with app name triangle
 	// 2 is the additional offset between the triangles
 	if($('#navigation').length) {
-		$('#header #nextcloud + .menutoggle').on('click', function(){
-			$('#menu-css-helper').remove();
+		$('#header #nextcloud + .menutoggle').one('click', function(){
 			var caretPosition = $('.header-appname + .icon-caret').offset().left - 2;
 			if(caretPosition > 255) {
 				// if the app name is longer than the menu, just put the triangle in the middle
 				return;
 			} else {
-				$('head').append('<style id="menu-css-helper">#navigation:after { left: '+ caretPosition +'px; }</style>');
-			}
-		});
-		$('#header #appmenu .menutoggle').on('click', function() {
-			$('#appmenu').toggleClass('menu-open');
-			if($('#appmenu').is(':visible')) {
-				$('#menu-css-helper').remove();
+				$('head').append('<style>#navigation:after { left: '+ caretPosition +'px; }</style>');
 			}
 		});
 	}
-
-	var resizeMenu = function() {
-		var maxApps = 8;
-		var appList = $('#appmenu li');
-		var availableWidth = $('#header-left').width() - $('#nextcloud').width() - 44;
-		var appCount = Math.floor((availableWidth)/44);
-		// show a maximum of 8 apps
-		if(appCount >= maxApps) {
-			appCount = maxApps;
-		}
-		// show at least 2 apps in the popover
-		if(appList.length-1-appCount >= 1) {
-			appCount--;
-		}
-
-		$('#more-apps a').removeClass('active');
-		var lastShownApp;
-		for (var k = 0; k < appList.length-1; k++) {
-			var name = $(appList[k]).data('id');
-			if(k < appCount) {
-				$(appList[k]).removeClass('hidden');
-				$('#apps li[data-id=' + name + ']').addClass('in-header');
-				lastShownApp = appList[k];
-			} else {
-				$(appList[k]).addClass('hidden');
-				$('#apps li[data-id=' + name + ']').removeClass('in-header');
-				// move active app to last position if it is active
-				if(appCount > 0 && $(appList[k]).children('a').hasClass('active')) {
-					$(lastShownApp).addClass('hidden');
-					$('#apps li[data-id=' + $(lastShownApp).data('id') + ']').removeClass('in-header');
-					$(appList[k]).removeClass('hidden');
-					$('#apps li[data-id=' + name + ']').addClass('in-header');
-				}
-			}
-		}
-
-		// show/hide more apps icon
-		if($('#apps li:not(.in-header)').length === 0) {
-			$('#more-apps').hide();
-			$('#navigation').hide();
-		} else {
-			$('#more-apps').show();
-		}
-	};
-	$(window).resize(resizeMenu);
-	resizeMenu();
 
 	// just add snapper for logged in users
 	if($('#app-navigation').length && !$('html').hasClass('lte9')) {
@@ -1643,7 +1502,7 @@ function initCore() {
 
 		$(window).resize(_.debounce(adjustControlsWidth, 250));
 
-		$('body').delegate('#app-content', 'apprendered appresized', _.debounce(adjustControlsWidth, 150));
+		$('body').delegate('#app-content', 'apprendered appresized', _.debounce(adjustControlsWidth, 100));
 
 	}
 
@@ -1808,54 +1667,6 @@ function relative_modified_date(timestamp) {
 OC.Util = {
 	// TODO: remove original functions from global namespace
 	humanFileSize: humanFileSize,
-
-	/**
-	 * Returns a file size in bytes from a humanly readable string
-	 * Makes 2kB to 2048.
-	 * Inspired by computerFileSize in helper.php
-	 * @param  {string} string file size in human readable format
-	 * @return {number} or null if string could not be parsed
-	 *
-	 *
-	 */
-	computerFileSize: function (string) {
-		if (typeof string !== 'string') {
-			return null;
-		}
-
-		var s = string.toLowerCase().trim();
-		var bytes = null;
-
-		var bytesArray = {
-			'b' : 1,
-			'k' : 1024,
-			'kb': 1024,
-			'mb': 1024 * 1024,
-			'm' : 1024 * 1024,
-			'gb': 1024 * 1024 * 1024,
-			'g' : 1024 * 1024 * 1024,
-			'tb': 1024 * 1024 * 1024 * 1024,
-			't' : 1024 * 1024 * 1024 * 1024,
-			'pb': 1024 * 1024 * 1024 * 1024 * 1024,
-			'p' : 1024 * 1024 * 1024 * 1024 * 1024
-		};
-
-		var matches = s.match(/^[\s+]?([0-9]*)(\.([0-9]+))?( +)?([kmgtp]?b?)$/i);
-		if (matches !== null) {
-			bytes = parseFloat(s);
-			if (!isFinite(bytes)) {
-				return null;
-			}
-		} else {
-			return null;
-		}
-		if (matches[5]) {
-			bytes = bytes * bytesArray[matches[5]];
-		}
-
-		bytes = Math.round(bytes);
-		return bytes;
-	},
 
 	/**
 	 * @param timestamp
@@ -2084,13 +1895,11 @@ OC.Util.History = {
 	 * Note: this includes a workaround for IE8/IE9 that uses
 	 * the hash part instead of the search part.
 	 *
-	 * @param {Object|string} params to append to the URL, can be either a string
+	 * @param params to append to the URL, can be either a string
 	 * or a map
-	 * @param {string} [url] URL to be used, otherwise the current URL will be used,
-	 * using the params as query string
 	 * @param {boolean} [replace=false] whether to replace instead of pushing
 	 */
-	_pushState: function(params, url, replace) {
+	_pushState: function(params, replace) {
 		var strParams;
 		if (typeof(params) === 'string') {
 			strParams = params;
@@ -2099,7 +1908,7 @@ OC.Util.History = {
 			strParams = OC.buildQueryString(params);
 		}
 		if (window.history.pushState) {
-			url = url || location.pathname + '?' + strParams;
+			var url = location.pathname + '?' + strParams;
 			// Workaround for bug with SVG and window.history.pushState on Firefox < 51
 			// https://bugzilla.mozilla.org/show_bug.cgi?id=652991
 			var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
@@ -2134,13 +1943,11 @@ OC.Util.History = {
 	 * Note: this includes a workaround for IE8/IE9 that uses
 	 * the hash part instead of the search part.
 	 *
-	 * @param {Object|string} params to append to the URL, can be either a string
+	 * @param params to append to the URL, can be either a string
 	 * or a map
-	 * @param {string} [url] URL to be used, otherwise the current URL will be used,
-	 * using the params as query string
 	 */
-	pushState: function(params, url) {
-		return this._pushState(params, url, false);
+	pushState: function(params) {
+		return this._pushState(params, false);
 	},
 
 	/**
@@ -2149,13 +1956,11 @@ OC.Util.History = {
 	 * Note: this includes a workaround for IE8/IE9 that uses
 	 * the hash part instead of the search part.
 	 *
-	 * @param {Object|string} params to append to the URL, can be either a string
+	 * @param params to append to the URL, can be either a string
 	 * or a map
-	 * @param {string} [url] URL to be used, otherwise the current URL will be used,
-	 * using the params as query string
 	 */
-	replaceState: function(params, url) {
-		return this._pushState(params, url, true);
+	replaceState: function(params) {
+		return this._pushState(params, true);
 	},
 
 	/**

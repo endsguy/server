@@ -36,9 +36,8 @@ if (!array_key_exists('appid', $_POST)) {
 	exit;
 }
 
-$appIds = (array)$_POST['appid'];
-foreach($appIds as $appId) {
-	$appId = OC_App::cleanAppId($appId);
-	OC_App::disable($appId);
-}
+$appId = (string)$_POST['appid'];
+$appId = OC_App::cleanAppId($appId);
+
+OC_App::disable($appId);
 OC_JSON::success();

@@ -2,7 +2,7 @@
 
 <div id="emptycontent" class="hidden">
 	<div class="icon-starred"></div>
-	<h2><?php p($l->t('No favorites yet')); ?></h2>
+	<h2><?php p($l->t('No favorites')); ?></h2>
 	<p><?php p($l->t('Files and folders you mark as favorite will show up here')); ?></p>
 </div>
 
@@ -40,3 +40,4 @@
 	<tfoot>
 	</tfoot>
 </table>
+

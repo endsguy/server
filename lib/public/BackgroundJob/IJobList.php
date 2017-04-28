@@ -91,7 +91,7 @@ interface IJobList {
 	 * @param \OCP\BackgroundJob\IJob $job
 	 * @since 7.0.0
 	 */
-	public function setLastJob(IJob $job);
+	public function setLastJob($job);
 
 	/**
 	 * Remove the reservation for a job
@@ -99,7 +99,7 @@ interface IJobList {
 	 * @param IJob $job
 	 * @since 9.1.0
 	 */
-	public function unlockJob(IJob $job);
+	public function unlockJob($job);
 
 	/**
 	 * get the id of the last ran job
@@ -115,17 +115,8 @@ interface IJobList {
 	/**
 	 * set the lastRun of $job to now
 	 *
-	 * @param IJob $job
+	 * @param \OCP\BackgroundJob\IJob $job
 	 * @since 7.0.0
 	 */
-	public function setLastRun(IJob $job);
-
-	/**
-	 * set the run duration of $job
-	 *
-	 * @param IJob $job
-	 * @param $timeTaken
-	 * @since 12.0.0
-	 */
-	public function setExecutionTime(IJob $job, $timeTaken);
+	public function setLastRun($job);
 }

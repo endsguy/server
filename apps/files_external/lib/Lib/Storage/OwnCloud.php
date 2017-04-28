@@ -23,12 +23,11 @@
  */
 
 namespace OCA\Files_External\Lib\Storage;
-use Sabre\DAV\Client;
 
 /**
- * Nextcloud backend for external storage based on DAV backend.
+ * ownCloud backend for external storage based on DAV backend.
  *
- * The Nextcloud URL consists of three parts:
+ * The ownCloud URL consists of three parts:
  * http://%host/%context/remote.php/webdav/%root
  *
  */
@@ -70,7 +69,6 @@ class OwnCloud extends \OC\Files\Storage\DAV{
 
 		$params['host'] = $host;
 		$params['root'] = $contextPath . self::OC_URL_SUFFIX . $root;
-		$params['authType'] = Client::AUTH_BASIC;
 
 		parent::__construct($params);
 	}

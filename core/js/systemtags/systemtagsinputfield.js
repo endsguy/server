@@ -40,9 +40,7 @@
 		'<form class="systemtags-rename-form">' +
 		'    <label class="hidden-visually" for="{{cid}}-rename-input">{{renameLabel}}</label>' +
 		'    <input id="{{cid}}-rename-input" type="text" value="{{name}}">' +
-		'    {{#if isAdmin}}' +
-		'      <a href="#" class="delete icon icon-delete" title="{{deleteTooltip}}"></a>' +
-		'    {{/if}}' +
+		'    <a href="#" class="delete icon icon-delete" title="{{deleteTooltip}}"></a>' +
 		'</form>';
 
 	/**
@@ -150,8 +148,7 @@
 				cid: this.cid,
 				name: oldName,
 				deleteTooltip: t('core', 'Delete'),
-				renameLabel: t('core', 'Rename'),
-				isAdmin: this._isAdmin
+				renameLabel: t('core', 'Rename')
 			}));
 			$item.find('.label').after($renameForm);
 			$item.find('.label, .systemtags-actions').addClass('hidden');
@@ -198,7 +195,6 @@
 			var $item = $(ev.target).closest('.systemtags-item');
 			var tagId = $item.attr('data-id');
 			this.collection.get(tagId).destroy();
-			$(ev.target).tooltip('hide');
 			$item.closest('.select2-result').remove();
 			// TODO: spinner
 			return false;

@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Aktivirano",
+    "Not enabled" : "Nije aktivirano",
     "Wrong password" : "Pogrešna lozinka",
     "Saved" : "Spremljeno",
     "No user supplied" : "Nijedan korisnik nije dostavljen",
@@ -61,6 +63,7 @@ OC.L10N.register(
     "Login" : "Prijava",
     "Plain" : "Čisti tekst",
     "NT LAN Manager" : "NT LAN menedžer",
+    "This is used for sending out notifications." : "Ovo se koristi za slanje notifikacija.",
     "Send mode" : "Način rada za slanje",
     "Encryption" : "Šifriranje",
     "From address" : "S adrese",

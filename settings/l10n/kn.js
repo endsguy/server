@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "ಸಕ್ರಿಯಗೊಳಿಸಿದೆ",
+    "Not enabled" : "﻿ಸಕ್ರಿಯಗೊಳಿಸಿಲ್ಲ",
     "Wrong password" : "ದುರ್ಬಲ ಗುಪ್ತಪದ",
     "Saved" : "﻿ಉಳಿಸಿದ",
     "No user supplied" : "﻿ಯಾವುದೇ ಬಳಕೆದಾರನ ಹೆಸರನ್ನು ನೀಡಿರುವುದಿಲ್ಲ",

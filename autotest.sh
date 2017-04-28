@@ -143,8 +143,6 @@ function cleanup_config {
 	if [ -f config/autotest-storage-swift.config.php ]; then
 		rm config/autotest-storage-swift.config.php
 	fi
-	# Remove mysqlmb4.config.php
-	rm -f config/mysqlmb4.config.php
 }
 
 # restore config on exit
@@ -346,9 +344,6 @@ function execute_tests {
 	if [ "$TEST_SELECTION" == "NODB" ]; then
 		GROUP='--exclude-group DB,SLOWDB'
 	fi
-	if [ "$TEST_SELECTION" == "PRIMARY-s3" ]; then
-		GROUP='--group PRIMARY-s3'
-	fi
 
 	COVER=''
 	if [ -z "$NOCOVERAGE" ]; then
@@ -358,7 +353,7 @@ function execute_tests {
 	fi
 
 	if [ -d "$2" ]; then
-	    for f in $(find "$2" -name '*Test.php'); do
+	    for f in $(find "$2" -name '*.php'); do
 			echo "${PHPUNIT[@]}" --configuration phpunit-autotest.xml $GROUP $COVER --log-junit "autotest-results-$DB.xml" "$2" / "$f" "$3"
 			"${PHPUNIT[@]}" --configuration phpunit-autotest.xml $GROUP $COVER --log-junit "autotest-results-$DB.xml" "$f" "$3"
 			RESULT=$?

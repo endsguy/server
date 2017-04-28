@@ -104,11 +104,6 @@ class SharingTest extends TestCase {
 			->method('getAppValue')
 			->with('core', 'shareapi_public_link_disclaimertext', null)
 			->willReturn('Lorem ipsum');
-		$this->config
-			->expects($this->at(12))
-			->method('getAppValue')
-			->with('core', 'shareapi_enable_link_password_by_default', 'no')
-			->willReturn('yes');
 
 		$expected = new TemplateResponse(
 			'settings',
@@ -127,8 +122,7 @@ class SharingTest extends TestCase {
 				'shareEnforceExpireDate'          => 'no',
 				'shareExcludeGroups'              => false,
 				'shareExcludedGroupsList'         => '',
-				'publicShareDisclaimerText'       => 'Lorem ipsum',
-				'enableLinkPasswordByDefault'     => 'yes'
+				'publicShareDisclaimerText'           => 'Lorem ipsum',
 			],
 			''
 		);
@@ -197,11 +191,6 @@ class SharingTest extends TestCase {
 			->method('getAppValue')
 			->with('core', 'shareapi_public_link_disclaimertext', null)
 			->willReturn('Lorem ipsum');
-		$this->config
-			->expects($this->at(12))
-			->method('getAppValue')
-			->with('core', 'shareapi_enable_link_password_by_default', 'no')
-			->willReturn('yes');
 
 		$expected = new TemplateResponse(
 			'settings',
@@ -220,8 +209,7 @@ class SharingTest extends TestCase {
 				'shareEnforceExpireDate'          => 'no',
 				'shareExcludeGroups'              => true,
 				'shareExcludedGroupsList'         => 'NoSharers|OtherNoSharers',
-				'publicShareDisclaimerText'       => 'Lorem ipsum',
-				'enableLinkPasswordByDefault'     => 'yes'
+				'publicShareDisclaimerText'           => 'Lorem ipsum',
 			],
 			''
 		);

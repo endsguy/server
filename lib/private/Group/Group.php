@@ -31,9 +31,6 @@ namespace OC\Group;
 use OCP\IGroup;
 
 class Group implements IGroup {
-	/** @var null|string  */
-	protected $displayName;
-
 	/**
 	 * @var string $id
 	 */
@@ -69,25 +66,16 @@ class Group implements IGroup {
 	 * @param \OC\Group\Backend[] $backends
 	 * @param \OC\User\Manager $userManager
 	 * @param \OC\Hooks\PublicEmitter $emitter
-	 * @param string $displayName
 	 */
-	public function __construct($gid, $backends, $userManager, $emitter = null, $displayName = null) {
+	public function __construct($gid, $backends, $userManager, $emitter = null) {
 		$this->gid = $gid;
 		$this->backends = $backends;
 		$this->userManager = $userManager;
 		$this->emitter = $emitter;
-		$this->displayName = $displayName;
 	}
 
 	public function getGID() {
 		return $this->gid;
-	}
-
-	public function getDisplayName() {
-		if (is_null($this->displayName)) {
-			return $this->gid;
-		}
-		return $this->displayName;
 	}
 
 	/**

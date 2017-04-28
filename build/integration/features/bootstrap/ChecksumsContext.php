@@ -48,7 +48,7 @@ class ChecksumsContext implements \Behat\Behat\Context\Context {
 	}
 
 	/** @BeforeScenario */
-	public function setUpScenario() {
+	public function tearUpScenario() {
 		$this->client = new Client();
 	}
 

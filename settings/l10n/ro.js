@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Activat",
+    "Not enabled" : "Dezactivat",
     "Wrong password" : "Parolă greșită",
     "Saved" : "Salvat",
     "No user supplied" : "Nu a fost furnizat niciun utilizator",
@@ -124,7 +126,6 @@ OC.L10N.register(
     "How to do backups" : "Cum să faci copii de rezervă",
     "Advanced monitoring" : "Monitorizare avansată",
     "Developer documentation" : "Documentație pentru dezvoltatori",
-    "This app has an update available." : "Este disponibilă o actualizare pentru această aplicație.",
     "by %s" : "de %s",
     "%s-licensed" : "%s-licențiat",
     "Documentation:" : "Documentație:",
@@ -133,6 +134,7 @@ OC.L10N.register(
     "Report a bug" : "Raportează un defect",
     "Show description …" : "Arată descriere ...",
     "Hide description …" : "Ascunde descriere ...",
+    "This app has an update available." : "Este disponibilă o actualizare pentru această aplicație.",
     "Enable only for specific groups" : "Activează doar pentru grupuri specifice",
     "SSL Root Certificates" : "Certificate SSL rădăcină",
     "Common Name" : "Nume comun",

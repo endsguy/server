@@ -47,11 +47,7 @@ class CappedMemoryCache implements ICache, \ArrayAccess {
 	}
 
 	public function set($key, $value, $ttl = 0) {
-		if (is_null($key)) {
-			$this->cache[] = $value;
-		} else {
-			$this->cache[$key] = $value;
-		}
+		$this->cache[$key] = $value;
 		$this->garbageCollect();
 	}
 

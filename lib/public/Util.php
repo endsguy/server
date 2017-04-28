@@ -703,7 +703,7 @@ class Util {
 	 */
 	public static function needUpgrade() {
 		if (!isset(self::$needUpgradeCache)) {
-			self::$needUpgradeCache=\OC_Util::needUpgrade(\OC::$server->getSystemConfig());
+			self::$needUpgradeCache=\OC_Util::needUpgrade(\OC::$server->getConfig());
 		}		
 		return self::$needUpgradeCache;
 	}

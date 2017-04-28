@@ -28,6 +28,7 @@
 namespace OCP\AppFramework\Db;
 
 use OCP\IDBConnection;
+use OCP\IDb;
 
 
 /**
@@ -228,7 +229,11 @@ abstract class Mapper {
 	 * @since 7.0.0
 	 */
 	protected function execute($sql, array $params=[], $limit=null, $offset=null){
-		$query = $this->db->prepare($sql, $limit, $offset);
+		if ($this->db instanceof IDb) {
+			$query = $this->db->prepareQuery($sql, $limit, $offset);
+		} else {
+			$query = $this->db->prepare($sql, $limit, $offset);
+		}
 
 		if ($this->isAssocArray($params)) {
 			foreach ($params as $key => $param) {
@@ -245,6 +250,15 @@ abstract class Mapper {
 		}
 
 		$result = $query->execute();
+
+		// this is only for backwards compatibility reasons and can be removed
+		// in owncloud 10. IDb returns a StatementWrapper from execute, PDO,
+		// Doctrine and IDbConnection don't so this needs to be done in order
+		// to stay backwards compatible for the things that rely on the
+		// StatementWrapper being returned
+		if ($result instanceof \OC_DB_StatementWrapper) {
+			return $result;
+		}
 
 		return $query;
 	}

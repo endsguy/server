@@ -24,25 +24,21 @@
 
 namespace OCA\Files_Sharing\External;
 
-use OCP\Federation\ICloudId;
-
 class Cache extends \OC\Files\Cache\Cache {
-	/** @var ICloudId */
-	private $cloudId;
 	private $remote;
 	private $remoteUser;
 	private $storage;
 
 	/**
 	 * @param \OCA\Files_Sharing\External\Storage $storage
-	 * @param ICloudId $cloudId
+	 * @param string $remote
+	 * @param string $remoteUser
 	 */
-	public function __construct($storage, ICloudId $cloudId) {
-		$this->cloudId = $cloudId;
+	public function __construct($storage, $remote, $remoteUser) {
 		$this->storage = $storage;
-		list(, $remote) = explode('://', $cloudId->getRemote(), 2);
+		list(, $remote) = explode('://', $remote, 2);
 		$this->remote = $remote;
-		$this->remoteUser = $cloudId->getUser();
+		$this->remoteUser = $remoteUser;
 		parent::__construct($storage);
 	}
 
@@ -51,7 +47,7 @@ class Cache extends \OC\Files\Cache\Cache {
 		if (!$result) {
 			return false;
 		}
-		$result['displayname_owner'] = $this->cloudId->getDisplayId();
+		$result['displayname_owner'] = $this->remoteUser . '@' . $this->remote;
 		if (!$file || $file === '') {
 			$result['is_share_mount_point'] = true;
 			$mountPoint = rtrim($this->storage->getMountPoint());
@@ -63,7 +59,7 @@ class Cache extends \OC\Files\Cache\Cache {
 	public function getFolderContentsById($id) {
 		$results = parent::getFolderContentsById($id);
 		foreach ($results as &$file) {
-			$file['displayname_owner'] = $this->cloudId->getDisplayId();
+			$file['displayname_owner'] = $this->remoteUser . '@' . $this->remote;
 		}
 		return $results;
 	}

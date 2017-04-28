@@ -610,11 +610,4 @@ class Wrapper implements \OC\Files\Storage\Storage, ILockingStorage {
 			$this->getWrapperStorage()->changeLock($path, $type, $provider);
 		}
 	}
-
-	/**
-	 * @return bool
-	 */
-	public function needsPartFile() {
-		return $this->getWrapperStorage()->needsPartFile();
-	}
 }

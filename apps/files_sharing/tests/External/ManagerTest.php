@@ -25,7 +25,6 @@
 
 namespace OCA\Files_Sharing\Tests\External;
 
-use OC\Federation\CloudIdManager;
 use OC\Files\Storage\StorageFactory;
 use OCA\FederatedFileSharing\DiscoveryManager;
 use OCA\Files_Sharing\External\Manager;
@@ -70,19 +69,22 @@ class ManagerTest extends TestCase {
 		$this->mountManager = new \OC\Files\Mount\Manager();
 		$this->clientService = $this->getMockBuilder('\OCP\Http\Client\IClientService')
 			->disableOriginalConstructor()->getMock();
-
+		$discoveryManager = new DiscoveryManager(
+			\OC::$server->getMemCacheFactory(),
+			\OC::$server->getHTTPClientService()
+		);
 		$this->manager = new Manager(
 			\OC::$server->getDatabaseConnection(),
 			$this->mountManager,
 			new StorageFactory(),
 			$this->clientService,
 			\OC::$server->getNotificationManager(),
-			\OC::$server->query(\OCP\OCS\IDiscoveryService::class),
+			$discoveryManager,
 			$this->uid
 		);
 		$this->testMountProvider = new MountProvider(\OC::$server->getDatabaseConnection(), function() {
 			return $this->manager;
-		}, new CloudIdManager());
+		});
 	}
 
 	private function setupMounts() {
@@ -140,7 +142,7 @@ class ManagerTest extends TestCase {
 			->disableOriginalConstructor()->getMock();
 		$client->expects($this->once())
 			->method('post')
-			->with($this->stringStartsWith('http://localhost/ocs/v2.php/cloud/shares/' . $openShares[0]['remote_id']), $this->anything())
+			->with($this->stringStartsWith('http://localhost/ocs/v1.php/cloud/shares/' . $openShares[0]['remote_id']), $this->anything())
 			->willReturn($response);
 
 		// Accept the first share
@@ -183,7 +185,7 @@ class ManagerTest extends TestCase {
 			->disableOriginalConstructor()->getMock();
 		$client->expects($this->once())
 			->method('post')
-			->with($this->stringStartsWith('http://localhost/ocs/v2.php/cloud/shares/' . $openShares[1]['remote_id'] . '/decline'), $this->anything())
+			->with($this->stringStartsWith('http://localhost/ocs/v1.php/cloud/shares/' . $openShares[1]['remote_id'] . '/decline'), $this->anything())
 			->willReturn($response);
 
 		// Decline the third share
@@ -223,11 +225,11 @@ class ManagerTest extends TestCase {
 			->disableOriginalConstructor()->getMock();
 		$client1->expects($this->once())
 			->method('post')
-			->with($this->stringStartsWith('http://localhost/ocs/v2.php/cloud/shares/' . $openShares[0]['remote_id'] . '/decline'), $this->anything())
+			->with($this->stringStartsWith('http://localhost/ocs/v1.php/cloud/shares/' . $openShares[0]['remote_id'] . '/decline'), $this->anything())
 			->willReturn($response);
 		$client2->expects($this->once())
 			->method('post')
-			->with($this->stringStartsWith('http://localhost/ocs/v2.php/cloud/shares/' . $acceptedShares[0]['remote_id'] . '/decline'), $this->anything())
+			->with($this->stringStartsWith('http://localhost/ocs/v1.php/cloud/shares/' . $acceptedShares[0]['remote_id'] . '/decline'), $this->anything())
 			->willReturn($response);
 
 		$this->manager->removeUserShares($this->uid);

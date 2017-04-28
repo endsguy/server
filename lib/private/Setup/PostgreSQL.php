@@ -35,6 +35,7 @@ class PostgreSQL extends AbstractDatabase {
 	public $dbprettyname = 'PostgreSQL';
 
 	public function setupDatabase($username) {
+		$systemConfig = $this->config->getSystemConfig();
 		try {
 			$connection = $this->connect([
 				'dbname' => 'postgres'
@@ -66,7 +67,7 @@ class PostgreSQL extends AbstractDatabase {
 				$this->createDBUser($connection);
 			}
 
-			$this->config->setValues([
+			$systemConfig->setValues([
 				'dbuser' => $this->dbUser,
 				'dbpassword' => $this->dbPassword,
 			]);
@@ -83,22 +84,22 @@ class PostgreSQL extends AbstractDatabase {
 			$this->logger->logException($e);
 			$this->logger->warning('Error trying to connect as "postgres", assuming database is setup and tables need to be created');
 			$tablesSetup = false;
-			$this->config->setValues([
+			$systemConfig->setValues([
 				'dbuser' => $this->dbUser,
 				'dbpassword' => $this->dbPassword,
 			]);
 		}
 
 		// connect to the ownCloud database (dbname=$this->dbname) and check if it needs to be filled
-		$this->dbUser = $this->config->getValue('dbuser');
-		$this->dbPassword = $this->config->getValue('dbpassword');
+		$this->dbUser = $systemConfig->getValue('dbuser');
+		$this->dbPassword = $systemConfig->getValue('dbpassword');
 		$connection = $this->connect();
 		try {
 			$connection->connect();
 		} catch (\Exception $e) {
 			$this->logger->logException($e);
 			throw new \OC\DatabaseSetupException($this->trans->t('PostgreSQL username and/or password not valid'),
-				$this->trans->t('You need to enter details of an existing account.'));
+				$this->trans->t('You need to enter either an existing account or the administrator.'));
 		}
 
 
@@ -149,16 +150,14 @@ class PostgreSQL extends AbstractDatabase {
 	}
 
 	private function createDBUser(IDBConnection $connection) {
-		$dbUser = $this->dbUser;
 		try {
-			$i = 1;
-			while ($this->userExists($connection)) {
-				$i++;
-				$this->dbUser = $dbUser . $i;
-			};
-
-			// create the user
-			$query = $connection->prepare("CREATE USER " . addslashes($this->dbUser) . " CREATEDB PASSWORD '" . addslashes($this->dbPassword) . "'");
+			if ($this->userExists($connection)) {
+				// change the password
+				$query = $connection->prepare("ALTER ROLE " . addslashes($this->dbUser) . " WITH CREATEDB PASSWORD '" . addslashes($this->dbPassword) . "'");
+			} else {
+				// create the user
+				$query = $connection->prepare("CREATE USER " . addslashes($this->dbUser) . " CREATEDB PASSWORD '" . addslashes($this->dbPassword) . "'");
+			}
 			$query->execute();
 		} catch (DatabaseException $e) {
 			$this->logger->error('Error while trying to create database user');

@@ -688,39 +688,30 @@ class Storage {
 	}
 
 	/**
-	 * Expire versions which exceed the quota.
+	 * Expire versions which exceed the quota
 	 *
-	 * This will setup the filesystem for the given user but will not
-	 * tear it down afterwards.
-	 *
-	 * @param string $filename path to file to expire
-	 * @param string $uid user for which to expire the version
+	 * @param string $filename
 	 * @return bool|int|null
 	 */
-	public static function expire($filename, $uid) {
+	public static function expire($filename) {
 		$config = \OC::$server->getConfig();
 		$expiration = self::getExpiration();
 
 		if($config->getSystemValue('files_versions', Storage::DEFAULTENABLED)=='true' && $expiration->isEnabled()) {
-			// get available disk space for user
-			$user = \OC::$server->getUserManager()->get($uid);
-			if (is_null($user)) {
-				\OCP\Util::writeLog('files_versions', 'Backends provided no user object for ' . $uid, \OCP\Util::ERROR);
-				throw new \OC\User\NoUserException('Backends provided no user object for ' . $uid);
-			}
-
-			\OC_Util::setupFS($uid);
 
 			if (!Filesystem::file_exists($filename)) {
 				return false;
 			}
 
+			list($uid, $filename) = self::getUidAndFilename($filename);
 			if (empty($filename)) {
 				// file maybe renamed or deleted
 				return false;
 			}
 			$versionsFileview = new View('/'.$uid.'/files_versions');
 
+			// get available disk space for user
+			$user = \OC::$server->getUserManager()->get($uid);
 			$softQuota = true;
 			$quota = $user->getQuota();
 			if ( $quota === null || $quota === 'none' ) {

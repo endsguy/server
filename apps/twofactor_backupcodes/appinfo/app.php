@@ -19,7 +19,4 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-// @codeCoverageIgnoreStart
 OC_App::registerPersonal('twofactor_backupcodes', 'settings/personal');
-// @codeCoverageIgnoreEnd

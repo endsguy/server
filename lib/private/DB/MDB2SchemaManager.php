@@ -33,7 +33,6 @@ use Doctrine\DBAL\Platforms\MySqlPlatform;
 use Doctrine\DBAL\Platforms\OraclePlatform;
 use Doctrine\DBAL\Platforms\PostgreSqlPlatform;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
-use Doctrine\DBAL\Schema\Schema;
 use OCP\IDBConnection;
 
 class MDB2SchemaManager {
@@ -67,8 +66,7 @@ class MDB2SchemaManager {
 	 */
 	public function createDbFromStructure($file) {
 		$schemaReader = new MDB2SchemaReader(\OC::$server->getConfig(), $this->conn->getDatabasePlatform());
-		$toSchema = new Schema([], [], $this->conn->getSchemaManager()->createSchemaConfig());
-		$toSchema = $schemaReader->loadSchemaFromFile($file, $toSchema);
+		$toSchema = $schemaReader->loadSchemaFromFile($file);
 		return $this->executeSchemaChange($toSchema);
 	}
 
@@ -102,8 +100,7 @@ class MDB2SchemaManager {
 	private function readSchemaFromFile($file) {
 		$platform = $this->conn->getDatabasePlatform();
 		$schemaReader = new MDB2SchemaReader(\OC::$server->getConfig(), $platform);
-		$toSchema = new Schema([], [], $this->conn->getSchemaManager()->createSchemaConfig());
-		return $schemaReader->loadSchemaFromFile($file, $toSchema);
+		return $schemaReader->loadSchemaFromFile($file);
 	}
 
 	/**
@@ -140,8 +137,7 @@ class MDB2SchemaManager {
 	 */
 	public function removeDBStructure($file) {
 		$schemaReader = new MDB2SchemaReader(\OC::$server->getConfig(), $this->conn->getDatabasePlatform());
-		$toSchema = new Schema([], [], $this->conn->getSchemaManager()->createSchemaConfig());
-		$fromSchema = $schemaReader->loadSchemaFromFile($file, $toSchema);
+		$fromSchema = $schemaReader->loadSchemaFromFile($file);
 		$toSchema = clone $fromSchema;
 		/** @var $table \Doctrine\DBAL\Schema\Table */
 		foreach ($toSchema->getTables() as $table) {

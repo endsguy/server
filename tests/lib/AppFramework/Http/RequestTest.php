@@ -305,10 +305,7 @@ class RequestTest extends \Test\TestCase {
 		$vars = array(
 			'put' => $data,
 			'method' => 'PUT',
-			'server' => [
-				'CONTENT_TYPE' => 'image/png',
-				'CONTENT_LENGTH' => strlen($data)
-			],
+			'server' => array('CONTENT_TYPE' => 'image/png'),
 		);
 
 		$request = new Request(
@@ -1654,7 +1651,7 @@ class RequestTest extends \Test\TestCase {
 						'HTTP_REQUESTTOKEN' => 'AAAHGxsTCTc3BgMQESAcNR0OAR0=:MyTotalSecretShareds',
 					],
 					'cookies' => [
-						'nc_token' => 'asdf',
+						'oc_token' => 'asdf',
 					],
 				],
 				$this->secureRandom,
@@ -1788,31 +1785,6 @@ class RequestTest extends \Test\TestCase {
 			->getMock();
 
 		$this->assertFalse($request->passesLaxCookieCheck());
-	}
-
-	public function testSkipCookieCheckForOCSRequests() {
-		/** @var Request $request */
-		$request = $this->getMockBuilder('\OC\AppFramework\Http\Request')
-			->setMethods(['getScriptName'])
-			->setConstructorArgs([
-				[
-					'server' => [
-						'HTTP_REQUESTTOKEN' => 'AAAHGxsTCTc3BgMQESAcNR0OAR0=:MyTotalSecretShareds',
-						'HTTP_OCS_APIREQUEST' => 'true',
-					],
-					'cookies' => [
-						session_name() => 'asdf',
-						'nc_sameSiteCookiestrict' => 'false',
-					],
-				],
-				$this->secureRandom,
-				$this->config,
-				$this->csrfTokenManager,
-				$this->stream
-			])
-			->getMock();
-
-		$this->assertTrue($request->passesStrictCookieCheck());
 	}
 
 	/**

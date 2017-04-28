@@ -22,6 +22,7 @@
 namespace OCA\DAV\Connector\Sabre;
 
 use Sabre\Xml\XmlSerializable;
+use Sabre\Xml\Element;
 use Sabre\Xml\Writer;
 
 /**

@@ -44,7 +44,6 @@ class Admin implements ISettings {
 			'outgoingServer2serverShareEnabled' => $this->fedShareProvider->isOutgoingServer2serverShareEnabled(),
 			'incomingServer2serverShareEnabled' => $this->fedShareProvider->isIncomingServer2serverShareEnabled(),
 			'lookupServerEnabled' => $this->fedShareProvider->isLookupServerQueriesEnabled(),
-			'lookupServerUploadEnabled' => $this->fedShareProvider->isLookupServerUploadEnabled(),
 		];
 
 		return new TemplateResponse('federatedfilesharing', 'settings-admin', $parameters, '');

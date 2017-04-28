@@ -28,6 +28,7 @@
 namespace OC\AppFramework;
 
 use OC\AppFramework\Http\Dispatcher;
+use OC_App;
 use OC\AppFramework\DependencyInjection\DIContainer;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\QueryException;
@@ -60,12 +61,11 @@ class App {
 
 		$appInfo = \OC_App::getAppInfo($appId);
 		if (isset($appInfo['namespace'])) {
-			self::$nameSpaceCache[$appId] = trim($appInfo['namespace']);
-		} else {
-			// if the tag is not found, fall back to uppercasing the first letter
-			self::$nameSpaceCache[$appId] = ucfirst($appId);
+			return $topNamespace . trim($appInfo['namespace']);
 		}
 
+		// if the tag is not found, fall back to uppercasing the first letter
+		self::$nameSpaceCache[$appId] = ucfirst($appId);
 		return $topNamespace . self::$nameSpaceCache[$appId];
 	}
 

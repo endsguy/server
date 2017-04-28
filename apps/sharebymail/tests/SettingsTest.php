@@ -24,7 +24,6 @@ namespace OCA\ShareByMail\Tests;
 
 
 use OCA\ShareByMail\Settings;
-use OCA\ShareByMail\Settings\SettingsManager;
 use Test\TestCase;
 
 class SettingsTest extends TestCase  {
@@ -32,15 +31,10 @@ class SettingsTest extends TestCase  {
 	/** @var  Settings */
 	private $instance;
 
-	/** @var  SettingsManager | \PHPUnit_Framework_MockObject_MockObject */
-	private $settingsManager;
-
 	public function setUp() {
 		parent::setUp();
 
-		$this->settingsManager = $this->getMockBuilder(SettingsManager::class)
-			->disableOriginalConstructor()->getMock();
-		$this->instance = new Settings($this->settingsManager);
+		$this->instance = new Settings();
 	}
 
 	public function testAnnounceShareProvider() {
@@ -64,32 +58,6 @@ class SettingsTest extends TestCase  {
 		];
 
 		$this->instance->announceShareProvider(['array' => &$before]);
-		$this->assertSame($after, $before);
-	}
-
-
-	public function testAnnounceShareByMailSettings() {
-		$this->settingsManager->expects($this->once())->method('enforcePasswordProtection')->willReturn(true);
-		$before = [
-			'oc_appconfig' =>
-				json_encode([
-					'key1' => 'value1',
-					'key2' => 'value2'
-				]),
-			'oc_foo' => 'oc_bar'
-		];
-
-		$after = [
-			'oc_appconfig' =>
-				json_encode([
-					'key1' => 'value1',
-					'key2' => 'value2',
-					'shareByMail' => ['enforcePasswordProtection' => true]
-				]),
-			'oc_foo' => 'oc_bar'
-		];
-
-		$this->instance->announceShareByMailSettings(['array' => &$before]);
 		$this->assertSame($after, $before);
 	}
 

@@ -196,7 +196,7 @@ interface ILDAPWrapper {
 	 */
 	public function unbind($link);
 
-	//additional required methods in Nextcloud
+	//additional required methods in ownCloud
 
 	/**
 	 * Checks whether the server supports LDAP

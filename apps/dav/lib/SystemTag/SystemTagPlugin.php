@@ -30,12 +30,15 @@ use Sabre\DAV\PropPatch;
 use Sabre\DAV\Exception\BadRequest;
 use Sabre\DAV\Exception\Conflict;
 use Sabre\DAV\Exception\Forbidden;
+use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\Exception\UnsupportedMediaType;
+
 use OCP\SystemTag\ISystemTag;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\TagAlreadyExistsException;
 use Sabre\HTTP\RequestInterface;
 use Sabre\HTTP\ResponseInterface;
+use OCA\DAV\SystemTag\SystemTagMappingNode;
 
 /**
  * Sabre plugin to handle system tags:
@@ -268,17 +271,17 @@ class SystemTagPlugin extends \Sabre\DAV\ServerPlugin {
 	 * @return void
 	 */
 	public function handleUpdateProperties($path, PropPatch $propPatch) {
-		$node = $this->server->tree->getNodeForPath($path);
-		if (!($node instanceof SystemTagNode)) {
-			return;
-		}
-
 		$propPatch->handle([
 			self::DISPLAYNAME_PROPERTYNAME,
 			self::USERVISIBLE_PROPERTYNAME,
 			self::USERASSIGNABLE_PROPERTYNAME,
 			self::GROUPS_PROPERTYNAME,
-		], function($props) use ($node) {
+		], function($props) use ($path) {
+			$node = $this->server->tree->getNodeForPath($path);
+			if (!($node instanceof SystemTagNode)) {
+				return;
+			}
+
 			$tag = $node->getSystemTag();
 			$name = $tag->getName();
 			$userVisible = $tag->isUserVisible();

@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Увімкнено",
+    "Not enabled" : "Вимкнено",
     "Wrong password" : "Невірний пароль",
     "Saved" : "Збережено",
     "No user supplied" : "Користувача не вказано",
@@ -83,6 +85,7 @@ OC.L10N.register(
     "NT LAN Manager" : "Менеджер NT LAN",
     "Email server" : "Сервер електронної пошти",
     "Open documentation" : "Відкрити документацію",
+    "This is used for sending out notifications." : "Використовується для відсилання повідомлень.",
     "Send mode" : "Режим надсилання",
     "Encryption" : "Шифрування",
     "From address" : "Адреса відправника",

@@ -23,23 +23,23 @@
 
 namespace OC\Settings\Admin;
 
+use OC\Encryption\Manager;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\Encryption\IManager;
 use OCP\IUserManager;
 use OCP\Settings\ISettings;
 
 class Encryption implements ISettings {
-	/** @var IManager */
+	/** @var Manager */
 	private $manager;
 
 	/** @var IUserManager */
 	private $userManager;
 
 	/**
-	 * @param IManager $manager
+	 * @param Manager $manager
 	 * @param IUserManager $userManager
 	 */
-	public function __construct(IManager $manager, IUserManager $userManager) {
+	public function __construct(Manager $manager, IUserManager $userManager) {
 		$this->manager = $manager;
 		$this->userManager = $userManager;
 	}

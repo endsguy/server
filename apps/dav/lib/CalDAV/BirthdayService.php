@@ -30,11 +30,6 @@ use Exception;
 use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\DAV\DAV\GroupPrincipalBackend;
 use Sabre\VObject\Component\VCalendar;
-use Sabre\VObject\Component\VCard;
-use Sabre\VObject\DateTimeParser;
-use Sabre\VObject\Document;
-use Sabre\VObject\InvalidDataException;
-use Sabre\VObject\Property\VCard\DateAndOrTime;
 use Sabre\VObject\Reader;
 
 class BirthdayService {
@@ -134,12 +129,6 @@ class BirthdayService {
 		}
 		try {
 			$doc = Reader::read($cardData);
-			// We're always converting to vCard 4.0 so we can rely on the
-			// VCardConverter handling the X-APPLE-OMIT-YEAR property for us.
-			if (!$doc instanceof VCard) {
-				return null;
-			}
-			$doc = $doc->convert(Document::VCARD40);
 		} catch (Exception $e) {
 			return null;
 		}
@@ -147,43 +136,21 @@ class BirthdayService {
 		if (!isset($doc->{$dateField})) {
 			return null;
 		}
-		if (!isset($doc->FN)) {
-			return null;
-		}
 		$birthday = $doc->{$dateField};
 		if (!(string)$birthday) {
 			return null;
 		}
-		// Skip if the BDAY property is not of the right type.
-		if (!$birthday instanceof DateAndOrTime) {
-			return null;
-		}
-
-		// Skip if we can't parse the BDAY value.
-		try {
-			$dateParts = DateTimeParser::parseVCardDateTime($birthday->getValue());
-		} catch (InvalidDataException $e) {
-			return null;
-		}
-
-		$unknownYear = false;
-		if (!$dateParts['year']) {
-			$birthday = '1900-' . $dateParts['month'] . '-' . $dateParts['date'];
-
-			$unknownYear = true;
-		}
-
+		$title = str_replace('{name}',
+			strtr((string)$doc->FN, array('\,' => ',', '\;' => ';')),
+			'{name}'
+		);
 		try {
 			$date = new \DateTime($birthday);
 		} catch (Exception $e) {
 			return null;
 		}
-		if ($unknownYear) {
-			$summary = $doc->FN->getValue() . ' ' . $summarySymbol;
-		} else {
-			$year = (int)$date->format('Y');
-			$summary = $doc->FN->getValue() . " ($summarySymbol$year)";
-		}
+
+		$summary = $title . ' (' . $summarySymbol . $date->format('Y') . ')';
 		$vCal = new VCalendar();
 		$vCal->VERSION = '2.0';
 		$vEvent = $vCal->createComponent('VEVENT');

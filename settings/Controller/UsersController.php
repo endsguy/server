@@ -33,10 +33,11 @@ namespace OC\Settings\Controller;
 use OC\Accounts\AccountManager;
 use OC\AppFramework\Http;
 use OC\ForbiddenException;
-use OC\Settings\Mailer\NewUserMailHelper;
+use OC\User\User;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IL10N;
@@ -48,7 +49,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\Mail\IMailer;
 use OCP\IAvatarManager;
-use OCP\Security\ISecureRandom;
+use Punic\Exception;
 
 /**
  * @package OC\Settings\Controller
@@ -68,8 +69,14 @@ class UsersController extends Controller {
 	private $config;
 	/** @var ILogger */
 	private $log;
+	/** @var \OC_Defaults */
+	private $defaults;
 	/** @var IMailer */
 	private $mailer;
+	/** @var string */
+	private $fromMailAddress;
+	/** @var IURLGenerator */
+	private $urlGenerator;
 	/** @var bool contains the state of the encryption app */
 	private $isEncryptionAppEnabled;
 	/** @var bool contains the state of the admin recovery setting */
@@ -78,10 +85,6 @@ class UsersController extends Controller {
 	private $avatarManager;
 	/** @var AccountManager */
 	private $accountManager;
-	/** @var ISecureRandom */
-	private $secureRandom;
-	/** @var NewUserMailHelper */
-	private $newUserMailHelper;
 
 	/**
 	 * @param string $appName
@@ -93,13 +96,13 @@ class UsersController extends Controller {
 	 * @param bool $isAdmin
 	 * @param IL10N $l10n
 	 * @param ILogger $log
+	 * @param \OC_Defaults $defaults
 	 * @param IMailer $mailer
+	 * @param string $fromMailAddress
 	 * @param IURLGenerator $urlGenerator
 	 * @param IAppManager $appManager
 	 * @param IAvatarManager $avatarManager
 	 * @param AccountManager $accountManager
-	 * @param ISecureRandom $secureRandom
-	 * @param NewUserMailHelper $newUserMailHelper
 	 */
 	public function __construct($appName,
 								IRequest $request,
@@ -110,13 +113,14 @@ class UsersController extends Controller {
 								$isAdmin,
 								IL10N $l10n,
 								ILogger $log,
+								\OC_Defaults $defaults,
 								IMailer $mailer,
+								$fromMailAddress,
 								IURLGenerator $urlGenerator,
 								IAppManager $appManager,
 								IAvatarManager $avatarManager,
-								AccountManager $accountManager,
-								ISecureRandom $secureRandom,
-								NewUserMailHelper $newUserMailHelper) {
+								AccountManager $accountManager
+) {
 		parent::__construct($appName, $request);
 		$this->userManager = $userManager;
 		$this->groupManager = $groupManager;
@@ -125,11 +129,12 @@ class UsersController extends Controller {
 		$this->isAdmin = $isAdmin;
 		$this->l10n = $l10n;
 		$this->log = $log;
+		$this->defaults = $defaults;
 		$this->mailer = $mailer;
+		$this->fromMailAddress = $fromMailAddress;
+		$this->urlGenerator = $urlGenerator;
 		$this->avatarManager = $avatarManager;
 		$this->accountManager = $accountManager;
-		$this->secureRandom = $secureRandom;
-		$this->newUserMailHelper = $newUserMailHelper;
 
 		// check for encryption state - TODO see formatUserForIndex
 		$this->isEncryptionAppEnabled = $appManager->isEnabledForUser('encryption');
@@ -183,10 +188,12 @@ class UsersController extends Controller {
 		}
 
 		$avatarAvailable = false;
-		try {
-			$avatarAvailable = $this->avatarManager->getAvatar($user->getUID())->exists();
-		} catch (\Exception $e) {
-			//No avatar yet
+		if ($this->config->getSystemValue('enable_avatars', true) === true) {
+			try {
+				$avatarAvailable = $this->avatarManager->getAvatar($user->getUID())->exists();
+			} catch (\Exception $e) {
+				//No avatar yet
+			}
 		}
 
 		return [
@@ -339,12 +346,13 @@ class UsersController extends Controller {
 			}
 
 			if (empty($groups)) {
-				return new DataResponse(
-					array(
-						'message' => $this->l10n->t('No valid group selected'),
-					),
-					Http::STATUS_FORBIDDEN
-				);
+				$groups = $this->groupManager->getSubAdmin()->getSubAdminsGroups($currentUser);
+				// New class returns IGroup[] so convert back
+				$gids = [];
+				foreach ($groups as $group) {
+					$gids[] = $group->getGID();
+				}
+				$groups = $gids;
 			}
 		}
 
@@ -355,21 +363,6 @@ class UsersController extends Controller {
 				),
 				Http::STATUS_CONFLICT
 			);
-		}
-
-		$generatePasswordResetToken = false;
-		if ($password === '') {
-			if ($email === '') {
-				return new DataResponse(
-					array(
-						'message' => (string)$this->l10n->t('To send a password link to the user an email address is required.')
-					),
-					Http::STATUS_UNPROCESSABLE_ENTITY
-				);
-			}
-
-			$password = $this->secureRandom->generate(32);
-			$generatePasswordResetToken = true;
 		}
 
 		try {
@@ -387,7 +380,7 @@ class UsersController extends Controller {
 			);
 		}
 
-		if($user instanceof IUser) {
+		if($user instanceof User) {
 			if($groups !== null) {
 				foreach($groups as $groupName) {
 					$group = $this->groupManager->get($groupName);
@@ -403,9 +396,29 @@ class UsersController extends Controller {
 			 */
 			if($email !== '') {
 				$user->setEMailAddress($email);
+
+				// data for the mail template
+				$mailData = array(
+					'username' => $username,
+					'url' => $this->urlGenerator->getAbsoluteURL('/')
+				);
+
+				$mail = new TemplateResponse('settings', 'email.new_user', $mailData, 'blank');
+				$mailContent = $mail->render();
+
+				$mail = new TemplateResponse('settings', 'email.new_user_plain_text', $mailData, 'blank');
+				$plainTextMailContent = $mail->render();
+
+				$subject = $this->l10n->t('Your %s account was created', [$this->defaults->getName()]);
+
 				try {
-					$emailTemplate = $this->newUserMailHelper->generateTemplate($user, $generatePasswordResetToken);
-					$this->newUserMailHelper->sendMail($user, $emailTemplate);
+					$message = $this->mailer->createMessage();
+					$message->setTo([$email => $username]);
+					$message->setSubject($subject);
+					$message->setHtmlBody($mailContent);
+					$message->setPlainBody($plainTextMailContent);
+					$message->setFrom([$this->fromMailAddress => $this->defaults->getName()]);
+					$this->mailer->send($message);
 				} catch(\Exception $e) {
 					$this->log->error("Can't send new user mail to $email: " . $e->getMessage(), array('app' => 'settings'));
 				}

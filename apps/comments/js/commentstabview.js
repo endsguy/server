@@ -23,7 +23,9 @@
 	var EDIT_COMMENT_TEMPLATE =
 		'<div class="newCommentRow comment" data-id="{{id}}">' +
 		'    <div class="authorRow">' +
+		'        {{#if avatarEnabled}}' +
 		'        <div class="avatar" data-username="{{actorId}}"></div>' +
+		'        {{/if}}' +
 		'        <div class="author">{{actorDisplayName}}</div>' +
 		'{{#if isEditMode}}' +
 		'        <a href="#" class="action delete icon icon-delete has-tooltip" title="{{deleteTooltip}}"></a>' +
@@ -42,7 +44,9 @@
 	var COMMENT_TEMPLATE =
 		'<li class="comment{{#if isUnread}} unread{{/if}}{{#if isLong}} collapsed{{/if}}" data-id="{{id}}">' +
 		'    <div class="authorRow">' +
+		'        {{#if avatarEnabled}}' +
 		'        <div class="avatar" {{#if actorId}}data-username="{{actorId}}"{{/if}}> </div>' +
+		'        {{/if}}' +
 		'        <div class="author">{{actorDisplayName}}</div>' +
 		'{{#if isUserAuthor}}' +
 		'        <a href="#" class="action edit icon icon-rename has-tooltip" title="{{editTooltip}}"></a>' +
@@ -81,6 +85,8 @@
 			this.collection.on('sync', this._onEndRequest, this);
 			this.collection.on('add', this._onAddModel, this);
 
+			this._avatarsEnabled = !!OC.config.enable_avatars;
+
 			this._commentMaxThreshold = this._commentMaxLength * 0.9;
 
 			// TODO: error handling
@@ -93,6 +99,7 @@
 			}
 			var currentUser = OC.getCurrentUser();
 			return this._template(_.extend({
+				avatarEnabled: this._avatarsEnabled,
 				actorId: currentUser.uid,
 				actorDisplayName: currentUser.displayName
 			}, params));
@@ -104,6 +111,7 @@
 			}
 			var currentUser = OC.getCurrentUser();
 			return this._editCommentTemplate(_.extend({
+				avatarEnabled: this._avatarsEnabled,
 				actorId: currentUser.uid,
 				actorDisplayName: currentUser.displayName,
 				newMessagePlaceholder: t('comments', 'New comment …'),
@@ -119,6 +127,7 @@
 			}
 
 			params = _.extend({
+				avatarEnabled: this._avatarsEnabled,
 				editTooltip: t('comments', 'Edit comment'),
 				isUserAuthor: OC.getCurrentUser().uid === params.actorId,
 				isLong: this._isLong(params.message)
@@ -160,7 +169,9 @@
 			this.$el.find('.comments').before(this.editCommentTemplate({}));
 			this.$el.find('.has-tooltip').tooltip();
 			this.$container = this.$el.find('ul.comments');
-			this.$el.find('.avatar').avatar(OC.getCurrentUser().uid, 32);
+			if (this._avatarsEnabled) {
+				this.$el.find('.avatar').avatar(OC.getCurrentUser().uid, 32);
+			}
 			this.delegateEvents();
 			this.$el.find('.message').on('keydown input change', this._onTypeComment);
 
@@ -228,25 +239,12 @@
 
 		_postRenderItem: function($el) {
 			$el.find('.has-tooltip').tooltip();
-			$el.find('.avatar').each(function() {
-				var $this = $(this);
-				$this.avatar($this.attr('data-username'), 32);
-			});
-
-			var username = $el.find('.avatar').data('username');
-			if (username !== oc_current_user) {
-				$el.find('.authorRow .avatar, .authorRow .author').contactsMenu(
-					username, 0, $el.find('.authorRow'));
+			if(this._avatarsEnabled) {
+				$el.find('.avatar').each(function() {
+					var $this = $(this);
+					$this.avatar($this.attr('data-username'), 32);
+				});
 			}
-
-			var message = $el.find('.message');
-			message.find('.avatar').each(function() {
-				var avatar = $(this);
-				var strong = $(this).next();
-				var appendTo = $(this).parent();
-
-				$.merge(avatar, strong).contactsMenu(avatar.data('user'), 0, appendTo);
-			});
 		},
 
 		/**
@@ -259,17 +257,17 @@
 			for(var i in mentions) {
 				var mention = '@' + mentions[i].mentionId;
 
-				var avatar = '<div class="avatar" '
-					+ 'data-user="' + _.escape(mentions[i].mentionId) + '"'
-					+' data-user-display-name="'
-					+ _.escape(mentions[i].mentionDisplayName) + '"></div>';
+				var avatar = '';
+				if(this._avatarsEnabled) {
+					avatar = '<div class="avatar" '
+						+ 'data-user="' + _.escape(mentions[i].mentionId) + '"'
+						+' data-user-display-name="'
+						+ _.escape(mentions[i].mentionDisplayName) + '"></div>';
+				}
 
 				// escape possible regex characters in the name
 				mention = mention.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-				var displayName = ''
-					+ '<span class="avatar-name-wrapper">'
-					+ avatar + ' <strong>'+ _.escape(mentions[i].mentionDisplayName)+'</strong>'
-					+ '</span>';
+				var displayName = avatar + ' <strong>'+ _.escape(mentions[i].mentionDisplayName)+'</strong>';
 
 				// replace every mention either at the start of the input or after a whitespace
 				// followed by a non-word character.
@@ -500,9 +498,9 @@
 			$form.find('.message').prop('disabled', false);
 
 			if(!_.isUndefined(commentId)) {
-				OC.Notification.show(t('comments', 'Error occurred while updating comment with id {id}', {id: commentId}), {type: 'error'});
+				OC.Notification.showTemporary(t('comments', 'Error occurred while updating comment with id {id}', {id: commentId}));
 			} else {
-				OC.Notification.show(t('comments', 'Error occurred while posting comment'), {type: 'error'});
+				OC.Notification.showTemporary(t('comments', 'Error occurred while posting comment'));
 			}
 		},
 

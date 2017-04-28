@@ -401,8 +401,6 @@ class Request implements \ArrayAccess, \Countable, IRequest {
 	protected function getContent() {
 		// If the content can't be parsed into an array then return a stream resource.
 		if ($this->method === 'PUT'
-			&& $this->getHeader('Content-Length') !== 0
-			&& $this->getHeader('Content-Length') !== null
 			&& strpos($this->getHeader('Content-Type'), 'application/x-www-form-urlencoded') === false
 			&& strpos($this->getHeader('Content-Type'), 'application/json') === false
 		) {
@@ -492,10 +490,7 @@ class Request implements \ArrayAccess, \Countable, IRequest {
 	 * @return bool
 	 */
 	private function cookieCheckRequired() {
-		if ($this->getHeader('OCS-APIREQUEST')) {
-			return false;
-		}
-		if($this->getCookie(session_name()) === null && $this->getCookie('nc_token') === null) {
+		if($this->getCookie(session_name()) === null && $this->getCookie('oc_token') === null) {
 			return false;
 		}
 
@@ -578,8 +573,7 @@ class Request implements \ArrayAccess, \Countable, IRequest {
 		}
 
 		if(empty($this->requestId)) {
-			$validChars = ISecureRandom::CHAR_UPPER . ISecureRandom::CHAR_LOWER . ISecureRandom::CHAR_DIGITS;
-			$this->requestId = $this->secureRandom->generate(20, $validChars);
+			$this->requestId = $this->secureRandom->generate(20);
 		}
 
 		return $this->requestId;

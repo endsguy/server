@@ -69,16 +69,11 @@ class AdminTest extends TestCase {
 			->expects($this->once())
 			->method('isLookupServerQueriesEnabled')
 			->willReturn($state);
-		$this->federatedShareProvider
-			->expects($this->once())
-			->method('isLookupServerUploadEnabled')
-			->willReturn($state);
 
 		$params = [
 			'outgoingServer2serverShareEnabled' => $state,
 			'incomingServer2serverShareEnabled' => $state,
 			'lookupServerEnabled' => $state,
-			'lookupServerUploadEnabled' => $state
 		];
 		$expected = new TemplateResponse('federatedfilesharing', 'settings-admin', $params, '');
 		$this->assertEquals($expected, $this->admin->getForm());

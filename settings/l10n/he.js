@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "מופעל",
+    "Not enabled" : "לא מופעל",
     "Wrong password" : "סיסמא שגוייה",
     "Saved" : "נשמר",
     "No user supplied" : "לא סופק שם משתמש",
@@ -98,6 +100,7 @@ OC.L10N.register(
     "NT LAN Manager" : "מנהל רשת NT",
     "Email server" : "שרת דואר אלקטרוני",
     "Open documentation" : "תיעוד פתוח",
+    "This is used for sending out notifications." : "משתמשים בזה כדי לשלוח הודעות.",
     "Send mode" : "מצב שליחה",
     "Encryption" : "הצפנה",
     "From address" : "מכתובת",
@@ -171,7 +174,6 @@ OC.L10N.register(
     "Theming" : "ערכת נושא",
     "Hardening and security guidance" : "הדרכת הקשחה ואבטחה",
     "Developer documentation" : "תיעוד מפתח",
-    "This app has an update available." : "ליישום זה קיים עדכון זמין.",
     "by %s" : "על ידי %s",
     "%s-licensed" : "%s-בעל רישיון",
     "Documentation:" : "תיעוד",
@@ -181,6 +183,7 @@ OC.L10N.register(
     "Report a bug" : "דיווח על באג",
     "Show description …" : "הצגת תיאור ...",
     "Hide description …" : "הסתרת תיאור ...",
+    "This app has an update available." : "ליישום זה קיים עדכון זמין.",
     "This app cannot be installed because the following dependencies are not fulfilled:" : "לא ניתן להתקין את יישום זה כיוון שייחסי התלות הבאים לא התקיימו:",
     "Enable only for specific groups" : "אפשר רק לקבוצות מסויימות",
     "SSL Root Certificates" : "אישורי אבטחת SSL לנתיב יסוד",

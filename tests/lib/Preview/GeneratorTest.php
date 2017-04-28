@@ -399,10 +399,6 @@ class GeneratorTest extends \Test\TestCase {
 			);
 
 		$result = $this->generator->getPreview($file, $reqX, $reqY, $crop, $mode);
-		if ($expectedX === $maxX && $expectedY === $maxY) {
-			$this->assertSame($maxPreview, $result);
-		} else {
-			$this->assertSame($preview, $result);
-		}
+		$this->assertSame($preview, $result);
 	}
 }

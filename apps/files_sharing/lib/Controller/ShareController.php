@@ -106,7 +106,7 @@ class ShareController extends Controller {
 	 * @param FederatedShareProvider $federatedShareProvider
 	 * @param EventDispatcherInterface $eventDispatcher
 	 * @param IL10N $l10n
-	 * @param Defaults $defaults
+	 * @param \OC_Defaults $defaults
 	 */
 	public function __construct($appName,
 								IRequest $request,
@@ -122,7 +122,7 @@ class ShareController extends Controller {
 								FederatedShareProvider $federatedShareProvider,
 								EventDispatcherInterface $eventDispatcher,
 								IL10N $l10n,
-								Defaults $defaults) {
+								\OC_Defaults $defaults) {
 		parent::__construct($appName, $request);
 
 		$this->config = $config;
@@ -160,7 +160,6 @@ class ShareController extends Controller {
 	/**
 	 * @PublicPage
 	 * @UseSession
-	 * @BruteForceProtection(action=publicLinkAuth)
 	 *
 	 * Authenticates against password-protected shares
 	 * @param string $token
@@ -182,9 +181,7 @@ class ShareController extends Controller {
 			return new RedirectResponse($this->urlGenerator->linkToRoute('files_sharing.sharecontroller.showShare', array('token' => $token)));
 		}
 
-		$response = new TemplateResponse($this->appName, 'authenticate', array('wrongpw' => true), 'guest');
-		$response->throttle();
-		return $response;
+		return new TemplateResponse($this->appName, 'authenticate', array('wrongpw' => true), 'guest');
 	}
 
 	/**
@@ -381,7 +378,8 @@ class ShareController extends Controller {
 
 		// Load files we need
 		\OCP\Util::addScript('files', 'file-upload');
-		\OCP\Util::addStyle('files_sharing', 'publicView');
+		\OCP\Util::addStyle('files_sharing', 'public');
+		\OCP\Util::addStyle('files_sharing', 'mobile');
 		\OCP\Util::addScript('files_sharing', 'public');
 		\OCP\Util::addScript('files', 'fileactions');
 		\OCP\Util::addScript('files', 'fileactionsmenu');
@@ -390,7 +388,8 @@ class ShareController extends Controller {
 
 		if (isset($shareTmpl['folder'])) {
 			// JS required for folders
-			\OCP\Util::addStyle('files', 'merged');
+			\OCP\Util::addStyle('files', 'files');
+			\OCP\Util::addStyle('files', 'upload');
 			\OCP\Util::addScript('files', 'filesummary');
 			\OCP\Util::addScript('files', 'breadcrumb');
 			\OCP\Util::addScript('files', 'fileinfomodel');

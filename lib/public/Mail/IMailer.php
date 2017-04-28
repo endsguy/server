@@ -55,14 +55,6 @@ interface IMailer {
 	public function createMessage();
 
 	/**
-	 * Creates a new email template object
-	 *
-	 * @return IEMailTemplate
-	 * @since 12.0.0
-	 */
-	public function createEMailTemplate();
-
-	/**
 	 * Send the specified message. Also sets the from address to the value defined in config.php
 	 * if no-one has been passed.
 	 *

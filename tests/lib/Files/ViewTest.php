@@ -9,31 +9,24 @@ namespace Test\Files;
 
 use OC\Cache\CappedMemoryCache;
 use OC\Files\Cache\Watcher;
-use OC\Files\Filesystem;
 use OC\Files\Storage\Common;
 use OC\Files\Mount\MountPoint;
 use OC\Files\Storage\Temporary;
-use OC\Files\Stream\Quota;
 use OC\Files\View;
-use OCP\Constants;
 use OCP\Files\Config\IMountProvider;
 use OCP\Files\FileInfo;
 use OCP\Lock\ILockingProvider;
-use OCP\Lock\LockedException;
-use OCP\Share;
-use OCP\Util;
 use Test\TestMoveableMountPoint;
-use Test\HookHelper;
 
-class TemporaryNoTouch extends Temporary {
+class TemporaryNoTouch extends \OC\Files\Storage\Temporary {
 	public function touch($path, $mtime = null) {
 		return false;
 	}
 }
 
-class TemporaryNoCross extends Temporary {
-	public function copyFromStorage(\OCP\Files\Storage $sourceStorage, $sourceInternalPath, $targetInternalPath, $preserveMtime = null) {
-		return Common::copyFromStorage($sourceStorage, $sourceInternalPath, $targetInternalPath, $preserveMtime);
+class TemporaryNoCross extends \OC\Files\Storage\Temporary {
+	public function copyFromStorage(\OCP\Files\Storage $sourceStorage, $sourceInternalPath, $targetInternalPath) {
+		return Common::copyFromStorage($sourceStorage, $sourceInternalPath, $targetInternalPath);
 	}
 
 	public function moveFromStorage(\OCP\Files\Storage $sourceStorage, $sourceInternalPath, $targetInternalPath) {
@@ -41,7 +34,7 @@ class TemporaryNoCross extends Temporary {
 	}
 }
 
-class TemporaryNoLocal extends Temporary {
+class TemporaryNoLocal extends \OC\Files\Storage\Temporary {
 	public function instanceOfStorage($className) {
 		if ($className === '\OC\Files\Storage\Local') {
 			return false;
@@ -98,10 +91,10 @@ class ViewTest extends \Test\TestCase {
 		$this->groupObject = $groupManager->createGroup('group1');
 		$this->groupObject->addUser($this->userObject);
 
-		self::loginAsUser($this->user);
+		$this->loginAsUser($this->user);
 		// clear mounts but somehow keep the root storage
 		// that was initialized above...
-		Filesystem::clearMounts();
+		\OC\Files\Filesystem::clearMounts();
 
 		$this->tempStorage = null;
 	}
@@ -118,13 +111,13 @@ class ViewTest extends \Test\TestCase {
 			system('rm -rf ' . escapeshellarg($this->tempStorage->getDataDir()));
 		}
 
-		self::logout();
+		$this->logout();
 
 		$this->userObject->delete();
 		$this->groupObject->delete();
 
 		$mountProviderCollection = \OC::$server->getMountProviderCollection();
-		self::invokePrivate($mountProviderCollection, 'providers', [[]]);
+		\Test\TestCase::invokePrivate($mountProviderCollection, 'providers', [[]]);
 
 		parent::tearDown();
 	}
@@ -136,10 +129,10 @@ class ViewTest extends \Test\TestCase {
 		$storage1 = $this->getTestStorage();
 		$storage2 = $this->getTestStorage();
 		$storage3 = $this->getTestStorage();
-		$root = self::getUniqueID('/');
-		Filesystem::mount($storage1, array(), $root . '/');
-		Filesystem::mount($storage2, array(), $root . '/substorage');
-		Filesystem::mount($storage3, array(), $root . '/folder/anotherstorage');
+		$root = $this->getUniqueID('/');
+		\OC\Files\Filesystem::mount($storage1, array(), $root . '/');
+		\OC\Files\Filesystem::mount($storage2, array(), $root . '/substorage');
+		\OC\Files\Filesystem::mount($storage3, array(), $root . '/folder/anotherstorage');
 		$textSize = strlen("dummy file data\n");
 		$imageSize = filesize(\OC::$SERVERROOT . '/core/img/logo.png');
 		$storageSize = $textSize * 2 + $imageSize;
@@ -147,7 +140,7 @@ class ViewTest extends \Test\TestCase {
 		$storageInfo = $storage3->getCache()->get('');
 		$this->assertEquals($storageSize, $storageInfo['size']);
 
-		$rootView = new View($root);
+		$rootView = new \OC\Files\View($root);
 
 		$cachedData = $rootView->getFileInfo('/foo.txt');
 		$this->assertEquals($textSize, $cachedData['size']);
@@ -175,7 +168,7 @@ class ViewTest extends \Test\TestCase {
 		 * foo.txt
 		 * substorage
 		 */
-		$this->assertCount(4, $folderData);
+		$this->assertEquals(4, count($folderData));
 		$this->assertEquals('folder', $folderData[0]['name']);
 		$this->assertEquals('foo.png', $folderData[1]['name']);
 		$this->assertEquals('foo.txt', $folderData[2]['name']);
@@ -193,12 +186,12 @@ class ViewTest extends \Test\TestCase {
 		 * foo.png
 		 * foo.txt
 		 */
-		$this->assertCount(3, $folderData);
+		$this->assertEquals(3, count($folderData));
 		$this->assertEquals('folder', $folderData[0]['name']);
 		$this->assertEquals('foo.png', $folderData[1]['name']);
 		$this->assertEquals('foo.txt', $folderData[2]['name']);
 
-		$folderView = new View($root . '/folder');
+		$folderView = new \OC\Files\View($root . '/folder');
 		$this->assertEquals($rootView->getFileInfo('/folder'), $folderView->getFileInfo('/'));
 
 		$cachedData = $rootView->getFileInfo('/foo.txt');
@@ -219,11 +212,11 @@ class ViewTest extends \Test\TestCase {
 		$storage1 = $this->getTestStorage();
 		$storage2 = $this->getTestStorage();
 		$storage3 = $this->getTestStorage();
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), '/substorage');
-		Filesystem::mount($storage3, array(), '/folder/anotherstorage');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/substorage');
+		\OC\Files\Filesystem::mount($storage3, array(), '/folder/anotherstorage');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 
 		$cachedData = $rootView->getFileInfo('/foo.txt');
 		/** @var int $id1 */
@@ -235,22 +228,22 @@ class ViewTest extends \Test\TestCase {
 		$id2 = $cachedData['fileid'];
 		$this->assertEquals('/substorage/foo.txt', $rootView->getPath($id2));
 
-		$folderView = new View('/substorage');
+		$folderView = new \OC\Files\View('/substorage');
 		$this->assertEquals('/foo.txt', $folderView->getPath($id2));
 	}
 
 	/**
 	 * @expectedException \OCP\Files\NotFoundException
 	 */
-	public function testGetPathNotExisting() {
+	function testGetPathNotExisting() {
 		$storage1 = $this->getTestStorage();
-		Filesystem::mount($storage1, [], '/');
+		\OC\Files\Filesystem::mount($storage1, [], '/');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 		$cachedData = $rootView->getFileInfo('/foo.txt');
 		/** @var int $id1 */
 		$id1 = $cachedData['fileid'];
-		$folderView = new View('/substorage');
+		$folderView = new \OC\Files\View('/substorage');
 		$this->assertNull($folderView->getPath($id1));
 	}
 
@@ -261,12 +254,12 @@ class ViewTest extends \Test\TestCase {
 		$storage1 = $this->getTestStorage(false);
 		$storage2 = $this->getTestStorage();
 		$storage1->mkdir('substorage');
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), '/substorage');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/substorage');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 		$folderContent = $rootView->getDirectoryContent('/');
-		$this->assertCount(4, $folderContent);
+		$this->assertEquals(4, count($folderContent));
 	}
 
 	public function sharingDisabledPermissionProvider() {
@@ -281,7 +274,7 @@ class ViewTest extends \Test\TestCase {
 	 */
 	public function testRemoveSharePermissionWhenSharingDisabledForUser($excludeGroups, $excludeGroupsList, $expectedShareable) {
 		// Reset sharing disabled for users cache
-		self::invokePrivate(\OC::$server->getShareManager(), 'sharingDisabledForUsersCache', [new CappedMemoryCache()]);
+		$this->invokePrivate(\OC::$server->getShareManager(), 'sharingDisabledForUsersCache', [new CappedMemoryCache()]);
 
 		$appConfig = \OC::$server->getAppConfig();
 		$oldExcludeGroupsFlag = $appConfig->getValue('core', 'shareapi_exclude_groups', 'no');
@@ -291,10 +284,10 @@ class ViewTest extends \Test\TestCase {
 
 		$storage1 = $this->getTestStorage();
 		$storage2 = $this->getTestStorage();
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), '/mount');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/mount');
 
-		$view = new View('/');
+		$view = new \OC\Files\View('/');
 
 		$folderContent = $view->getDirectoryContent('');
 		$this->assertEquals($expectedShareable, $folderContent[0]->isShareable());
@@ -306,31 +299,31 @@ class ViewTest extends \Test\TestCase {
 		$appConfig->setValue('core', 'shareapi_exclude_groups_list', $oldExcludeGroupsList);
 
 		// Reset sharing disabled for users cache
-		self::invokePrivate(\OC::$server->getShareManager(), 'sharingDisabledForUsersCache', [new CappedMemoryCache()]);
+		$this->invokePrivate(\OC::$server->getShareManager(), 'sharingDisabledForUsersCache', [new CappedMemoryCache()]);
 	}
 
 	public function testCacheIncompleteFolder() {
 		$storage1 = $this->getTestStorage(false);
-		Filesystem::clearMounts();
-		Filesystem::mount($storage1, array(), '/incomplete');
-		$rootView = new View('/incomplete');
+		\OC\Files\Filesystem::clearMounts();
+		\OC\Files\Filesystem::mount($storage1, array(), '/incomplete');
+		$rootView = new \OC\Files\View('/incomplete');
 
 		$entries = $rootView->getDirectoryContent('/');
-		$this->assertCount(3, $entries);
+		$this->assertEquals(3, count($entries));
 
 		// /folder will already be in the cache but not scanned
 		$entries = $rootView->getDirectoryContent('/folder');
-		$this->assertCount(1, $entries);
+		$this->assertEquals(1, count($entries));
 	}
 
 	public function testAutoScan() {
 		$storage1 = $this->getTestStorage(false);
 		$storage2 = $this->getTestStorage(false);
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), '/substorage');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/substorage');
 		$textSize = strlen("dummy file data\n");
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 
 		$cachedData = $rootView->getFileInfo('/');
 		$this->assertEquals('httpd/unix-directory', $cachedData['mimetype']);
@@ -348,17 +341,17 @@ class ViewTest extends \Test\TestCase {
 		$storage1 = $this->getTestStorage();
 		$storage2 = $this->getTestStorage();
 		$storage3 = $this->getTestStorage();
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), '/substorage');
-		Filesystem::mount($storage3, array(), '/folder/anotherstorage');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/substorage');
+		\OC\Files\Filesystem::mount($storage3, array(), '/folder/anotherstorage');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 
 		$results = $rootView->search('foo');
-		$this->assertCount(6, $results);
+		$this->assertEquals(6, count($results));
 		$paths = array();
 		foreach ($results as $result) {
-			$this->assertEquals($result['path'], Filesystem::normalizePath($result['path']));
+			$this->assertEquals($result['path'], \OC\Files\Filesystem::normalizePath($result['path']));
 			$paths[] = $result['path'];
 		}
 		$this->assertContains('/foo.txt', $paths);
@@ -368,9 +361,9 @@ class ViewTest extends \Test\TestCase {
 		$this->assertContains('/folder/anotherstorage/foo.txt', $paths);
 		$this->assertContains('/folder/anotherstorage/foo.png', $paths);
 
-		$folderView = new View('/folder');
+		$folderView = new \OC\Files\View('/folder');
 		$results = $folderView->search('bar');
-		$this->assertCount(2, $results);
+		$this->assertEquals(2, count($results));
 		$paths = array();
 		foreach ($results as $result) {
 			$paths[] = $result['path'];
@@ -379,7 +372,7 @@ class ViewTest extends \Test\TestCase {
 		$this->assertContains('/bar.txt', $paths);
 
 		$results = $folderView->search('foo');
-		$this->assertCount(2, $results);
+		$this->assertEquals(2, count($results));
 		$paths = array();
 		foreach ($results as $result) {
 			$paths[] = $result['path'];
@@ -387,8 +380,8 @@ class ViewTest extends \Test\TestCase {
 		$this->assertContains('/anotherstorage/foo.txt', $paths);
 		$this->assertContains('/anotherstorage/foo.png', $paths);
 
-		$this->assertCount(6, $rootView->searchByMime('text'));
-		$this->assertCount(3, $folderView->searchByMime('text'));
+		$this->assertEquals(6, count($rootView->searchByMime('text')));
+		$this->assertEquals(3, count($folderView->searchByMime('text')));
 	}
 
 	/**
@@ -396,10 +389,10 @@ class ViewTest extends \Test\TestCase {
 	 */
 	public function testWatcher() {
 		$storage1 = $this->getTestStorage();
-		Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
 		$storage1->getWatcher()->setPolicy(Watcher::CHECK_ALWAYS);
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 
 		$cachedData = $rootView->getFileInfo('foo.txt');
 		$this->assertEquals(16, $cachedData['size']);
@@ -416,8 +409,8 @@ class ViewTest extends \Test\TestCase {
 	 * @medium
 	 */
 	public function testCopyBetweenStorageNoCross() {
-		$storage1 = $this->getTestStorage(true, TemporaryNoCross::class);
-		$storage2 = $this->getTestStorage(true, TemporaryNoCross::class);
+		$storage1 = $this->getTestStorage(true, '\Test\Files\TemporaryNoCross');
+		$storage2 = $this->getTestStorage(true, '\Test\Files\TemporaryNoCross');
 		$this->copyBetweenStorages($storage1, $storage2);
 	}
 
@@ -434,16 +427,16 @@ class ViewTest extends \Test\TestCase {
 	 * @medium
 	 */
 	public function testCopyBetweenStorageCrossNonLocal() {
-		$storage1 = $this->getTestStorage(true, TemporaryNoLocal::class);
-		$storage2 = $this->getTestStorage(true, TemporaryNoLocal::class);
+		$storage1 = $this->getTestStorage(true, '\Test\Files\TemporaryNoLocal');
+		$storage2 = $this->getTestStorage(true, '\Test\Files\TemporaryNoLocal');
 		$this->copyBetweenStorages($storage1, $storage2);
 	}
 
-	public function copyBetweenStorages($storage1, $storage2) {
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), '/substorage');
+	function copyBetweenStorages($storage1, $storage2) {
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/substorage');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 		$rootView->mkdir('substorage/emptyfolder');
 		$rootView->copy('substorage', 'anotherfolder');
 		$this->assertTrue($rootView->is_dir('/anotherfolder'));
@@ -462,8 +455,8 @@ class ViewTest extends \Test\TestCase {
 	 * @medium
 	 */
 	public function testMoveBetweenStorageNoCross() {
-		$storage1 = $this->getTestStorage(true, TemporaryNoCross::class);
-		$storage2 = $this->getTestStorage(true, TemporaryNoCross::class);
+		$storage1 = $this->getTestStorage(true, '\Test\Files\TemporaryNoCross');
+		$storage2 = $this->getTestStorage(true, '\Test\Files\TemporaryNoCross');
 		$this->moveBetweenStorages($storage1, $storage2);
 	}
 
@@ -480,16 +473,16 @@ class ViewTest extends \Test\TestCase {
 	 * @medium
 	 */
 	public function testMoveBetweenStorageCrossNonLocal() {
-		$storage1 = $this->getTestStorage(true, TemporaryNoLocal::class);
-		$storage2 = $this->getTestStorage(true, TemporaryNoLocal::class);
+		$storage1 = $this->getTestStorage(true, '\Test\Files\TemporaryNoLocal');
+		$storage2 = $this->getTestStorage(true, '\Test\Files\TemporaryNoLocal');
 		$this->moveBetweenStorages($storage1, $storage2);
 	}
 
-	public function moveBetweenStorages($storage1, $storage2) {
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), '/substorage');
+	function moveBetweenStorages($storage1, $storage2) {
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/substorage');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 		$rootView->rename('foo.txt', 'substorage/folder/foo.txt');
 		$this->assertFalse($rootView->file_exists('foo.txt'));
 		$this->assertTrue($rootView->file_exists('substorage/folder/foo.txt'));
@@ -505,10 +498,10 @@ class ViewTest extends \Test\TestCase {
 	public function testUnlink() {
 		$storage1 = $this->getTestStorage();
 		$storage2 = $this->getTestStorage();
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), '/substorage');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/substorage');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 		$rootView->file_put_contents('/foo.txt', 'asd');
 		$rootView->file_put_contents('/substorage/bar.txt', 'asd');
 
@@ -522,39 +515,16 @@ class ViewTest extends \Test\TestCase {
 		$this->assertFalse($rootView->file_exists('substorage/bar.txt'));
 	}
 
-	public function rmdirOrUnlinkDataProvider() {
-		return [['rmdir'], ['unlink']];
-	}
-
-	/**
-	 * @dataProvider rmdirOrUnlinkDataProvider
-	 */
-	public function testRmdir($method) {
-		$storage1 = $this->getTestStorage();
-		Filesystem::mount($storage1, [], '/');
-
-		$rootView = new View('');
-		$rootView->mkdir('sub');
-		$rootView->mkdir('sub/deep');
-		$rootView->file_put_contents('/sub/deep/foo.txt', 'asd');
-
-		$this->assertTrue($rootView->file_exists('sub/deep/foo.txt'));
-
-		$this->assertTrue($rootView->$method('sub'));
-
-		$this->assertFalse($rootView->file_exists('sub'));
-	}
-
 	/**
 	 * @medium
 	 */
 	public function testUnlinkRootMustFail() {
 		$storage1 = $this->getTestStorage();
 		$storage2 = $this->getTestStorage();
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), '/substorage');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/substorage');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 		$rootView->file_put_contents('/foo.txt', 'asd');
 		$rootView->file_put_contents('/substorage/bar.txt', 'asd');
 
@@ -568,11 +538,11 @@ class ViewTest extends \Test\TestCase {
 	 * @medium
 	 */
 	public function testTouch() {
-		$storage = $this->getTestStorage(true, TemporaryNoTouch::class);
+		$storage = $this->getTestStorage(true, '\Test\Files\TemporaryNoTouch');
 
-		Filesystem::mount($storage, array(), '/');
+		\OC\Files\Filesystem::mount($storage, array(), '/');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 		$oldCachedData = $rootView->getFileInfo('foo.txt');
 
 		$rootView->touch('foo.txt', 500);
@@ -591,33 +561,16 @@ class ViewTest extends \Test\TestCase {
 	/**
 	 * @medium
 	 */
-	public function testTouchFloat() {
-		$storage = $this->getTestStorage(true, TemporaryNoTouch::class);
-
-		Filesystem::mount($storage, array(), '/');
-
-		$rootView = new View('');
-		$oldCachedData = $rootView->getFileInfo('foo.txt');
-
-		$rootView->touch('foo.txt', 500.5);
-
-		$cachedData = $rootView->getFileInfo('foo.txt');
-		$this->assertEquals(500, $cachedData['mtime']);
-	}
-
-	/**
-	 * @medium
-	 */
 	public function testViewHooks() {
 		$storage1 = $this->getTestStorage();
 		$storage2 = $this->getTestStorage();
-		$defaultRoot = Filesystem::getRoot();
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), $defaultRoot . '/substorage');
+		$defaultRoot = \OC\Files\Filesystem::getRoot();
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), $defaultRoot . '/substorage');
 		\OC_Hook::connect('OC_Filesystem', 'post_write', $this, 'dummyHook');
 
-		$rootView = new View('');
-		$subView = new View($defaultRoot . '/substorage');
+		$rootView = new \OC\Files\View('');
+		$subView = new \OC\Files\View($defaultRoot . '/substorage');
 		$this->hookPath = null;
 
 		$rootView->file_put_contents('/foo.txt', 'asd');
@@ -635,12 +588,12 @@ class ViewTest extends \Test\TestCase {
 
 	public function testSearchNotOutsideView() {
 		$storage1 = $this->getTestStorage();
-		Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
 		$storage1->rename('folder', 'foo');
 		$scanner = $storage1->getScanner();
 		$scanner->scan('');
 
-		$view = new View('/foo');
+		$view = new \OC\Files\View('/foo');
 
 		$result = $view->search('.txt');
 		$this->assertCount(1, $result);
@@ -651,7 +604,7 @@ class ViewTest extends \Test\TestCase {
 	 * @param string $class
 	 * @return \OC\Files\Storage\Storage
 	 */
-	private function getTestStorage($scan = true, $class = Temporary::class) {
+	private function getTestStorage($scan = true, $class = '\OC\Files\Storage\Temporary') {
 		/**
 		 * @var \OC\Files\Storage\Storage $storage
 		 */
@@ -677,12 +630,12 @@ class ViewTest extends \Test\TestCase {
 	public function testViewHooksIfRootStartsTheSame() {
 		$storage1 = $this->getTestStorage();
 		$storage2 = $this->getTestStorage();
-		$defaultRoot = Filesystem::getRoot();
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), $defaultRoot . '_substorage');
+		$defaultRoot = \OC\Files\Filesystem::getRoot();
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), $defaultRoot . '_substorage');
 		\OC_Hook::connect('OC_Filesystem', 'post_write', $this, 'dummyHook');
 
-		$subView = new View($defaultRoot . '_substorage');
+		$subView = new \OC\Files\View($defaultRoot . '_substorage');
 		$this->hookPath = null;
 
 		$subView->file_put_contents('/foo.txt', 'asd');
@@ -708,14 +661,14 @@ class ViewTest extends \Test\TestCase {
 	public function testEditNoCreateHook() {
 		$storage1 = $this->getTestStorage();
 		$storage2 = $this->getTestStorage();
-		$defaultRoot = Filesystem::getRoot();
-		Filesystem::mount($storage1, array(), '/');
-		Filesystem::mount($storage2, array(), $defaultRoot);
+		$defaultRoot = \OC\Files\Filesystem::getRoot();
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage2, array(), $defaultRoot);
 		\OC_Hook::connect('OC_Filesystem', 'post_create', $this, 'dummyHookCreate');
 		\OC_Hook::connect('OC_Filesystem', 'post_update', $this, 'dummyHookUpdate');
 		\OC_Hook::connect('OC_Filesystem', 'post_write', $this, 'dummyHookWrite');
 
-		$view = new View($defaultRoot);
+		$view = new \OC\Files\View($defaultRoot);
 		$this->hookWritePath = $this->hookUpdatePath = $this->hookCreatePath = null;
 
 		$view->file_put_contents('/asd.txt', 'foo');
@@ -740,9 +693,9 @@ class ViewTest extends \Test\TestCase {
 	 */
 	public function testResolvePath($expected, $pathToTest) {
 		$storage1 = $this->getTestStorage();
-		Filesystem::mount($storage1, array(), '/');
+		\OC\Files\Filesystem::mount($storage1, array(), '/');
 
-		$view = new View('');
+		$view = new \OC\Files\View('');
 
 		$result = $view->resolvePath($pathToTest);
 		$this->assertEquals($expected, $result[1]);
@@ -754,7 +707,7 @@ class ViewTest extends \Test\TestCase {
 		$this->assertTrue($exists);
 	}
 
-	public function resolvePathTestProvider() {
+	function resolvePathTestProvider() {
 		return array(
 			array('foo.txt', 'foo.txt'),
 			array('foo.txt', '/foo.txt'),
@@ -772,10 +725,10 @@ class ViewTest extends \Test\TestCase {
 	public function testUTF8Names() {
 		$names = array('虚', '和知しゃ和で', 'regular ascii', 'sɨˈrɪlɪk', 'ѨѬ', 'أنا أحب القراءة كثيرا');
 
-		$storage = new Temporary(array());
-		Filesystem::mount($storage, array(), '/');
+		$storage = new \OC\Files\Storage\Temporary(array());
+		\OC\Files\Filesystem::mount($storage, array(), '/');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 		foreach ($names as $name) {
 			$rootView->file_put_contents('/' . $name, 'dummy content');
 		}
@@ -801,10 +754,10 @@ class ViewTest extends \Test\TestCase {
 
 	public function xtestLongPath() {
 
-		$storage = new Temporary(array());
-		Filesystem::mount($storage, array(), '/');
+		$storage = new \OC\Files\Storage\Temporary(array());
+		\OC\Files\Filesystem::mount($storage, array(), '/');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 
 		$longPath = '';
 		$ds = DIRECTORY_SEPARATOR;
@@ -852,11 +805,11 @@ class ViewTest extends \Test\TestCase {
 	public function testTouchNotSupported() {
 		$storage = new TemporaryNoTouch(array());
 		$scanner = $storage->getScanner();
-		Filesystem::mount($storage, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage, array(), '/test/');
 		$past = time() - 100;
 		$storage->file_put_contents('test', 'foobar');
 		$scanner->scan('');
-		$view = new View('');
+		$view = new \OC\Files\View('');
 		$info = $view->getFileInfo('/test/test');
 
 		$view->touch('/test/test', $past);
@@ -872,14 +825,14 @@ class ViewTest extends \Test\TestCase {
 		$scanner1 = $storage1->getScanner();
 		$scanner2 = $storage2->getScanner();
 		$storage1->mkdir('sub');
-		Filesystem::mount($storage1, array(), '/test/');
-		Filesystem::mount($storage2, array(), '/test/sub/storage');
+		\OC\Files\Filesystem::mount($storage1, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/test/sub/storage');
 
 		$past = time() - 100;
 		$storage2->file_put_contents('test.txt', 'foobar');
 		$scanner1->scan('');
 		$scanner2->scan('');
-		$view = new View('');
+		$view = new \OC\Files\View('');
 
 		$storage2->getWatcher('')->setPolicy(Watcher::CHECK_ALWAYS);
 
@@ -902,17 +855,17 @@ class ViewTest extends \Test\TestCase {
 	 * @dataProvider absolutePathProvider
 	 */
 	public function testGetAbsolutePath($expectedPath, $relativePath) {
-		$view = new View('/files');
+		$view = new \OC\Files\View('/files');
 		$this->assertEquals($expectedPath, $view->getAbsolutePath($relativePath));
 	}
 
 	public function testPartFileInfo() {
 		$storage = new Temporary(array());
 		$scanner = $storage->getScanner();
-		Filesystem::mount($storage, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage, array(), '/test/');
 		$storage->file_put_contents('test.part', 'foobar');
 		$scanner->scan('');
-		$view = new View('/test');
+		$view = new \OC\Files\View('/test');
 		$info = $view->getFileInfo('test.part');
 
 		$this->assertInstanceOf('\OCP\Files\FileInfo', $info);
@@ -920,7 +873,7 @@ class ViewTest extends \Test\TestCase {
 		$this->assertEquals(6, $info->getSize());
 	}
 
-	public function absolutePathProvider() {
+	function absolutePathProvider() {
 		return array(
 			array('/files/', ''),
 			array('/files/0', '0'),
@@ -935,8 +888,8 @@ class ViewTest extends \Test\TestCase {
 	/**
 	 * @dataProvider chrootRelativePathProvider
 	 */
-	public function testChrootGetRelativePath($root, $absolutePath, $expectedPath) {
-		$view = new View('/files');
+	function testChrootGetRelativePath($root, $absolutePath, $expectedPath) {
+		$view = new \OC\Files\View('/files');
 		$view->chroot($root);
 		$this->assertEquals($expectedPath, $view->getRelativePath($absolutePath));
 	}
@@ -949,7 +902,7 @@ class ViewTest extends \Test\TestCase {
 	 * @dataProvider initRelativePathProvider
 	 */
 	public function testInitGetRelativePath($root, $absolutePath, $expectedPath) {
-		$view = new View($root);
+		$view = new \OC\Files\View($root);
 		$this->assertEquals($expectedPath, $view->getRelativePath($absolutePath));
 	}
 
@@ -1032,9 +985,9 @@ class ViewTest extends \Test\TestCase {
 		$storage = new Temporary(array());
 		$scanner = $storage->getScanner();
 		$storage->file_put_contents('foo.txt', 'bar');
-		Filesystem::mount($storage, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage, array(), '/test/');
 		$scanner->scan('');
-		$view = new View('/test/foo.txt');
+		$view = new \OC\Files\View('/test/foo.txt');
 
 		$this->assertEquals('bar', $view->file_get_contents(''));
 		$fh = tmpfile();
@@ -1058,11 +1011,11 @@ class ViewTest extends \Test\TestCase {
 			$longPath .= '/' . $folderName;
 		}
 
-		$storage = new Temporary(array());
+		$storage = new \OC\Files\Storage\Temporary(array());
 		$this->tempStorage = $storage; // for later hard cleanup
-		Filesystem::mount($storage, array(), '/');
+		\OC\Files\Filesystem::mount($storage, array(), '/');
 
-		$rootView = new View('');
+		$rootView = new \OC\Files\View('');
 
 		if ($param0 === '@0') {
 			$param0 = $longPath;
@@ -1125,14 +1078,16 @@ class ViewTest extends \Test\TestCase {
 	public function testRenameCrossStoragePreserveMtime() {
 		$storage1 = new Temporary(array());
 		$storage2 = new Temporary(array());
+		$scanner1 = $storage1->getScanner();
+		$scanner2 = $storage2->getScanner();
 		$storage1->mkdir('sub');
 		$storage1->mkdir('foo');
 		$storage1->file_put_contents('foo.txt', 'asd');
 		$storage1->file_put_contents('foo/bar.txt', 'asd');
-		Filesystem::mount($storage1, array(), '/test/');
-		Filesystem::mount($storage2, array(), '/test/sub/storage');
+		\OC\Files\Filesystem::mount($storage1, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/test/sub/storage');
 
-		$view = new View('');
+		$view = new \OC\Files\View('');
 		$time = time() - 200;
 		$view->touch('/test/foo.txt', $time);
 		$view->touch('/test/foo', $time);
@@ -1157,8 +1112,8 @@ class ViewTest extends \Test\TestCase {
 
 	private function doTestCopyRenameFail($operation) {
 		$storage1 = new Temporary(array());
-		/** @var \PHPUnit_Framework_MockObject_MockObject|Temporary $storage2 */
-		$storage2 = $this->getMockBuilder(TemporaryNoCross::class)
+		/** @var \PHPUnit_Framework_MockObject_MockObject | \OC\Files\Storage\Temporary $storage2 */
+		$storage2 = $this->getMockBuilder('\Test\Files\TemporaryNoCross')
 			->setConstructorArgs([[]])
 			->setMethods(['fopen'])
 			->getMock();
@@ -1168,7 +1123,7 @@ class ViewTest extends \Test\TestCase {
 			->will($this->returnCallback(function ($path, $mode) use ($storage2) {
 				/** @var \PHPUnit_Framework_MockObject_MockObject | \OC\Files\Storage\Temporary $storage2 */
 				$source = fopen($storage2->getSourcePath($path), $mode);
-				return Quota::wrap($source, 9);
+				return \OC\Files\Stream\Quota::wrap($source, 9);
 			}));
 
 		$storage1->mkdir('sub');
@@ -1179,11 +1134,11 @@ class ViewTest extends \Test\TestCase {
 		$storage2->file_put_contents('existing.txt', '0123');
 		$storage1->getScanner()->scan('');
 		$storage2->getScanner()->scan('');
-		Filesystem::mount($storage1, array(), '/test/');
-		Filesystem::mount($storage2, array(), '/test/sub/storage');
+		\OC\Files\Filesystem::mount($storage1, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage2, array(), '/test/sub/storage');
 
 		// move file
-		$view = new View('');
+		$view = new \OC\Files\View('');
 		$this->assertTrue($storage1->file_exists('foo.txt'));
 		$this->assertFalse($storage2->file_exists('foo.txt'));
 		$this->assertFalse($view->$operation('/test/foo.txt', '/test/sub/storage/foo.txt'));
@@ -1209,8 +1164,10 @@ class ViewTest extends \Test\TestCase {
 	}
 
 	public function testDeleteFailKeepCache() {
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
+		/**
+		 * @var \PHPUnit_Framework_MockObject_MockObject | \OC\Files\Storage\Temporary $storage
+		 */
+		$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setConstructorArgs(array(array()))
 			->setMethods(array('unlink'))
 			->getMock();
@@ -1221,15 +1178,15 @@ class ViewTest extends \Test\TestCase {
 		$cache = $storage->getCache();
 		$storage->file_put_contents('foo.txt', 'asd');
 		$scanner->scan('');
-		Filesystem::mount($storage, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage, array(), '/test/');
 
-		$view = new View('/test');
+		$view = new \OC\Files\View('/test');
 
 		$this->assertFalse($view->unlink('foo.txt'));
 		$this->assertTrue($cache->inCache('foo.txt'));
 	}
 
-	public function directoryTraversalProvider() {
+	function directoryTraversalProvider() {
 		return [
 			['../test/'],
 			['..\\test\\my/../folder'],
@@ -1243,7 +1200,7 @@ class ViewTest extends \Test\TestCase {
 	 * @param string $root
 	 */
 	public function testConstructDirectoryTraversalException($root) {
-		new View($root);
+		new \OC\Files\View($root);
 	}
 
 	public function testRenameOverWrite() {
@@ -1254,22 +1211,22 @@ class ViewTest extends \Test\TestCase {
 		$storage->file_put_contents('foo.txt', 'asd');
 		$storage->file_put_contents('foo/bar.txt', 'asd');
 		$scanner->scan('');
-		Filesystem::mount($storage, array(), '/test/');
-		$view = new View('');
+		\OC\Files\Filesystem::mount($storage, array(), '/test/');
+		$view = new \OC\Files\View('');
 		$this->assertTrue($view->rename('/test/foo.txt', '/test/foo/bar.txt'));
 	}
 
 	public function testSetMountOptionsInStorage() {
-		$mount = new MountPoint(Temporary::class, '/asd/', [[]], Filesystem::getLoader(), ['foo' => 'bar']);
-		Filesystem::getMountManager()->addMount($mount);
+		$mount = new MountPoint('\OC\Files\Storage\Temporary', '/asd/', [[]], \OC\Files\Filesystem::getLoader(), ['foo' => 'bar']);
+		\OC\Files\Filesystem::getMountManager()->addMount($mount);
 		/** @var \OC\Files\Storage\Common $storage */
 		$storage = $mount->getStorage();
 		$this->assertEquals($storage->getMountOption('foo'), 'bar');
 	}
 
 	public function testSetMountOptionsWatcherPolicy() {
-		$mount = new MountPoint(Temporary::class, '/asd/', [[]], Filesystem::getLoader(), ['filesystem_check_changes' => Watcher::CHECK_NEVER]);
-		Filesystem::getMountManager()->addMount($mount);
+		$mount = new MountPoint('\OC\Files\Storage\Temporary', '/asd/', [[]], \OC\Files\Filesystem::getLoader(), ['filesystem_check_changes' => Watcher::CHECK_NEVER]);
+		\OC\Files\Filesystem::getMountManager()->addMount($mount);
 		/** @var \OC\Files\Storage\Common $storage */
 		$storage = $mount->getStorage();
 		$watcher = $storage->getWatcher();
@@ -1277,12 +1234,12 @@ class ViewTest extends \Test\TestCase {
 	}
 
 	public function testGetAbsolutePathOnNull() {
-		$view = new View();
+		$view = new \OC\Files\View();
 		$this->assertNull($view->getAbsolutePath(null));
 	}
 
 	public function testGetRelativePathOnNull() {
-		$view = new View();
+		$view = new \OC\Files\View();
 		$this->assertNull($view->getRelativePath(null));
 	}
 
@@ -1290,7 +1247,7 @@ class ViewTest extends \Test\TestCase {
 	 * @expectedException \InvalidArgumentException
 	 */
 	public function testNullAsRoot() {
-		new View(null);
+		new \OC\Files\View(null);
 	}
 
 	/**
@@ -1307,9 +1264,9 @@ class ViewTest extends \Test\TestCase {
 		$rootPath = str_replace('{folder}', 'files', $rootPath);
 		$pathPrefix = str_replace('{folder}', 'files', $pathPrefix);
 
-		$view = new View($rootPath);
+		$view = new \OC\Files\View($rootPath);
 		$storage = new Temporary(array());
-		Filesystem::mount($storage, [], '/');
+		\OC\Files\Filesystem::mount($storage, [], '/');
 		$this->assertTrue($view->lockFile($pathPrefix . '/foo/bar', ILockingProvider::LOCK_EXCLUSIVE));
 		$view->lockFile($pathPrefix . '/foo/bar/asd', ILockingProvider::LOCK_SHARED);
 	}
@@ -1326,9 +1283,9 @@ class ViewTest extends \Test\TestCase {
 		$rootPath = str_replace('{folder}', 'files_encryption', $rootPath);
 		$pathPrefix = str_replace('{folder}', 'files_encryption', $pathPrefix);
 
-		$view = new View($rootPath);
+		$view = new \OC\Files\View($rootPath);
 		$storage = new Temporary(array());
-		Filesystem::mount($storage, [], '/');
+		\OC\Files\Filesystem::mount($storage, [], '/');
 		$this->assertFalse($view->lockFile($pathPrefix . '/foo/bar', ILockingProvider::LOCK_EXCLUSIVE));
 		$this->assertFalse($view->lockFile($pathPrefix . '/foo/bar/asd', ILockingProvider::LOCK_SHARED));
 	}
@@ -1347,9 +1304,9 @@ class ViewTest extends \Test\TestCase {
 		$rootPath = str_replace('{folder}', 'files', $rootPath);
 		$pathPrefix = str_replace('{folder}', 'files', $pathPrefix);
 
-		$view = new View($rootPath);
+		$view = new \OC\Files\View($rootPath);
 		$storage = new Temporary(array());
-		Filesystem::mount($storage, [], '/');
+		\OC\Files\Filesystem::mount($storage, [], '/');
 		$this->assertTrue($view->lockFile($pathPrefix . '/foo/bar', ILockingProvider::LOCK_SHARED));
 		$view->lockFile($pathPrefix . '/foo/bar', ILockingProvider::LOCK_EXCLUSIVE);
 	}
@@ -1366,9 +1323,9 @@ class ViewTest extends \Test\TestCase {
 		$rootPath = str_replace('{folder}', 'files_encryption', $rootPath);
 		$pathPrefix = str_replace('{folder}', 'files_encryption', $pathPrefix);
 
-		$view = new View($rootPath);
+		$view = new \OC\Files\View($rootPath);
 		$storage = new Temporary(array());
-		Filesystem::mount($storage, [], '/');
+		\OC\Files\Filesystem::mount($storage, [], '/');
 		$this->assertFalse($view->lockFile($pathPrefix . '/foo/bar', ILockingProvider::LOCK_SHARED));
 		$this->assertFalse($view->lockFile($pathPrefix . '/foo/bar', ILockingProvider::LOCK_EXCLUSIVE));
 	}
@@ -1378,11 +1335,11 @@ class ViewTest extends \Test\TestCase {
 	 */
 	public function testLockLocalMountPointPathInsteadOfStorageRoot() {
 		$lockingProvider = \OC::$server->getLockingProvider();
-		$view = new View('/testuser/files/');
+		$view = new \OC\Files\View('/testuser/files/');
 		$storage = new Temporary([]);
-		Filesystem::mount($storage, [], '/');
+		\OC\Files\Filesystem::mount($storage, [], '/');
 		$mountedStorage = new Temporary([]);
-		Filesystem::mount($mountedStorage, [], '/testuser/files/mountpoint');
+		\OC\Files\Filesystem::mount($mountedStorage, [], '/testuser/files/mountpoint');
 
 		$this->assertTrue(
 			$view->lockFile('/mountpoint', ILockingProvider::LOCK_EXCLUSIVE, true),
@@ -1395,7 +1352,7 @@ class ViewTest extends \Test\TestCase {
 		$thrown = false;
 		try {
 			$storage->acquireLock('/testuser/files/mountpoint', ILockingProvider::LOCK_EXCLUSIVE, $lockingProvider);
-		} catch (LockedException $e) {
+		} catch (\OCP\Lock\LockedException $e) {
 			$thrown = true;
 		}
 		$this->assertTrue($thrown, 'Mount point path was locked on root storage');
@@ -1408,11 +1365,11 @@ class ViewTest extends \Test\TestCase {
 	 */
 	public function testLockStorageRootButNotLocalMountPoint() {
 		$lockingProvider = \OC::$server->getLockingProvider();
-		$view = new View('/testuser/files/');
+		$view = new \OC\Files\View('/testuser/files/');
 		$storage = new Temporary([]);
-		Filesystem::mount($storage, [], '/');
+		\OC\Files\Filesystem::mount($storage, [], '/');
 		$mountedStorage = new Temporary([]);
-		Filesystem::mount($mountedStorage, [], '/testuser/files/mountpoint');
+		\OC\Files\Filesystem::mount($mountedStorage, [], '/testuser/files/mountpoint');
 
 		$this->assertTrue(
 			$view->lockFile('/mountpoint', ILockingProvider::LOCK_EXCLUSIVE, false),
@@ -1422,7 +1379,7 @@ class ViewTest extends \Test\TestCase {
 		$thrown = false;
 		try {
 			$mountedStorage->acquireLock('', ILockingProvider::LOCK_EXCLUSIVE, $lockingProvider);
-		} catch (LockedException $e) {
+		} catch (\OCP\Lock\LockedException $e) {
 			$thrown = true;
 		}
 		$this->assertTrue($thrown, 'Mount point storage root was locked on original storage');
@@ -1438,11 +1395,11 @@ class ViewTest extends \Test\TestCase {
 	 */
 	public function testLockMountPointPathFailReleasesBoth() {
 		$lockingProvider = \OC::$server->getLockingProvider();
-		$view = new View('/testuser/files/');
+		$view = new \OC\Files\View('/testuser/files/');
 		$storage = new Temporary([]);
-		Filesystem::mount($storage, [], '/');
+		\OC\Files\Filesystem::mount($storage, [], '/');
 		$mountedStorage = new Temporary([]);
-		Filesystem::mount($mountedStorage, [], '/testuser/files/mountpoint.txt');
+		\OC\Files\Filesystem::mount($mountedStorage, [], '/testuser/files/mountpoint.txt');
 
 		// this would happen if someone is writing on the mount point
 		$mountedStorage->acquireLock('', ILockingProvider::LOCK_EXCLUSIVE, $lockingProvider);
@@ -1452,7 +1409,7 @@ class ViewTest extends \Test\TestCase {
 			// this actually acquires two locks, one on the mount point and one on the storage root,
 			// but the one on the storage root will fail
 			$view->lockFile('/mountpoint.txt', ILockingProvider::LOCK_SHARED);
-		} catch (LockedException $e) {
+		} catch (\OCP\Lock\LockedException $e) {
 			$thrown = true;
 		}
 		$this->assertTrue($thrown, 'Cannot acquire shared lock because storage root is already locked');
@@ -1488,7 +1445,7 @@ class ViewTest extends \Test\TestCase {
 	 * @dataProvider pathRelativeToFilesProvider
 	 */
 	public function testGetPathRelativeToFiles($path, $expectedPath) {
-		$view = new View();
+		$view = new \OC\Files\View();
 		$this->assertEquals($expectedPath, $view->getPathRelativeToFiles($path));
 	}
 
@@ -1505,18 +1462,16 @@ class ViewTest extends \Test\TestCase {
 	/**
 	 * @dataProvider pathRelativeToFilesProviderExceptionCases
 	 * @expectedException \InvalidArgumentException
-	 * @expectedExceptionMessage $absolutePath must be relative to "files"
-	 * @param string $path
 	 */
 	public function testGetPathRelativeToFilesWithInvalidArgument($path) {
-		$view = new View();
+		$view = new \OC\Files\View();
 		$view->getPathRelativeToFiles($path);
 	}
 
 	public function testChangeLock() {
-		$view = new View('/testuser/files/');
+		$view = new \OC\Files\View('/testuser/files/');
 		$storage = new Temporary(array());
-		Filesystem::mount($storage, [], '/');
+		\OC\Files\Filesystem::mount($storage, [], '/');
 
 		$view->lockFile('/test/sub', ILockingProvider::LOCK_SHARED);
 		$this->assertTrue($this->isFileLocked($view, '/test//sub', ILockingProvider::LOCK_SHARED));
@@ -1554,14 +1509,14 @@ class ViewTest extends \Test\TestCase {
 	 * @param $shouldEmit
 	 */
 	public function testHookPaths($root, $path, $shouldEmit) {
-		$filesystemReflection = new \ReflectionClass(Filesystem::class);
+		$filesystemReflection = new \ReflectionClass('\OC\Files\Filesystem');
 		$defaultRootValue = $filesystemReflection->getProperty('defaultInstance');
 		$defaultRootValue->setAccessible(true);
 		$oldRoot = $defaultRootValue->getValue();
-		$defaultView = new View('/foo/files');
+		$defaultView = new \OC\Files\View('/foo/files');
 		$defaultRootValue->setValue($defaultView);
-		$view = new View($root);
-		$result = self::invokePrivate($view, 'shouldEmitHooks', [$path]);
+		$view = new \OC\Files\View($root);
+		$result = $this->invokePrivate($view, 'shouldEmitHooks', [$path]);
 		$defaultRootValue->setValue($oldRoot);
 		$this->assertEquals($shouldEmit, $result);
 	}
@@ -1575,7 +1530,7 @@ class ViewTest extends \Test\TestCase {
 	private function createTestMovableMountPoints($mountPoints) {
 		$mounts = [];
 		foreach ($mountPoints as $mountPoint) {
-			$storage = $this->getMockBuilder(Temporary::class)
+			$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 				->setMethods([])
 				->getMock();
 
@@ -1585,7 +1540,6 @@ class ViewTest extends \Test\TestCase {
 				->getMock();
 		}
 
-		/** @var IMountProvider|\PHPUnit_Framework_MockObject_MockObject $mountProvider */
 		$mountProvider = $this->createMock(IMountProvider::class);
 		$mountProvider->expects($this->any())
 			->method('getMountsForUser')
@@ -1601,7 +1555,7 @@ class ViewTest extends \Test\TestCase {
 	 * Test mount point move
 	 */
 	public function testMountPointMove() {
-		self::loginAsUser($this->user);
+		$this->loginAsUser($this->user);
 
 		list($mount1, $mount2) = $this->createTestMovableMountPoints([
 			$this->user . '/files/mount1',
@@ -1615,7 +1569,7 @@ class ViewTest extends \Test\TestCase {
 			->method('moveMount')
 			->will($this->returnValue(true));
 
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 		$view->mkdir('sub');
 
 		$this->assertTrue($view->rename('mount1', 'renamed_mount'), 'Can rename mount point');
@@ -1626,7 +1580,7 @@ class ViewTest extends \Test\TestCase {
 	 * Test that moving a mount point into another is forbidden
 	 */
 	public function testMoveMountPointIntoAnother() {
-		self::loginAsUser($this->user);
+		$this->loginAsUser($this->user);
 
 		list($mount1, $mount2) = $this->createTestMovableMountPoints([
 			$this->user . '/files/mount1',
@@ -1639,7 +1593,7 @@ class ViewTest extends \Test\TestCase {
 		$mount2->expects($this->never())
 			->method('moveMount');
 
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
 		$this->assertFalse($view->rename('mount1', 'mount2'), 'Cannot overwrite another mount point');
 		$this->assertFalse($view->rename('mount1', 'mount2/sub'), 'Cannot move a mount point into another');
@@ -1649,7 +1603,7 @@ class ViewTest extends \Test\TestCase {
 	 * Test that moving a mount point into a shared folder is forbidden
 	 */
 	public function testMoveMountPointIntoSharedFolder() {
-		self::loginAsUser($this->user);
+		$this->loginAsUser($this->user);
 
 		list($mount1) = $this->createTestMovableMountPoints([
 			$this->user . '/files/mount1',
@@ -1658,20 +1612,20 @@ class ViewTest extends \Test\TestCase {
 		$mount1->expects($this->never())
 			->method('moveMount');
 
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 		$view->mkdir('shareddir');
 		$view->mkdir('shareddir/sub');
 		$view->mkdir('shareddir/sub2');
 
 		$fileId = $view->getFileInfo('shareddir')->getId();
 		$userObject = \OC::$server->getUserManager()->createUser('test2', 'IHateNonMockableStaticClasses');
-		$this->assertTrue(Share::shareItem('folder', $fileId, Share::SHARE_TYPE_USER, 'test2', Constants::PERMISSION_READ));
+		$this->assertTrue(\OCP\Share::shareItem('folder', $fileId, \OCP\Share::SHARE_TYPE_USER, 'test2', \OCP\Constants::PERMISSION_READ));
 
 		$this->assertFalse($view->rename('mount1', 'shareddir'), 'Cannot overwrite shared folder');
 		$this->assertFalse($view->rename('mount1', 'shareddir/sub'), 'Cannot move mount point into shared folder');
 		$this->assertFalse($view->rename('mount1', 'shareddir/sub/sub2'), 'Cannot move mount point into shared subfolder');
 
-		$this->assertTrue(Share::unshare('folder', $fileId, Share::SHARE_TYPE_USER, 'test2'));
+		$this->assertTrue(\OCP\Share::unshare('folder', $fileId, \OCP\Share::SHARE_TYPE_USER, 'test2'));
 		$userObject->delete();
 	}
 
@@ -1795,7 +1749,7 @@ class ViewTest extends \Test\TestCase {
 	 * @param string $lockedPath path of the locked item to check
 	 * @param string $hookType hook type
 	 * @param int $expectedLockBefore expected lock during pre hooks
-	 * @param int $expectedLockDuring expected lock during operation
+	 * @param int $expectedLockduring expected lock during operation
 	 * @param int $expectedLockAfter expected lock during post hooks
 	 * @param int $expectedStrayLock expected lock after returning, should
 	 * be null (unlock) for most operations
@@ -1810,14 +1764,13 @@ class ViewTest extends \Test\TestCase {
 		$expectedLockAfter = ILockingProvider::LOCK_SHARED,
 		$expectedStrayLock = null
 	) {
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
+		$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setMethods([$operation])
 			->getMock();
 
-		Filesystem::mount($storage, array(), $this->user . '/');
+		\OC\Files\Filesystem::mount($storage, array(), $this->user . '/');
 
 		// work directly on disk because mkdir might be mocked
 		$realPath = $storage->getSourcePath('');
@@ -1859,15 +1812,14 @@ class ViewTest extends \Test\TestCase {
 	 * This code path uses $storage->fopen instead
 	 */
 	public function testLockFilePutContentWithStream() {
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
 		$path = 'test_file_put_contents.txt';
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
+		$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setMethods(['fopen'])
 			->getMock();
 
-		Filesystem::mount($storage, array(), $this->user . '/');
+		\OC\Files\Filesystem::mount($storage, array(), $this->user . '/');
 		$storage->mkdir('files');
 
 		$storage->expects($this->once())
@@ -1898,15 +1850,14 @@ class ViewTest extends \Test\TestCase {
 	 * Test locks for fopen with fclose at the end
 	 */
 	public function testLockFopen() {
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
 		$path = 'test_file_put_contents.txt';
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
+		$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setMethods(['fopen'])
 			->getMock();
 
-		Filesystem::mount($storage, array(), $this->user . '/');
+		\OC\Files\Filesystem::mount($storage, array(), $this->user . '/');
 		$storage->mkdir('files');
 
 		$storage->expects($this->once())
@@ -1951,14 +1902,13 @@ class ViewTest extends \Test\TestCase {
 		$operationArgs,
 		$path
 	) {
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
+		$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setMethods([$operation])
 			->getMock();
 
-		Filesystem::mount($storage, array(), $this->user . '/');
+		\OC\Files\Filesystem::mount($storage, array(), $this->user . '/');
 
 		// work directly on disk because mkdir might be mocked
 		$realPath = $storage->getSourcePath('');
@@ -2002,20 +1952,19 @@ class ViewTest extends \Test\TestCase {
 		$path,
 		$hookType
 	) {
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
+		$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setMethods([$operation])
 			->getMock();
 
-		Filesystem::mount($storage, array(), $this->user . '/');
+		\OC\Files\Filesystem::mount($storage, array(), $this->user . '/');
 		$storage->mkdir('files');
 
-		Util::connectHook(
-			Filesystem::CLASSNAME,
+		\OCP\Util::connectHook(
+			\OC\Files\Filesystem::CLASSNAME,
 			$hookType,
-			HookHelper::class,
+			'\Test\HookHelper',
 			'cancellingCallback'
 		);
 
@@ -2041,10 +1990,9 @@ class ViewTest extends \Test\TestCase {
 	 * the operation
 	 */
 	public function testLockFileRename($operation, $expectedLockTypeSourceDuring) {
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
+		$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setMethods([$operation, 'filemtime'])
 			->getMock();
 
@@ -2055,7 +2003,7 @@ class ViewTest extends \Test\TestCase {
 		$sourcePath = 'original.txt';
 		$targetPath = 'target.txt';
 
-		Filesystem::mount($storage, array(), $this->user . '/');
+		\OC\Files\Filesystem::mount($storage, array(), $this->user . '/');
 		$storage->mkdir('files');
 		$view->file_put_contents($sourcePath, 'meh');
 
@@ -2097,17 +2045,16 @@ class ViewTest extends \Test\TestCase {
 	 * @expectedException \Exception
 	 */
 	public function testLockFileCopyException() {
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
+		$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setMethods(['copy'])
 			->getMock();
 
 		$sourcePath = 'original.txt';
 		$targetPath = 'target.txt';
 
-		Filesystem::mount($storage, array(), $this->user . '/');
+		\OC\Files\Filesystem::mount($storage, array(), $this->user . '/');
 		$storage->mkdir('files');
 		$view->file_put_contents($sourcePath, 'meh');
 
@@ -2138,9 +2085,9 @@ class ViewTest extends \Test\TestCase {
 	 * Test rename operation: unlock first path when second path was locked
 	 */
 	public function testLockFileRenameUnlockOnException() {
-		self::loginAsUser('test');
+		$this->loginAsUser('test');
 
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
 		$sourcePath = 'original.txt';
 		$targetPath = 'target.txt';
@@ -2155,7 +2102,7 @@ class ViewTest extends \Test\TestCase {
 		$thrown = false;
 		try {
 			$view->rename($sourcePath, $targetPath);
-		} catch (LockedException $e) {
+		} catch (\OCP\Lock\LockedException $e) {
 			$thrown = true;
 		}
 
@@ -2171,9 +2118,9 @@ class ViewTest extends \Test\TestCase {
 	 * Test rename operation: unlock first path when second path was locked
 	 */
 	public function testGetOwner() {
-		self::loginAsUser('test');
+		$this->loginAsUser('test');
 
-		$view = new View('/test/files/');
+		$view = new \OC\Files\View('/test/files/');
 
 		$path = 'foo.txt';
 		$view->file_put_contents($path, 'meh');
@@ -2188,7 +2135,7 @@ class ViewTest extends \Test\TestCase {
 		$this->assertEquals('test', $folderInfo[0]->getOwner()->getUID());
 
 		$subStorage = new Temporary();
-		Filesystem::mount($subStorage, [], '/test/files/asd');
+		\OC\Files\Filesystem::mount($subStorage, [], '/test/files/asd');
 
 		$folderInfo = $view->getDirectoryContent('');
 		$folderInfo = array_values(array_filter($folderInfo, function (FileInfo $info) {
@@ -2216,14 +2163,12 @@ class ViewTest extends \Test\TestCase {
 	 * the operation
 	 */
 	public function testLockFileRenameCrossStorage($viewOperation, $storageOperation, $expectedLockTypeSourceDuring) {
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
+		$storage = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setMethods([$storageOperation])
 			->getMock();
-		/** @var Temporary|\PHPUnit_Framework_MockObject_MockObject $storage2 */
-		$storage2 = $this->getMockBuilder(Temporary::class)
+		$storage2 = $this->getMockBuilder('\OC\Files\Storage\Temporary')
 			->setMethods([$storageOperation, 'filemtime'])
 			->getMock();
 
@@ -2234,8 +2179,8 @@ class ViewTest extends \Test\TestCase {
 		$sourcePath = 'original.txt';
 		$targetPath = 'substorage/target.txt';
 
-		Filesystem::mount($storage, array(), $this->user . '/');
-		Filesystem::mount($storage2, array(), $this->user . '/files/substorage');
+		\OC\Files\Filesystem::mount($storage, array(), $this->user . '/');
+		\OC\Files\Filesystem::mount($storage2, array(), $this->user . '/files/substorage');
 		$storage->mkdir('files');
 		$view->file_put_contents($sourcePath, 'meh');
 
@@ -2276,13 +2221,13 @@ class ViewTest extends \Test\TestCase {
 	 * Test locks when moving a mount point
 	 */
 	public function testLockMoveMountPoint() {
-		self::loginAsUser('test');
+		$this->loginAsUser('test');
 
 		list($mount) = $this->createTestMovableMountPoints([
 			$this->user . '/files/substorage',
 		]);
 
-		$view = new View('/' . $this->user . '/files/');
+		$view = new \OC\Files\View('/' . $this->user . '/files/');
 		$view->mkdir('subdir');
 
 		$sourcePath = 'substorage';
@@ -2337,7 +2282,7 @@ class ViewTest extends \Test\TestCase {
 	 * Connect hook callbacks for hook type
 	 *
 	 * @param string $hookType hook type or null for none
-	 * @param View $view view to check the lock on
+	 * @param \OC\Files\View $view view to check the lock on
 	 * @param string $path path for which to check the lock
 	 * @param int $lockTypePre variable to receive lock type that was active in the pre-hook
 	 * @param int $lockTypePost variable to receive lock type that was active in the post-hook
@@ -2369,14 +2314,14 @@ class ViewTest extends \Test\TestCase {
 			));
 
 		if ($hookType !== null) {
-			Util::connectHook(
-				Filesystem::CLASSNAME,
+			\OCP\Util::connectHook(
+				\OC\Files\Filesystem::CLASSNAME,
 				$hookType,
 				$eventHandler,
 				'preCallback'
 			);
-			Util::connectHook(
-				Filesystem::CLASSNAME,
+			\OCP\Util::connectHook(
+				\OC\Files\Filesystem::CLASSNAME,
 				'post_' . $hookType,
 				$eventHandler,
 				'postCallback'
@@ -2387,14 +2332,14 @@ class ViewTest extends \Test\TestCase {
 	/**
 	 * Returns the file lock type
 	 *
-	 * @param View $view view
+	 * @param \OC\Files\View $view view
 	 * @param string $path path
 	 * @param bool $onMountPoint true to check the mount point instead of the
 	 * mounted storage
 	 *
 	 * @return int lock type or null if file was not locked
 	 */
-	private function getFileLockType(View $view, $path, $onMountPoint = false) {
+	private function getFileLockType(\OC\Files\View $view, $path, $onMountPoint = false) {
 		if ($this->isFileLocked($view, $path, ILockingProvider::LOCK_EXCLUSIVE, $onMountPoint)) {
 			return ILockingProvider::LOCK_EXCLUSIVE;
 		} else if ($this->isFileLocked($view, $path, ILockingProvider::LOCK_SHARED, $onMountPoint)) {
@@ -2408,8 +2353,9 @@ class ViewTest extends \Test\TestCase {
 		$mountPoint = '/' . $this->user . '/files/mount/';
 
 		// Mock the mount point
-		/** @var TestMoveableMountPoint|\PHPUnit_Framework_MockObject_MockObject $mount */
-		$mount = $this->createMock(TestMoveableMountPoint::class);
+		$mount = $this->getMockBuilder('\Test\TestMoveableMountPoint')
+			->disableOriginalConstructor()
+			->getMock();
 		$mount->expects($this->once())
 			->method('getMountPoint')
 			->willReturn($mountPoint);
@@ -2421,7 +2367,7 @@ class ViewTest extends \Test\TestCase {
 			->willReturn('');
 
 		// Register mount
-		Filesystem::getMountManager()->addMount($mount);
+		\OC\Files\Filesystem::getMountManager()->addMount($mount);
 
 		// Listen for events
 		$eventHandler = $this->getMockBuilder('\stdclass')
@@ -2429,25 +2375,25 @@ class ViewTest extends \Test\TestCase {
 			->getMock();
 		$eventHandler->expects($this->once())
 			->method('umount')
-			->with([Filesystem::signal_param_path => '/mount']);
+			->with([\OC\Files\Filesystem::signal_param_path => '/mount']);
 		$eventHandler->expects($this->once())
 			->method('post_umount')
-			->with([Filesystem::signal_param_path => '/mount']);
-		Util::connectHook(
-			Filesystem::CLASSNAME,
+			->with([\OC\Files\Filesystem::signal_param_path => '/mount']);
+		\OCP\Util::connectHook(
+			\OC\Files\Filesystem::CLASSNAME,
 			'umount',
 			$eventHandler,
 			'umount'
 		);
-		Util::connectHook(
-			Filesystem::CLASSNAME,
+		\OCP\Util::connectHook(
+			\OC\Files\Filesystem::CLASSNAME,
 			'post_umount',
 			$eventHandler,
 			'post_umount'
 		);
 
 		//Delete the mountpoint
-		$view = new View('/' . $this->user . '/files');
+		$view = new \OC\Files\View('/' . $this->user . '/files');
 		$this->assertEquals('foo', $view->rmdir('mount'));
 	}
 
@@ -2467,9 +2413,9 @@ class ViewTest extends \Test\TestCase {
 	 */
 	public function testGetDirectoryContentMimeFilter($filter, $expected) {
 		$storage1 = new Temporary();
-		$root = self::getUniqueID('/');
-		Filesystem::mount($storage1, array(), $root . '/');
-		$view = new View($root);
+		$root = $this->getUniqueID('/');
+		\OC\Files\Filesystem::mount($storage1, array(), $root . '/');
+		$view = new \OC\Files\View($root);
 
 		$view->file_put_contents('test1.txt', 'asd');
 		$view->file_put_contents('test2.txt', 'asd');
@@ -2490,10 +2436,10 @@ class ViewTest extends \Test\TestCase {
 		$storage = new Temporary(array());
 		$scanner = $storage->getScanner();
 		$storage->file_put_contents('foo.txt', 'bar');
-		Filesystem::mount($storage, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage, array(), '/test/');
 		$scanner->scan('');
 
-		$view = new View('/test/foo.txt');
+		$view = new \OC\Files\View('/test/foo.txt');
 		$view->putFileInfo('.', ['checksum' => '42']);
 
 		$this->assertEquals('bar', $view->file_get_contents(''));
@@ -2511,14 +2457,14 @@ class ViewTest extends \Test\TestCase {
 		$scanner = $storage->getScanner();
 		$cache = $storage->getCache();
 		$storage->file_put_contents('foo.txt', 'bar');
-		Filesystem::mount($storage, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage, array(), '/test/');
 		$scanner->scan('');
 
 		$storage->unlink('foo.txt');
 
 		$this->assertTrue($cache->inCache('foo.txt'));
 
-		$view = new View('/test');
+		$view = new \OC\Files\View('/test');
 		$rootInfo = $view->getFileInfo('');
 		$this->assertEquals(3, $rootInfo->getSize());
 		$view->unlink('foo.txt');
@@ -2535,7 +2481,7 @@ class ViewTest extends \Test\TestCase {
 		$cache = $storage->getCache();
 		$storage->mkdir('foo');
 		$storage->file_put_contents('foo/foo.txt', 'bar');
-		Filesystem::mount($storage, array(), '/test/');
+		\OC\Files\Filesystem::mount($storage, array(), '/test/');
 		$scanner->scan('');
 
 		$storage->rmdir('foo');
@@ -2543,7 +2489,7 @@ class ViewTest extends \Test\TestCase {
 		$this->assertTrue($cache->inCache('foo'));
 		$this->assertTrue($cache->inCache('foo/foo.txt'));
 
-		$view = new View('/test');
+		$view = new \OC\Files\View('/test');
 		$rootInfo = $view->getFileInfo('');
 		$this->assertEquals(3, $rootInfo->getSize());
 		$view->rmdir('foo');

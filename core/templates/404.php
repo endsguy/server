@@ -1,7 +1,7 @@
 <?php
 /** @var $_ array */
 /** @var $l \OCP\IL10N */
-/** @var $theme OCP\Defaults */
+/** @var $theme OC_Theme */
 // @codeCoverageIgnoreStart
 if(!isset($_)) {//also provide standalone error page
 	require_once '../../lib/base.php';

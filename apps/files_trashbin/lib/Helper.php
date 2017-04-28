@@ -72,9 +72,8 @@ class Helper {
 				$timestamp = substr(pathinfo($parts[0], PATHINFO_EXTENSION), 1);
 			}
 			$originalPath = '';
-			$originalName = substr($entryName, 0, -strlen($timestamp)-2);
-			if (isset($originalLocations[$originalName][$timestamp])) {
-				$originalPath = $originalLocations[$originalName][$timestamp];
+			if (isset($originalLocations[$id][$timestamp])) {
+				$originalPath = $originalLocations[$id][$timestamp];
 				if (substr($originalPath, -1) === '/') {
 					$originalPath = substr($originalPath, 0, -1);
 				}
@@ -91,11 +90,7 @@ class Helper {
 				'permissions' => Constants::PERMISSION_ALL - Constants::PERMISSION_SHARE
 			);
 			if ($originalPath) {
-				if ($originalPath !== '.') {
-					$i['extraData'] = $originalPath . '/' . $originalName;
-				} else {
-					$i['extraData'] = $originalName;
-				}
+				$i['extraData'] = $originalPath . '/' . $id;
 			}
 			$result[] = new FileInfo($absoluteDir . '/' . $i['name'], $storage, $internalPath . '/' . $i['name'], $i, $mount);
 		}

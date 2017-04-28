@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Sisse lülitatud",
+    "Not enabled" : "Pole sisse lülitatud",
     "Wrong password" : "Vale parool",
     "Saved" : "Salvestatud",
     "No user supplied" : "Kasutajat ei sisestatud",
@@ -74,6 +76,7 @@ OC.L10N.register(
     "NT LAN Manager" : "NT LAN Manager",
     "Email server" : "E-kirjade server",
     "Open documentation" : "Ava dokumentatsioon",
+    "This is used for sending out notifications." : "Seda kasutatakse teadete välja saatmiseks.",
     "Send mode" : "Saatmise viis",
     "Encryption" : "Krüpteerimine",
     "From address" : "Saatja aadress",

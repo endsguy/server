@@ -9,7 +9,6 @@
 namespace Test\L10N;
 
 use OC\L10N\Factory;
-use OC\L10N\LanguageNotFoundException;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IUser;
@@ -340,22 +339,26 @@ class FactoryTest extends TestCase {
 	public function dataSetLanguageFromRequest() {
 		return [
 			// Language is available
-			[null, 'de', ['de'], 'de'],
-			[null, 'de,en', ['de'], 'de'],
-			[null, 'de-DE,en-US;q=0.8,en;q=0.6', ['de'], 'de'],
+			[null, 'de', null, ['de'], 'de', 'de'],
+			[null, 'de,en', null, ['de'], 'de', 'de'],
+			[null, 'de-DE,en-US;q=0.8,en;q=0.6', null, ['de'], 'de', 'de'],
 			// Language is not available
-			[null, 'de', ['ru'], new LanguageNotFoundException()],
-			[null, 'de,en', ['ru', 'en'], 'en'],
-			[null, 'de-DE,en-US;q=0.8,en;q=0.6', ['ru', 'en'], 'en'],
+			[null, 'de', null, ['ru'], 'en', 'en'],
+			[null, 'de,en', null, ['ru', 'en'], 'en', 'en'],
+			[null, 'de-DE,en-US;q=0.8,en;q=0.6', null, ['ru', 'en'], 'en', 'en'],
+			// Language is available, but request language is set
+			[null, 'de', 'ru', ['de'], 'de', 'ru'],
+			[null, 'de,en', 'ru', ['de'], 'de', 'ru'],
+			[null, 'de-DE,en-US;q=0.8,en;q=0.6', 'ru', ['de'], 'de', 'ru'],
 
-			// Language for app
-			['files_pdfviewer', 'de', ['de'], 'de'],
-			['files_pdfviewer', 'de,en', ['de'], 'de'],
-			['files_pdfviewer', 'de-DE,en-US;q=0.8,en;q=0.6', ['de'], 'de'],
-			// Language for app is not available
-			['files_pdfviewer', 'de', ['ru'], new LanguageNotFoundException()],
-			['files_pdfviewer', 'de,en', ['ru', 'en'], 'en'],
-			['files_pdfviewer', 'de-DE,en-US;q=0.8,en;q=0.6', ['ru', 'en'], 'en'],
+			// Request lang should not be set for apps: Language is available
+			['files_pdfviewer', 'de', null, ['de'], 'de', ''],
+			['files_pdfviewer', 'de,en', null, ['de'], 'de', ''],
+			['files_pdfviewer', 'de-DE,en-US;q=0.8,en;q=0.6', null, ['de'], 'de', ''],
+			// Request lang should not be set for apps: Language is not available
+			['files_pdfviewer', 'de', null, ['ru'], 'en', ''],
+			['files_pdfviewer', 'de,en', null, ['ru', 'en'], 'en', ''],
+			['files_pdfviewer', 'de-DE,en-US;q=0.8,en;q=0.6', null, ['ru', 'en'], 'en', ''],
 		];
 	}
 
@@ -364,10 +367,12 @@ class FactoryTest extends TestCase {
 	 *
 	 * @param string|null $app
 	 * @param string $header
+	 * @param string|null $requestLanguage
 	 * @param string[] $availableLanguages
 	 * @param string $expected
+	 * @param string $expectedLang
 	 */
-	public function testGetLanguageFromRequest($app, $header, array $availableLanguages, $expected) {
+	public function testSetLanguageFromRequest($app, $header, $requestLanguage, array $availableLanguages, $expected, $expectedLang) {
 		$factory = $this->getFactory(['findAvailableLanguages']);
 		$factory->expects($this->once())
 			->method('findAvailableLanguages')
@@ -379,12 +384,11 @@ class FactoryTest extends TestCase {
 			->with('ACCEPT_LANGUAGE')
 			->willReturn($header);
 
-		if ($expected instanceof LanguageNotFoundException) {
-			$this->setExpectedException(LanguageNotFoundException::class);
-			self::invokePrivate($factory, 'getLanguageFromRequest', [$app]);
-		} else {
-			$this->assertSame($expected, self::invokePrivate($factory, 'getLanguageFromRequest', [$app]), 'Asserting returned language');
+		if ($requestLanguage !== null) {
+			$this->invokePrivate($factory, 'requestLanguage', [$requestLanguage]);
 		}
+		$this->assertSame($expected, $factory->setLanguageFromRequest($app), 'Asserting returned language');
+		$this->assertSame($expectedLang, $this->invokePrivate($factory, 'requestLanguage'), 'Asserting stored language');
 	}
 
 	public function dataGetL10nFilesForApp() {

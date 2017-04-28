@@ -9,7 +9,6 @@
 namespace Test;
 
 use OC;
-use OCP\IConfig;
 
 class ImageTest extends \Test\TestCase {
 	public static function tearDownAfterClass() {
@@ -134,12 +133,7 @@ class ImageTest extends \Test\TestCase {
 		$expected = ob_get_clean();
 		$this->assertEquals($expected, $img->data());
 
-		$config = $this->createMock(IConfig::class);
-		$config->expects($this->once())
-			->method('getAppValue')
-			->with('preview', 'jpeg_quality', 90)
-			->willReturn(null);
-		$img = new \OC_Image(OC::$SERVERROOT.'/tests/data/testimage.jpg', null, $config);
+		$img = new \OC_Image(OC::$SERVERROOT.'/tests/data/testimage.jpg');
 		$raw = imagecreatefromstring(file_get_contents(OC::$SERVERROOT.'/tests/data/testimage.jpg'));
 		ob_start();
 		imagejpeg($raw);

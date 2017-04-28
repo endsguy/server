@@ -97,8 +97,7 @@ class Application {
 					throw new NeedsUpdateException();
 				} elseif ($this->config->getSystemValue('maintenance', false)) {
 					if ($input->getArgument('command') !== '_completion') {
-						$errOutput = $output->getErrorOutput();
-						$errOutput->writeln('<comment>Nextcloud is in maintenance mode - no app have been loaded</comment>' . PHP_EOL);
+						$output->writeln("Nextcloud is in maintenance mode - no apps have been loaded");
 					}
 				} else {
 					OC_App::loadApps();
@@ -135,7 +134,7 @@ class Application {
 		}
 
 		if ($input->getFirstArgument() !== 'check') {
-			$errors = \OC_Util::checkServer(\OC::$server->getSystemConfig());
+			$errors = \OC_Util::checkServer(\OC::$server->getConfig());
 			if (!empty($errors)) {
 				foreach ($errors as $error) {
 					$output->writeln((string)$error['error']);

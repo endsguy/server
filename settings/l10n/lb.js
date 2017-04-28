@@ -1,6 +1,7 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Aktivéiert",
     "Wrong password" : "Falscht Passwuert",
     "Saved" : "Gespäichert",
     "Authentication error" : "Authentifikatioun's Fehler",

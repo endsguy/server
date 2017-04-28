@@ -37,7 +37,7 @@ trait Auth {
 	private $responseXml;
 
 	/** @BeforeScenario */
-	public function setUpScenario() {
+	public function tearUpScenario() {
 		$this->client = new Client();
 		$this->responseXml = '';
 		$this->cookieJar = new CookieJar();
@@ -55,7 +55,7 @@ trait Auth {
 		try {
 			if ($useCookies) {
 				$request = $this->client->createRequest($method, $fullUrl, [
-					'cookies' => $this->cookieJar,
+				    'cookies' => $this->cookieJar,
 				]);
 			} else {
 				$request = $this->client->createRequest($method, $fullUrl);
@@ -67,8 +67,6 @@ trait Auth {
 			$request->setHeader('requesttoken', $this->requestToken);
 			$this->response = $this->client->send($request);
 		} catch (ClientException $ex) {
-			$this->response = $ex->getResponse();
-		} catch (ServerException $ex) {
 			$this->response = $ex->getResponse();
 		}
 	}
@@ -214,26 +212,27 @@ trait Auth {
 	 *
 	 * @param bool $remember
 	 */
-	public function aNewBrowserSessionIsStarted($remember = false) {
+	public function aNewBrowserSessionIsStarted() {
 		$loginUrl = substr($this->baseUrl, 0, -5) . '/login';
 		// Request a new session and extract CSRF token
 		$client = new Client();
-		$response = $client->get($loginUrl, [
-			'cookies' => $this->cookieJar,
-		]);
+		$response = $client->get(
+			$loginUrl, [
+		    'cookies' => $this->cookieJar,
+			]
+		);
 		$this->extracRequestTokenFromResponse($response);
 
 		// Login and extract new token
 		$client = new Client();
 		$response = $client->post(
 			$loginUrl, [
-			'body' => [
-				'user' => 'user0',
-				'password' => '123456',
-				'remember_login' => $remember ? '1' : '0',
-				'requesttoken' => $this->requestToken,
-			],
-			'cookies' => $this->cookieJar,
+		    'body' => [
+			'user' => 'user0',
+			'password' => '123456',
+			'requesttoken' => $this->requestToken,
+		    ],
+		    'cookies' => $this->cookieJar,
 			]
 		);
 		$this->extracRequestTokenFromResponse($response);

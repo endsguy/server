@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Ativada",
+    "Not enabled" : "Desativada",
     "Wrong password" : "Palavra-passe errada",
     "Saved" : "Guardado",
     "No user supplied" : "Nenhum utilizador especificado",
@@ -97,6 +99,7 @@ OC.L10N.register(
     "NT LAN Manager" : "Gestor de REDE NT",
     "Email server" : "Servidor de Correio Eletrónico",
     "Open documentation" : "Abrir documentação",
+    "This is used for sending out notifications." : "Isto é utilizado para enviar notificações",
     "Send mode" : "Modo de Envio",
     "Encryption" : "Encriptação",
     "From address" : "Do endereço",
@@ -170,7 +173,6 @@ OC.L10N.register(
     "Theming" : "Temas",
     "Hardening and security guidance" : "Orientações de proteção e segurança",
     "Developer documentation" : "Documentação de Programador",
-    "This app has an update available." : "Esta aplicação tem uma atualização disponível.",
     "by %s" : "por %s",
     "%s-licensed" : "%s-autorizado",
     "Documentation:" : "Documentação:",
@@ -179,6 +181,7 @@ OC.L10N.register(
     "Report a bug" : "Reportar um erro",
     "Show description …" : "Mostrar descrição ...",
     "Hide description …" : "Esconder descrição ...",
+    "This app has an update available." : "Esta aplicação tem uma atualização disponível.",
     "This app cannot be installed because the following dependencies are not fulfilled:" : "Esta aplicação não pode ser instalada porque as seguintes dependências não podem ser realizadas:",
     "Enable only for specific groups" : "Activar só para grupos específicos",
     "SSL Root Certificates" : "Certificados SSL Root",

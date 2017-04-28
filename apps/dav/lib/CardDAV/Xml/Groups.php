@@ -22,6 +22,7 @@
 namespace OCA\DAV\CardDAV\Xml;
 
 use Sabre\Xml\XmlSerializable;
+use Sabre\Xml\Element;
 use Sabre\Xml\Writer;
 
 class Groups implements XmlSerializable {

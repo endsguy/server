@@ -56,6 +56,7 @@
 			if (options && options.linksOnly) {
 				this._linksOnly = true;
 			}
+			OC.Plugins.attach('OCA.Sharing.FileList', this);
 		},
 
 		_renderRow: function() {
@@ -82,7 +83,7 @@
 			// add row with expiration date for link only shares - influenced by _createRow of filelist
 			if (this._linksOnly) {
 				var expirationTimestamp = 0;
-				if(fileData.shares && fileData.shares[0].expiration !== null) {
+				if(fileData.shares[0].expiration !== null) {
 					expirationTimestamp = moment(fileData.shares[0].expiration).valueOf();
 				}
 				$tr.attr('data-expiration', expirationTimestamp);
@@ -168,8 +169,7 @@
 				/* jshint camelcase: false */
 				data: {
 					format: 'json',
-					shared_with_me: !!this._sharedWithUser,
-					include_tags: true
+					shared_with_me: !!this._sharedWithUser
 				},
 				type: 'GET',
 				beforeSend: function(xhr) {
@@ -183,8 +183,7 @@
 					url: OC.linkToOCS('apps/files_sharing/api/v1') + 'remote_shares',
 					/* jshint camelcase: false */
 					data: {
-						format: 'json',
-						include_tags: true
+						format: 'json'
 					},
 					type: 'GET',
 					beforeSend: function(xhr) {
@@ -239,8 +238,7 @@
 						type: share.type,
 						id: share.file_id,
 						path: OC.dirname(share.mountpoint),
-						permissions: share.permissions,
-						tags: share.tags || []
+						permissions: share.permissions
 					};
 
 					file.shares = [{
@@ -278,8 +276,7 @@
 					var file = {
 						id: share.file_source,
 						icon: OC.MimeType.getIconUrl(share.mimetype),
-						mimetype: share.mimetype,
-						tags: share.tags || []
+						mimetype: share.mimetype
 					};
 					if (share.item_type === 'folder') {
 						file.type = 'dir';
@@ -385,12 +382,6 @@
 
 			// Sort by expected sort comparator
 			return files.sort(this._sortComparator);
-		},
-
-		_onUrlChanged: function(e) {
-			if (e && _.isString(e.dir)) {
-				this.changeDirectory(e.dir, false, true);
-			}
 		}
 	});
 

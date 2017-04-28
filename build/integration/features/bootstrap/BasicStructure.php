@@ -24,10 +24,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 use GuzzleHttp\Client;
-use GuzzleHttp\Cookie\CookieJar;
-use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Message\ResponseInterface;
 
 require __DIR__ . '/../../vendor/autoload.php';
@@ -35,7 +32,6 @@ require __DIR__ . '/../../vendor/autoload.php';
 trait BasicStructure {
 
 	use Auth;
-	use Trashbin;
 
 	/** @var string */
 	private $currentUser = '';
@@ -52,7 +48,7 @@ trait BasicStructure {
 	/** @var ResponseInterface */
 	private $response = null;
 
-	/** @var CookieJar */
+	/** @var \GuzzleHttp\Cookie\CookieJar */
 	private $cookieJar;
 
 	/** @var string */
@@ -67,7 +63,7 @@ trait BasicStructure {
 		$this->localBaseUrl = $this->baseUrl;
 		$this->remoteBaseUrl = $this->baseUrl;
 		$this->currentServer = 'LOCAL';
-		$this->cookieJar = new CookieJar();
+		$this->cookieJar = new \GuzzleHttp\Cookie\CookieJar();
 
 		// in case of ci deployment we take the server url from the environment
 		$testServerUrl = getenv('TEST_SERVER_URL');
@@ -84,11 +80,11 @@ trait BasicStructure {
 	}
 
 	/**
-	 * @Given /^using api version "(\d+)"$/
+	 * @Given /^using api version "([^"]*)"$/
 	 * @param string $version
 	 */
 	public function usingApiVersion($version) {
-		$this->apiVersion = (int) $version;
+		$this->apiVersion = $version;
 	}
 
 	/**
@@ -178,7 +174,7 @@ trait BasicStructure {
 
 		try {
 			$this->response = $client->send($client->createRequest($verb, $fullUrl, $options));
-		} catch (ClientException $ex) {
+		} catch (\GuzzleHttp\Exception\ClientException $ex) {
 			$this->response = $ex->getResponse();
 		}
 	}
@@ -208,7 +204,7 @@ trait BasicStructure {
 
 		try {
 			$this->response = $client->send($client->createRequest($verb, $fullUrl, $options));
-		} catch (ClientException $ex) {
+		} catch (\GuzzleHttp\Exception\ClientException $ex) {
 			$this->response = $ex->getResponse();
 		}
 	}
@@ -302,7 +298,7 @@ trait BasicStructure {
 		$request->addHeader('requesttoken', $this->requestToken);
 		try {
 			$this->response = $client->send($request);
-		} catch (ClientException $e) {
+		} catch (\GuzzleHttp\Exception\ClientException $e) {
 			$this->response = $e->getResponse();
 		}
 	}
@@ -325,7 +321,7 @@ trait BasicStructure {
 		);
 		try {
 			$this->response = $client->send($request);
-		} catch (ClientException $e) {
+		} catch (\GuzzleHttp\Exception\ClientException $e) {
 			$this->response = $e->getResponse();
 		}
 	}
@@ -347,35 +343,21 @@ trait BasicStructure {
 		file_put_contents("../../data/$user/files" . "$filename", "$text");
 	}
 
-	public function createFileSpecificSize($name, $size) {
-		$file = fopen("work/" . "$name", 'w');
+	public function createFileSpecificSize($name, $size){
+		$file = fopen("data/" . "$name", 'w');
 		fseek($file, $size - 1 ,SEEK_CUR);
 		fwrite($file,'a'); // write a dummy char at SIZE position
 		fclose($file);
 	}
 
-	public function createFileWithText($name, $text){
-		$file = fopen("work/" . "$name", 'w');
-		fwrite($file, $text);
-		fclose($file);
-	}
-
 	/**
-	 * @Given file :filename of size :size is created in local storage
-	 * @param string $filename
-	 * @param string $size
+	 * @When User :user empties trashbin
+	 * @param string $user
 	 */
-	public function fileIsCreatedInLocalStorageWithSize($filename, $size) {
-		$this->createFileSpecificSize("local_storage/$filename", $size);
-	}
-
-	/**
-	 * @Given file :filename with text :text is created in local storage
-	 * @param string $filename
-	 * @param string $text
-	 */
-	public function fileIsCreatedInLocalStorageWithText($filename, $text) {
-		$this->createFileWithText("local_storage/$filename", $text);
+	public function emptyTrashbin($user) {
+		$body = new \Behat\Gherkin\Node\TableNode([['allfiles', 'true'], ['dir', '%2F']]);
+		$this->sendingToWithDirectUrl('POST', "/index.php/apps/files_trashbin/ajax/delete.php", $body);
+		$this->theHTTPStatusCodeShouldBe('200');
 	}
 
 	/**

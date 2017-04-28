@@ -9,17 +9,13 @@
  */
 
 (function(OC, OCA) {
-
-	_.extend(OC.Files.Client, {
-		PROPERTY_READMARKER:	'{' + OC.Files.Client.NS_OWNCLOUD + '}readMarker'
-	});
-
+	var NS_OWNCLOUD = 'http://owncloud.org/ns';
 	/**
 	 * @class OCA.Comments.CommentSummaryModel
 	 * @classdesc
 	 *
 	 * Model containing summary information related to comments
-	 * like the read marker.
+	 * like the read marker. 
 	 *
 	 */
 	var CommentSummaryModel = OC.Backbone.Model.extend(
@@ -41,7 +37,7 @@
 		_objectId: null,
 
 		davProperties: {
-			'readMarker': OC.Files.Client.PROPERTY_READMARKER
+			'readMarker': '{' + NS_OWNCLOUD + '}readMarker'
 		},
 
 		/**
@@ -66,3 +62,4 @@
 
 	OCA.Comments.CommentSummaryModel = CommentSummaryModel;
 })(OC, OCA);
+

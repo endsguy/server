@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Habilitar",
+    "Not enabled" : "Desactiváu",
     "Wrong password" : "Contraseña incorreuta",
     "Saved" : "Guardáu",
     "No user supplied" : "Nun s'especificó un usuariu",
@@ -49,6 +51,7 @@ OC.L10N.register(
     "Login" : "Entamar sesión",
     "Plain" : "Planu",
     "NT LAN Manager" : "Xestor de NT LAN",
+    "This is used for sending out notifications." : "Esto úsase pa unviar notificaciones.",
     "Send mode" : "Mou d'unviu",
     "Encryption" : "Cifráu",
     "From address" : "Dende la direición",

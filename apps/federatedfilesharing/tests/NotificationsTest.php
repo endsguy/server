@@ -25,10 +25,10 @@ namespace OCA\FederatedFileSharing\Tests;
 
 
 use OCA\FederatedFileSharing\AddressHandler;
+use OCA\FederatedFileSharing\DiscoveryManager;
 use OCA\FederatedFileSharing\Notifications;
 use OCP\BackgroundJob\IJobList;
 use OCP\Http\Client\IClientService;
-use OCP\OCS\IDiscoveryService;
 
 class NotificationsTest extends \Test\TestCase {
 
@@ -38,8 +38,8 @@ class NotificationsTest extends \Test\TestCase {
 	/** @var  IClientService | \PHPUnit_Framework_MockObject_MockObject*/
 	private $httpClientService;
 
-	/** @var  IDiscoveryService | \PHPUnit_Framework_MockObject_MockObject */
-	private $discoveryService;
+	/** @var  DiscoveryManager | \PHPUnit_Framework_MockObject_MockObject */
+	private $discoveryManager;
 
 	/** @var  IJobList | \PHPUnit_Framework_MockObject_MockObject */
 	private $jobList;
@@ -48,7 +48,8 @@ class NotificationsTest extends \Test\TestCase {
 		parent::setUp();
 
 		$this->jobList = $this->getMockBuilder('OCP\BackgroundJob\IJobList')->getMock();
-		$this->discoveryService = $this->getMockBuilder(IDiscoveryService::class)->getMock();
+		$this->discoveryManager = $this->getMockBuilder('OCA\FederatedFileSharing\DiscoveryManager')
+			->disableOriginalConstructor()->getMock();
 		$this->httpClientService = $this->getMockBuilder('OCP\Http\Client\IClientService')->getMock();
 		$this->addressHandler = $this->getMockBuilder('OCA\FederatedFileSharing\AddressHandler')
 			->disableOriginalConstructor()->getMock();
@@ -66,7 +67,7 @@ class NotificationsTest extends \Test\TestCase {
 			$instance = new Notifications(
 				$this->addressHandler,
 				$this->httpClientService,
-				$this->discoveryService,
+				$this->discoveryManager,
 				$this->jobList
 			);
 		} else {
@@ -75,7 +76,7 @@ class NotificationsTest extends \Test\TestCase {
 					[
 						$this->addressHandler,
 						$this->httpClientService,
-						$this->discoveryService,
+						$this->discoveryManager,
 						$this->jobList
 					]
 				)->setMethods($mockedMethods)->getMock();

@@ -4,8 +4,6 @@
  *
  * @author Morris Jobke <hey@morrisjobke.de>
  * @author Robin Appelman <robin@icewind.nl>
- * @author Thomas Müller <thomas.mueller@tmit.eu>
- * @author Piotr Mrowczynski <piotr@owncloud.com>
  *
  * @license AGPL-3.0
  *
@@ -31,53 +29,28 @@ class EventLogger implements IEventLogger {
 	/**
 	 * @var \OC\Diagnostics\Event[]
 	 */
-	private $events = [];
-	
-	/**
-	 * @var bool - Module needs to be activated by some app
-	 */
-	private $activated = false;
+	private $events = array();
 
-	/**
-	 * @inheritdoc
-	 */
 	public function start($id, $description) {
-		if ($this->activated){
-			$this->events[$id] = new Event($id, $description, microtime(true));
-		}
+		$this->events[$id] = new Event($id, $description, microtime(true));
 	}
 
-	/**
-	 * @inheritdoc
-	 */
 	public function end($id) {
-		if ($this->activated && isset($this->events[$id])) {
+		if (isset($this->events[$id])) {
 			$timing = $this->events[$id];
 			$timing->end(microtime(true));
 		}
 	}
 
-	/**
-	 * @inheritdoc
-	 */
 	public function log($id, $description, $start, $end) {
-		if ($this->activated) {
-			$this->events[$id] = new Event($id, $description, $start);
-			$this->events[$id]->end($end);
-		}
+		$this->events[$id] = new Event($id, $description, $start);
+		$this->events[$id]->end($end);
 	}
 
 	/**
-	 * @inheritdoc
+	 * @return \OCP\Diagnostics\IEvent[]
 	 */
 	public function getEvents() {
 		return $this->events;
-	}
-	
-	/**
-	 * @inheritdoc
-	 */
-	public function activate() {
-		$this->activated = true;
 	}
 }

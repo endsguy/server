@@ -21,6 +21,7 @@
 namespace OC\Files\Cache;
 
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\Files\Mount\IMountPoint;
 use OCP\IDBConnection;
 
 /**

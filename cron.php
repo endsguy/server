@@ -50,6 +50,11 @@ try {
 		exit;
 	}
 
+	if (\OC::$server->getSystemConfig()->getValue('singleuser', false)) {
+		\OCP\Util::writeLog('cron', 'We are in admin only mode, skipping cron', \OCP\Util::DEBUG);
+		exit;
+	}
+
 	// load all apps to get all api routes properly setup
 	OC_App::loadApps();
 
@@ -84,14 +89,12 @@ try {
 
 	if (OC::$CLI) {
 		// set to run indefinitely if needed
-		if (strpos(@ini_get('disable_functions'), 'set_time_limit') === false) {
-			@set_time_limit(0);
-		}
+		set_time_limit(0);
 
 		// the cron job must be executed with the right user
 		if (!function_exists('posix_getuid')) {
 			echo "The posix extensions are required - see http://php.net/manual/en/book.posix.php" . PHP_EOL;
-			exit(1);
+			exit(0);
 		}
 		$user = posix_getpwuid(posix_getuid());
 		$configUser = posix_getpwuid(fileowner(OC::$configDir . 'config.php'));
@@ -99,7 +102,7 @@ try {
 			echo "Console has to be executed with the same user as the web server is operated" . PHP_EOL;
 			echo "Current user: " . $user['name'] . PHP_EOL;
 			echo "Web server user: " . $configUser['name'] . PHP_EOL;
-			exit(1);
+			exit(0);
 		}
 
 		// We call ownCloud from the CLI (aka cron)
@@ -121,9 +124,11 @@ try {
 				break;
 			}
 
+			$logger->debug('Run ' . get_class($job) . ' job with ID ' . $job->getId(), ['app' => 'cron']);
 			$job->execute($jobList, $logger);
 			// clean up after unclean jobs
 			\OC_Util::tearDownFS();
+			$logger->debug('Finished ' . get_class($job) . ' job with ID ' . $job->getId(), ['app' => 'cron']);
 
 			$jobList->setLastJob($job);
 			$executedJobs[$job->getId()] = true;

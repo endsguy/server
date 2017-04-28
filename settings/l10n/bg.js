@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Включено",
+    "Not enabled" : "Изключено",
     "Wrong password" : "Грешна парола",
     "Saved" : "Запаметяване",
     "No user supplied" : "Липсва потребител",
@@ -96,6 +98,7 @@ OC.L10N.register(
     "SSL/TLS" : "SSL/TLS",
     "STARTTLS" : "STARTTLS",
     "Open documentation" : "Отвори документацията",
+    "This is used for sending out notifications." : "Това се използва за изпращане на уведомления.",
     "Send mode" : "Режим на изпращане",
     "Encryption" : "Криптиране",
     "From address" : "От адрес",
@@ -149,7 +152,6 @@ OC.L10N.register(
     "Improving the config.php" : "Подобряване на config.php",
     "Theming" : "Промяна на облика",
     "Developer documentation" : "Документация за разработчици",
-    "This app has an update available." : "Това приложение има налично обновление.",
     "by %s" : "от %s",
     "Documentation:" : "Документация:",
     "Visit website" : "Посещаване на интернет страница",

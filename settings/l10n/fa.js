@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "فعال شده",
+    "Not enabled" : "غیر فعال",
     "Wrong password" : "رمز عبور اشتباه است",
     "Saved" : "ذخیره شد",
     "No user supplied" : "هیچ کاربری تعریف نشده است",
@@ -73,6 +75,7 @@ OC.L10N.register(
     "NT LAN Manager" : "مدیر NT LAN",
     "Email server" : "سرور ایمیل",
     "Open documentation" : "بازکردن مستند",
+    "This is used for sending out notifications." : "این برای ارسال هشدار ها استفاده می شود",
     "Send mode" : "حالت ارسال",
     "Encryption" : "رمزگذاری",
     "From address" : "آدرس فرستنده",

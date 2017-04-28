@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "เปิดการใช้งาน",
+    "Not enabled" : "ใช้งานไม่ได้",
     "Wrong password" : "รหัสผ่านไม่ถูกต้อง",
     "Saved" : "บันทึกแล้ว",
     "No user supplied" : "ไม่มีผู้ใช้",
@@ -92,6 +94,7 @@ OC.L10N.register(
     "NT LAN Manager" : "ตัวจัดการ NT LAN",
     "Email server" : "อีเมลเซิร์ฟเวอร์",
     "Open documentation" : "เปิดเอกสาร",
+    "This is used for sending out notifications." : "นี้จะใช้สำหรับการส่งออกการแจ้งเตือน",
     "Send mode" : "โหมดการส่ง",
     "Encryption" : "การเข้ารหัส",
     "From address" : "จากที่อยู่",

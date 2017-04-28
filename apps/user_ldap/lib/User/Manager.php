@@ -34,7 +34,6 @@ use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Image;
 use OCP\IUserManager;
-use OCP\Notification\IManager as INotificationManager;
 
 /**
  * Manager
@@ -51,12 +50,6 @@ class Manager {
 
 	/** @var IDBConnection */
 	protected $db;
-
-	/** @var IUserManager */
-	protected $userManager;
-
-	/** @var INotificationManager */
-	protected $notificationManager;
 
 	/** @var FilesystemHelper */
 	protected $ocFilesystem;
@@ -92,19 +85,17 @@ class Manager {
 	public function __construct(IConfig $ocConfig,
 								FilesystemHelper $ocFilesystem, LogWrapper $ocLog,
 								IAvatarManager $avatarManager, Image $image,
-								IDBConnection $db, IUserManager $userManager,
-								INotificationManager $notificationManager) {
+								IDBConnection $db, IUserManager $userManager) {
 
-		$this->ocConfig            = $ocConfig;
-		$this->ocFilesystem        = $ocFilesystem;
-		$this->ocLog               = $ocLog;
-		$this->avatarManager       = $avatarManager;
-		$this->image               = $image;
-		$this->db                  = $db;
-		$this->userManager         = $userManager;
-		$this->notificationManager = $notificationManager;
-		$this->usersByDN           = new CappedMemoryCache();
-		$this->usersByUid          = new CappedMemoryCache();
+		$this->ocConfig      = $ocConfig;
+		$this->ocFilesystem  = $ocFilesystem;
+		$this->ocLog         = $ocLog;
+		$this->avatarManager = $avatarManager;
+		$this->image         = $image;
+		$this->db            = $db;
+		$this->userManager   = $userManager;
+		$this->usersByDN     = new CappedMemoryCache();
+		$this->usersByUid    = new CappedMemoryCache();
 	}
 
 	/**
@@ -127,8 +118,7 @@ class Manager {
 		$this->checkAccess();
 		$user = new User($uid, $dn, $this->access, $this->ocConfig,
 			$this->ocFilesystem, clone $this->image, $this->ocLog,
-			$this->avatarManager, $this->userManager, 
-			$this->notificationManager);
+			$this->avatarManager, $this->userManager);
 		$this->usersByDN[$dn]   = $user;
 		$this->usersByUid[$uid] = $user;
 		return $user;
@@ -185,7 +175,7 @@ class Manager {
 
 	/**
 	 * Checks whether the specified user is marked as deleted
-	 * @param string $id the Nextcloud user name
+	 * @param string $id the ownCloud user name
 	 * @return bool
 	 */
 	public function isDeletedUser($id) {
@@ -208,7 +198,7 @@ class Manager {
 	}
 
 	/**
-	 * @brief returns a User object by it's Nextcloud username
+	 * @brief returns a User object by it's ownCloud username
 	 * @param string $id the DN or username of the user
 	 * @return \OCA\User_LDAP\User\User|\OCA\User_LDAP\User\OfflineUser|null
 	 */
@@ -225,7 +215,7 @@ class Manager {
 	}
 
 	/**
-	 * @brief returns a User object by it's DN or Nextcloud username
+	 * @brief returns a User object by it's DN or ownCloud username
 	 * @param string $id the DN or username of the user
 	 * @return \OCA\User_LDAP\User\User|\OCA\User_LDAP\User\OfflineUser|null
 	 * @throws \Exception when connection could not be established

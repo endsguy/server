@@ -8,20 +8,15 @@
 
 namespace Test\Repair;
 
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\MySqlPlatform;
-use OC\Repair\Collation;
-use OCP\IDBConnection;
 use OCP\ILogger;
 use OCP\Migration\IOutput;
-use Test\TestCase;
 
-class TestCollationRepair extends Collation {
+class TestCollationRepair extends \OC\Repair\Collation {
 	/**
-	 * @param IDBConnection $connection
+	 * @param \Doctrine\DBAL\Connection $connection
 	 * @return string[]
 	 */
-	public function getAllNonUTF8BinTables(IDBConnection $connection) {
+	public function getAllNonUTF8BinTables($connection) {
 		return parent::getAllNonUTF8BinTables($connection);
 	}
 }
@@ -33,7 +28,7 @@ class TestCollationRepair extends Collation {
  *
  * @see \OC\Repair\RepairMimeTypes
  */
-class RepairCollationTest extends TestCase {
+class RepairCollationTest extends \Test\TestCase {
 
 	/**
 	 * @var TestCollationRepair
@@ -41,7 +36,7 @@ class RepairCollationTest extends TestCase {
 	private $repair;
 
 	/**
-	 * @var Connection|IDBConnection
+	 * @var \Doctrine\DBAL\Connection
 	 */
 	private $connection;
 
@@ -64,7 +59,7 @@ class RepairCollationTest extends TestCase {
 		$this->connection = \OC::$server->getDatabaseConnection();
 		$this->logger = $this->createMock(ILogger::class);
 		$this->config = \OC::$server->getConfig();
-		if (!$this->connection->getDatabasePlatform() instanceof MySqlPlatform) {
+		if (!$this->connection->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\MySqlPlatform) {
 			$this->markTestSkipped("Test only relevant on MySql");
 		}
 

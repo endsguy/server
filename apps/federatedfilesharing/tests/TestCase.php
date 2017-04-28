@@ -23,7 +23,6 @@
 namespace OCA\FederatedFileSharing\Tests;
 
 use OC\Files\Filesystem;
-use OC\Group\Database;
 
 /**
  * Class Test_Files_Sharing_Base
@@ -42,7 +41,7 @@ abstract class TestCase extends \Test\TestCase {
 
 		// reset backend
 		\OC_User::clearBackends();
-		\OC::$server->getGroupManager()->clearBackends();
+		\OC_Group::clearBackends();
 
 		// create users
 		$backend = new \Test\Util\User\Dummy();
@@ -76,8 +75,8 @@ abstract class TestCase extends \Test\TestCase {
 		// reset backend
 		\OC_User::clearBackends();
 		\OC_User::useBackend('database');
-		\OC::$server->getGroupManager()->clearBackends();
-		\OC::$server->getGroupManager()->addBackend(new Database());
+		\OC_Group::clearBackends();
+		\OC_Group::useBackend(new \OC_Group_Database());
 
 		parent::tearDownAfterClass();
 	}
@@ -94,15 +93,9 @@ abstract class TestCase extends \Test\TestCase {
 		}
 
 		if ($create) {
-			$userManager = \OC::$server->getUserManager();
-			$groupManager = \OC::$server->getGroupManager();
-
-			$userObject = $userManager->createUser($user, $password);
-			$group = $groupManager->createGroup('group');
-
-			if ($group and $userObject) {
-				$group->addUser($userObject);
-			}
+			\OC::$server->getUserManager()->createUser($user, $password);
+			\OC_Group::createGroup('group');
+			\OC_Group::addToGroup($user, 'group');
 		}
 
 		self::resetStorage();

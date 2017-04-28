@@ -23,6 +23,7 @@ namespace OCA\Comments\Notification;
 
 use OCP\Comments\CommentsEvent;
 use OCP\Comments\IComment;
+use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\Notification\IManager;
 
@@ -33,19 +34,25 @@ class Listener {
 	/** @var IUserManager */
 	protected $userManager;
 
+	/** @var IURLGenerator */
+	protected $urlGenerator;
+
 	/**
 	 * Listener constructor.
 	 *
 	 * @param IManager $notificationManager
 	 * @param IUserManager $userManager
+	 * @param IURLGenerator $urlGenerator
 	 */
 	public function __construct(
 		IManager $notificationManager,
-		IUserManager $userManager
+		IUserManager $userManager,
+		IURLGenerator $urlGenerator
 	) {
 
 		$this->notificationManager = $notificationManager;
 		$this->userManager = $userManager;
+		$this->urlGenerator = $urlGenerator;
 	}
 
 	/**
@@ -93,7 +100,11 @@ class Listener {
 			->setApp('comments')
 			->setObject('comment', $comment->getId())
 			->setSubject('mention', [ $comment->getObjectType(), $comment->getObjectId() ])
-			->setDateTime($comment->getCreationDateTime());
+			->setDateTime($comment->getCreationDateTime())
+			->setLink($this->urlGenerator->linkToRouteAbsolute(
+				'comments.Notifications.view',
+				['id' => $comment->getId()])
+			);
 
 		return $notification;
 	}

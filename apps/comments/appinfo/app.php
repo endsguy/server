@@ -26,7 +26,13 @@ $eventDispatcher->addListener(
 	'OCA\Files::loadAdditionalScripts',
 	function() {
 		\OCP\Util::addScript('oc-backbone-webdav');
-		\OCP\Util::addScript('comments', 'merged');
+		\OCP\Util::addScript('comments', 'app');
+		\OCP\Util::addScript('comments', 'commentmodel');
+		\OCP\Util::addScript('comments', 'commentcollection');
+		\OCP\Util::addScript('comments', 'commentsummarymodel');
+		\OCP\Util::addScript('comments', 'commentstabview');
+		\OCP\Util::addScript('comments', 'filesplugin');
+		\OCP\Util::addScript('comments', 'activitytabviewplugin');
 		\OCP\Util::addStyle('comments', 'comments');
 	}
 );

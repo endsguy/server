@@ -69,7 +69,7 @@ class CheckUser extends Command {
 			->addArgument(
 					'ocName',
 					InputArgument::REQUIRED,
-					'the user name as used in Nextcloud'
+					'the user name as used in ownCloud'
 				     )
 			->addOption(
 					'force',
@@ -102,7 +102,7 @@ class CheckUser extends Command {
 
 	/**
 	 * checks whether a user is actually mapped
-	 * @param string $ocName the username as used in Nextcloud
+	 * @param string $ocName the username as used in ownCloud
 	 * @throws \Exception
 	 * @return true
 	 */

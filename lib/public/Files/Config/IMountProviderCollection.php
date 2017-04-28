@@ -23,6 +23,7 @@
 
 namespace OCP\Files\Config;
 
+use OCP\Files\Mount\IMountPoint;
 use OCP\IUser;
 
 /**

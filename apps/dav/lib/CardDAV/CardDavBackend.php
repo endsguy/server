@@ -155,8 +155,6 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 				'{http://calendarserver.org/ns/}getctag' => $row['synctoken'],
 				'{http://sabredav.org/ns}sync-token' => $row['synctoken']?$row['synctoken']:'0',
 			];
-
-			$this->addOwnerPrincipal($addressBooks[$row['id']]);
 		}
 		$result->closeCursor();
 
@@ -271,7 +269,7 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 			return null;
 		}
 
-		$addressBook = [
+		return [
 			'id'  => $row['id'],
 			'uri' => $row['uri'],
 			'principaluri' => $row['principaluri'],
@@ -280,10 +278,6 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 			'{http://calendarserver.org/ns/}getctag' => $row['synctoken'],
 			'{http://sabredav.org/ns}sync-token' => $row['synctoken']?$row['synctoken']:'0',
 		];
-
-		$this->addOwnerPrincipal($addressBook);
-
-		return $addressBook;
 	}
 
 	/**
@@ -305,19 +299,15 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 			return null;
 		}
 
-		$addressBook = [
-			'id'  => $row['id'],
-			'uri' => $row['uri'],
-			'principaluri' => $row['principaluri'],
-			'{DAV:}displayname' => $row['displayname'],
-			'{' . Plugin::NS_CARDDAV . '}addressbook-description' => $row['description'],
-			'{http://calendarserver.org/ns/}getctag' => $row['synctoken'],
-			'{http://sabredav.org/ns}sync-token' => $row['synctoken']?$row['synctoken']:'0',
-		];
-
-		$this->addOwnerPrincipal($addressBook);
-
-		return $addressBook;
+		return [
+				'id'  => $row['id'],
+				'uri' => $row['uri'],
+				'principaluri' => $row['principaluri'],
+				'{DAV:}displayname' => $row['displayname'],
+				'{' . Plugin::NS_CARDDAV . '}addressbook-description' => $row['description'],
+				'{http://calendarserver.org/ns/}getctag' => $row['synctoken'],
+				'{http://sabredav.org/ns}sync-token' => $row['synctoken']?$row['synctoken']:'0',
+			];
 	}
 
 	/**
@@ -879,15 +869,16 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 	public function search($addressBookId, $pattern, $searchProperties) {
 		$query = $this->db->getQueryBuilder();
 		$query2 = $this->db->getQueryBuilder();
-
 		$query2->selectDistinct('cp.cardid')->from($this->dbCardsPropertiesTable, 'cp');
-		$query2->andWhere($query2->expr()->eq('cp.addressbookid', $query->createNamedParameter($addressBookId)));
-		$or = $query2->expr()->orX();
 		foreach ($searchProperties as $property) {
-			$or->add($query2->expr()->eq('cp.name', $query->createNamedParameter($property)));
+			$query2->orWhere(
+				$query2->expr()->andX(
+					$query2->expr()->eq('cp.name', $query->createNamedParameter($property)),
+					$query2->expr()->ilike('cp.value', $query->createNamedParameter('%' . $this->db->escapeLikeParameter($pattern) . '%'))
+				)
+			);
 		}
-		$query2->andWhere($or);
-		$query2->andWhere($query2->expr()->ilike('cp.value', $query->createNamedParameter('%' . $this->db->escapeLikeParameter($pattern) . '%')));
+		$query2->andWhere($query2->expr()->eq('cp.addressbookid', $query->createNamedParameter($addressBookId)));
 
 		$query->select('c.carddata', 'c.uri')->from($this->dbCardsTable, 'c')
 			->where($query->expr()->in('c.id', $query->createFunction($query2->getSQL())));
@@ -1095,20 +1086,5 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 			return "principals/$name";
 		}
 		return $principalUri;
-	}
-
-	private function addOwnerPrincipal(&$addressbookInfo) {
-		$ownerPrincipalKey = '{' . \OCA\DAV\DAV\Sharing\Plugin::NS_OWNCLOUD . '}owner-principal';
-		$displaynameKey = '{' . \OCA\DAV\DAV\Sharing\Plugin::NS_NEXTCLOUD . '}owner-displayname';
-		if (isset($addressbookInfo[$ownerPrincipalKey])) {
-			$uri = $addressbookInfo[$ownerPrincipalKey];
-		} else {
-			$uri = $addressbookInfo['principaluri'];
-		}
-
-		$principalInformation = $this->principalBackend->getPrincipalByPath($uri);
-		if (isset($principalInformation['{DAV:}displayname'])) {
-			$addressbookInfo[$displaynameKey] = $principalInformation['{DAV:}displayname'];
-		}
 	}
 }

@@ -43,11 +43,11 @@ use OCP\AppFramework\Http;
 class Response {
 
 	/**
-	 * Headers - defaults to ['Cache-Control' => 'no-cache, no-store, must-revalidate']
+	 * Headers - defaults to ['Cache-Control' => 'no-cache, must-revalidate']
 	 * @var array
 	 */
 	private $headers = array(
-		'Cache-Control' => 'no-cache, no-store, must-revalidate'
+		'Cache-Control' => 'no-cache, must-revalidate'
 	);
 
 
@@ -81,8 +81,6 @@ class Response {
 	/** @var ContentSecurityPolicy|null Used Content-Security-Policy */
 	private $contentSecurityPolicy = null;
 
-	/** @var bool */
-	private $throttled = false;
 
 	/**
 	 * Caches the response
@@ -324,22 +322,5 @@ class Response {
 		return $this;
 	}
 
-	/**
-	 * Marks the response as to throttle. Will be throttled when the
-	 * @BruteForceProtection annotation is added.
-	 *
-	 * @since 12.0.0
-	 */
-	public function throttle() {
-		$this->throttled = true;
-	}
 
-	/**
-	 * Whether the current response is throttled.
-	 *
-	 * @since 12.0.0
-	 */
-	public function isThrottled() {
-		return $this->throttled;
-	}
 }

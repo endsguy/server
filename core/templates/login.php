@@ -1,7 +1,11 @@
 <?php /** @var $l \OCP\IL10N */ ?>
 <?php
 vendor_script('jsTimezoneDetect/jstz');
-script('core', 'merged-login');
+script('core', [
+	'visitortimezone',
+	'lostpassword',
+	'login'
+]);
 ?>
 
 <!--[if IE 8]><style>input[type="checkbox"]{padding:0;}</style><![endif]-->
@@ -39,7 +43,7 @@ script('core', 'merged-login');
 				placeholder="<?php p($l->t('Username or email')); ?>"
 				value="<?php p($_['loginName']); ?>"
 				<?php p($_['user_autofocus'] ? 'autofocus' : ''); ?>
-				autocomplete="on" autocapitalize="none" autocorrect="off" required>
+				autocomplete="on" autocapitalize="off" autocorrect="off" required>
 			<label for="user" class="infield"><?php p($l->t('Username or email')); ?></label>
 		</p>
 
@@ -47,7 +51,7 @@ script('core', 'merged-login');
 			<input type="password" name="password" id="password" value=""
 				placeholder="<?php p($l->t('Password')); ?>"
 				<?php p($_['user_autofocus'] ? '' : 'autofocus'); ?>
-				autocomplete="on" autocapitalize="off" autocorrect="none" required>
+				autocomplete="on" autocapitalize="off" autocorrect="off" required>
 			<label for="password" class="infield"><?php p($l->t('Password')); ?></label>
 		</p>
 
@@ -64,6 +68,7 @@ script('core', 'merged-login');
 		<input type="submit" id="submit" class="login primary icon-confirm-white" title="" value="<?php p($l->t('Log in')); ?>" disabled="disabled" />
 
 		<div class="login-additional">
+			<?php if ($_['rememberLoginAllowed'] === true) : ?>
 			<div class="remember-login-container">
 				<?php if ($_['rememberLoginState'] === 0) { ?>
 				<input type="checkbox" name="remember_login" value="1" id="remember_login" class="checkbox checkbox--white">
@@ -72,6 +77,7 @@ script('core', 'merged-login');
 				<?php } ?>
 				<label for="remember_login"><?php p($l->t('Stay logged in')); ?></label>
 			</div>
+			<?php endif; ?>
 		</div>
 
 		<input type="hidden" name="timezone_offset" id="timezone_offset"/>

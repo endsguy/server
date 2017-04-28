@@ -77,7 +77,7 @@ class DecryptAllTest extends TestCase {
 
 		$this->config->expects($this->any())
 			->method('getSystemValue')
-			->with('maintenance', false)
+			->with('singleuser', false)
 			->willReturn(false);
 		$this->appManager->expects($this->any())
 			->method('isEnabledForUser')
@@ -85,12 +85,12 @@ class DecryptAllTest extends TestCase {
 
 	}
 
-	public function testMaintenanceAndTrashbin() {
+	public function testSingleUserAndTrashbin() {
 
 		// on construct we enable single-user-mode and disable the trash bin
 		$this->config->expects($this->at(1))
 			->method('setSystemValue')
-			->with('maintenance', true);
+			->with('singleuser', true);
 		$this->appManager->expects($this->once())
 			->method('disableApp')
 			->with('files_trashbin');
@@ -98,7 +98,7 @@ class DecryptAllTest extends TestCase {
 		// on destruct wi disable single-user-mode again and enable the trash bin
 		$this->config->expects($this->at(2))
 			->method('setSystemValue')
-			->with('maintenance', false);
+			->with('singleuser', false);
 		$this->appManager->expects($this->once())
 			->method('enableApp')
 			->with('files_trashbin');
@@ -110,16 +110,16 @@ class DecryptAllTest extends TestCase {
 			$this->decryptAll,
 			$this->questionHelper
 		);
-		$this->invokePrivate($instance, 'forceMaintenanceAndTrashbin');
+		$this->invokePrivate($instance, 'forceSingleUserAndTrashbin');
 
 		$this->assertTrue(
 			$this->invokePrivate($instance, 'wasTrashbinEnabled')
 		);
 
 		$this->assertFalse(
-			$this->invokePrivate($instance, 'wasMaintenanceModeEnabled')
+			$this->invokePrivate($instance, 'wasSingleUserModeEnabled')
 		);
-		$this->invokePrivate($instance, 'resetMaintenanceAndTrashbin');
+		$this->invokePrivate($instance, 'resetSingleUserAndTrashbin');
 	}
 
 	/**

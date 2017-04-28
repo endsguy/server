@@ -25,9 +25,8 @@ namespace OCA\FederatedFileSharing;
 
 
 use OC\HintException;
+use OC\Share\Helper;
 use OCP\Contacts\IManager;
-use OCP\Federation\ICloudId;
-use OCP\Federation\ICloudIdManager;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
@@ -42,27 +41,22 @@ class Notifier implements INotifier {
 	protected $url;
 	/** @var array */
 	protected $federatedContacts;
-	/** @var ICloudIdManager */
-	protected $cloudIdManager;
 
 	/**
 	 * @param IFactory $factory
 	 * @param IManager $contactsManager
 	 * @param IURLGenerator $url
-	 * @param ICloudIdManager $cloudIdManager
 	 */
-	public function __construct(IFactory $factory, IManager $contactsManager, IURLGenerator $url, ICloudIdManager $cloudIdManager) {
+	public function __construct(IFactory $factory, IManager $contactsManager, IURLGenerator $url) {
 		$this->factory = $factory;
 		$this->contactsManager = $contactsManager;
 		$this->url = $url;
-		$this->cloudIdManager = $cloudIdManager;
 	}
 
 	/**
 	 * @param INotification $notification
 	 * @param string $languageCode The code of the language that should be used to prepare the notification
 	 * @return INotification
-	 * @throws \InvalidArgumentException
 	 */
 	public function prepare(INotification $notification, $languageCode) {
 		if ($notification->getApp() !== 'files_sharing') {
@@ -146,10 +140,8 @@ class Notifier implements INotifier {
 	protected function createRemoteUser($cloudId) {
 		$displayName = $cloudId;
 		try {
-			$resolvedId = $this->cloudIdManager->resolveCloudId($cloudId);
-			$displayName = $this->getDisplayName($resolvedId);
-			$user = $resolvedId->getUser();
-			$server = $resolvedId->getRemote();
+			list($user, $server) = Helper::splitUserRemote($cloudId);
+			$displayName = $this->getDisplayName($user, $server);
 		} catch (HintException $e) {
 			$user = $cloudId;
 			$server = '';
@@ -166,12 +158,14 @@ class Notifier implements INotifier {
 	/**
 	 * Try to find the user in the contacts
 	 *
-	 * @param ICloudId $cloudId
+	 * @param string $user
+	 * @param string $server
 	 * @return string
+	 * @throws \OutOfBoundsException when there is no contact for the id
 	 */
-	protected function getDisplayName(ICloudId $cloudId) {
-		$server = $cloudId->getRemote();
-		$user = $cloudId->getUser();
+	protected function getDisplayName($user, $server) {
+		$server = strtolower(rtrim($server, '/'));
+
 		if (strpos($server, 'http://') === 0) {
 			$server = substr($server, strlen('http://'));
 		} else if (strpos($server, 'https://') === 0) {
@@ -179,7 +173,7 @@ class Notifier implements INotifier {
 		}
 
 		try {
-			return $this->getDisplayNameFromContact($cloudId->getId());
+			return $this->getDisplayNameFromContact($user . '@' . $server);
 		} catch (\OutOfBoundsException $e) {
 		}
 
@@ -193,7 +187,7 @@ class Notifier implements INotifier {
 		} catch (\OutOfBoundsException $e) {
 		}
 
-		return $cloudId->getId();
+		return $user . '@' . $server;
 	}
 
 	/**

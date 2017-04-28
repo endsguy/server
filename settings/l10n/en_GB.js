@@ -1,6 +1,8 @@
 OC.L10N.register(
     "settings",
     {
+    "Enabled" : "Enabled",
+    "Not enabled" : "Not enabled",
     "Wrong password" : "Incorrect password",
     "Saved" : "Saved",
     "No user supplied" : "No user supplied",
@@ -100,6 +102,7 @@ OC.L10N.register(
     "NT LAN Manager" : "NT LAN Manager",
     "Email server" : "Email server",
     "Open documentation" : "Open documentation",
+    "This is used for sending out notifications." : "This is used for sending out notifications.",
     "Send mode" : "Send mode",
     "Encryption" : "Encryption",
     "From address" : "From address",
@@ -174,7 +177,6 @@ OC.L10N.register(
     "Theming" : "Theming",
     "Hardening and security guidance" : "Hardening and security guidance",
     "Developer documentation" : "Developer documentation",
-    "This app has an update available." : "This app has an update available.",
     "by %s" : "by %s",
     "%s-licensed" : "%s-licensed",
     "Documentation:" : "Documentation:",
@@ -184,6 +186,7 @@ OC.L10N.register(
     "Report a bug" : "Report a bug",
     "Show description …" : "Show description …",
     "Hide description …" : "Hide description …",
+    "This app has an update available." : "This app has an update available.",
     "This app has no minimum Nextcloud version assigned. This will be an error in the future." : "This app has no minimum Nextcloud version assigned. This will cause an error in the future.",
     "This app has no maximum Nextcloud version assigned. This will be an error in the future." : "This app has no maximum Nextcloud version assigned. This will cause an error in the future.",
     "This app cannot be installed because the following dependencies are not fulfilled:" : "This app cannot be installed because the following dependencies are not fulfilled:",

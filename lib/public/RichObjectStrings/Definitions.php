@@ -216,7 +216,7 @@ class Definitions {
 				'path' => [
 					'since' => '11.0.0',
 					'required' => true,
-					'description' => 'The full path of the file for the user, should not start with a slash',
+					'description' => 'The full path of the file for the user',
 					'example' => 'path/to/file.txt',
 				],
 				'link' => [

@@ -31,16 +31,13 @@
 namespace OC\Core\Controller;
 
 use \OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\JSONResponse;
 use \OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\Defaults;
 use OCP\Encryption\IManager;
 use \OCP\IURLGenerator;
 use \OCP\IRequest;
 use \OCP\IL10N;
 use \OCP\IConfig;
-use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Security\ICrypto;
@@ -59,7 +56,7 @@ class LostController extends Controller {
 	protected $urlGenerator;
 	/** @var IUserManager */
 	protected $userManager;
-	/** @var Defaults */
+	/** @var \OC_Defaults */
 	protected $defaults;
 	/** @var IL10N */
 	protected $l10n;
@@ -83,7 +80,7 @@ class LostController extends Controller {
 	 * @param IRequest $request
 	 * @param IURLGenerator $urlGenerator
 	 * @param IUserManager $userManager
-	 * @param Defaults $defaults
+	 * @param \OC_Defaults $defaults
 	 * @param IL10N $l10n
 	 * @param IConfig $config
 	 * @param ISecureRandom $secureRandom
@@ -97,7 +94,7 @@ class LostController extends Controller {
 								IRequest $request,
 								IURLGenerator $urlGenerator,
 								IUserManager $userManager,
-								Defaults $defaults,
+								\OC_Defaults $defaults,
 								IL10N $l10n,
 								IConfig $config,
 								ISecureRandom $secureRandom,
@@ -157,7 +154,7 @@ class LostController extends Controller {
 	 * @param string $userId
 	 * @throws \Exception
 	 */
-	protected function checkPasswordResetToken($token, $userId) {
+	private function checkPasswordResetToken($token, $userId) {
 		$user = $this->userManager->get($userId);
 		if($user === null) {
 			throw new \Exception($this->l10n->t('Couldn\'t reset password because the token is invalid'));
@@ -204,25 +201,19 @@ class LostController extends Controller {
 
 	/**
 	 * @PublicPage
-	 * @BruteForceProtection(action=passwordResetEmail)
-	 * @AnonRateThrottle(limit=10, period=300)
 	 *
 	 * @param string $user
-	 * @return JSONResponse
+	 * @return array
 	 */
 	public function email($user){
 		// FIXME: use HTTP error codes
 		try {
 			$this->sendEmail($user);
 		} catch (\Exception $e){
-			$response = new JSONResponse($this->error($e->getMessage()));
-			$response->throttle();
-			return $response;
+			return $this->error($e->getMessage());
 		}
 
-		$response = new JSONResponse($this->success());
-		$response->throttle();
-		return $response;
+		return $this->success();
 	}
 
 	/**
@@ -242,8 +233,6 @@ class LostController extends Controller {
 			$this->checkPasswordResetToken($token, $userId);
 			$user = $this->userManager->get($userId);
 
-			\OC_Hook::emit('\OC\Core\LostPassword\Controller\LostController', 'pre_passwordReset', array('uid' => $userId, 'password' => $password));
-
 			if (!$user->setPassword($password)) {
 				throw new \Exception();
 			}
@@ -260,12 +249,16 @@ class LostController extends Controller {
 	}
 
 	/**
-	 * @param string $input
+	 * @param string $user
 	 * @throws \Exception
 	 */
-	protected function sendEmail($input) {
-		$user = $this->findUserByIdOrMail($input);
-		$email = $user->getEMailAddress();
+	protected function sendEmail($user) {
+		if (!$this->userManager->userExists($user)) {
+			throw new \Exception($this->l10n->t('Couldn\'t send reset email. Please make sure your username is correct.'));
+		}
+
+		$userObject = $this->userManager->get($user);
+		$email = $userObject->getEMailAddress();
 
 		if (empty($email)) {
 			throw new \Exception(
@@ -284,34 +277,21 @@ class LostController extends Controller {
 			ISecureRandom::CHAR_UPPER
 		);
 		$tokenValue = $this->timeFactory->getTime() .':'. $token;
-		$encryptedValue = $this->crypto->encrypt($tokenValue, $email . $this->config->getSystemValue('secret'));
-		$this->config->setUserValue($user->getUID(), 'core', 'lostpassword', $encryptedValue);
+		$mailAddress = !is_null($userObject->getEMailAddress()) ? $userObject->getEMailAddress() : '';
+		$encryptedValue = $this->crypto->encrypt($tokenValue, $mailAddress.$this->config->getSystemValue('secret'));
+		$this->config->setUserValue($user, 'core', 'lostpassword', $encryptedValue);
 
-		$link = $this->urlGenerator->linkToRouteAbsolute('core.lost.resetform', array('userId' => $user->getUID(), 'token' => $token));
+		$link = $this->urlGenerator->linkToRouteAbsolute('core.lost.resetform', array('userId' => $user, 'token' => $token));
 
-		$emailTemplate = $this->mailer->createEMailTemplate();
-
-		$emailTemplate->addHeader();
-		$emailTemplate->addHeading($this->l10n->t('Password reset'));
-
-		$emailTemplate->addBodyText(
-			$this->l10n->t('Click the following button to reset your password. If you have not requested the password reset, then ignore this email.'),
-			$this->l10n->t('Click the following link to reset your password. If you have not requested the password reset, then ignore this email.')
-		);
-
-		$emailTemplate->addBodyButton(
-			$this->l10n->t('Reset your password'),
-			$link,
-			false
-		);
-		$emailTemplate->addFooter();
+		$tmpl = new \OC_Template('core', 'lostpassword/email');
+		$tmpl->assign('link', $link);
+		$msg = $tmpl->fetchPage();
 
 		try {
 			$message = $this->mailer->createMessage();
-			$message->setTo([$email => $user->getUID()]);
+			$message->setTo([$email => $user]);
 			$message->setSubject($this->l10n->t('%s password reset', [$this->defaults->getName()]));
-			$message->setPlainBody($emailTemplate->renderText());
-			$message->setHtmlBody($emailTemplate->renderHtml());
+			$message->setPlainBody($msg);
 			$message->setFrom([$this->from => $this->defaults->getName()]);
 			$this->mailer->send($message);
 		} catch (\Exception $e) {
@@ -321,21 +301,4 @@ class LostController extends Controller {
 		}
 	}
 
-	/**
-	 * @param string $input
-	 * @return IUser
-	 * @throws \Exception
-	 */
-	protected function findUserByIdOrMail($input) {
-		$user = $this->userManager->get($input);
-		if ($user instanceof IUser) {
-			return $user;
-		}
-		$users = $this->userManager->getByEmail($input);
-		if (count($users) === 1) {
-			return $users[0];
-		}
-
-		throw new \InvalidArgumentException($this->l10n->t('Couldn\'t send reset email. Please make sure your username is correct.'));
-	}
 }

@@ -31,6 +31,7 @@
 namespace OCP\AppFramework;
 
 use OCP\AppFramework\Http\DataResponse;
+use OCP\AppFramework\Http\OCSResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
 

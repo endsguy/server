@@ -55,18 +55,18 @@ class BirthdayServiceTest extends TestCase {
 
 	/**
 	 * @dataProvider providesVCards
-	 * @param boolean $expectedSummary
+	 * @param boolean $nullExpected
 	 * @param string | null $data
 	 */
-	public function testBuildBirthdayFromContact($expectedSummary, $data) {
+	public function testBuildBirthdayFromContact($nullExpected, $data) {
 		$cal = $this->service->buildDateFromContact($data, 'BDAY', '*');
-		if ($expectedSummary === null) {
+		if ($nullExpected) {
 			$this->assertNull($cal);
 		} else {
 			$this->assertInstanceOf('Sabre\VObject\Component\VCalendar', $cal);
 			$this->assertTrue(isset($cal->VEVENT));
 			$this->assertEquals('FREQ=YEARLY', $cal->VEVENT->RRULE->getValue());
-			$this->assertEquals($expectedSummary, $cal->VEVENT->SUMMARY->getValue());
+			$this->assertEquals('12345 (*1900)', $cal->VEVENT->SUMMARY->getValue());
 			$this->assertEquals('TRANSPARENT', $cal->VEVENT->TRANSP->getValue());
 		}
 	}
@@ -126,9 +126,9 @@ class BirthdayServiceTest extends TestCase {
 		if ($expectedOp === 'create') {
 			$service->expects($this->exactly(3))->method('buildDateFromContact')->willReturn(new VCalendar());
 			$this->calDav->expects($this->exactly(3))->method('createCalendarObject')->withConsecutive(
-				[1234, 'default-gump.vcf.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.2//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"],
-				[1234, 'default-gump.vcf-death.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.2//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"],
-				[1234, 'default-gump.vcf-anniversary.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.2//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"]
+				[1234, 'default-gump.vcf.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"],
+				[1234, 'default-gump.vcf-death.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"],
+				[1234, 'default-gump.vcf-anniversary.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"]
 				);
 		}
 		if ($expectedOp === 'update') {
@@ -136,9 +136,9 @@ class BirthdayServiceTest extends TestCase {
 			$service->expects($this->exactly(3))->method('birthdayEvenChanged')->willReturn(true);
 			$this->calDav->expects($this->exactly(3))->method('getCalendarObject')->willReturn(['calendardata' => '']);
 			$this->calDav->expects($this->exactly(3))->method('updateCalendarObject')->withConsecutive(
-				[1234, 'default-gump.vcf.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.2//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"],
-				[1234, 'default-gump.vcf-death.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.2//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"],
-				[1234, 'default-gump.vcf-anniversary.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.2//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"]
+				[1234, 'default-gump.vcf.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"],
+				[1234, 'default-gump.vcf-death.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"],
+				[1234, 'default-gump.vcf-anniversary.ics', "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n"]
 				);
 		}
 
@@ -233,19 +233,14 @@ class BirthdayServiceTest extends TestCase {
 
 	public function providesVCards() {
 		return [
-			[null, null],
-			[null, ''],
-			[null, 'yasfewf'],
-			[null, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
-			[null, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
-			[null, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:someday\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
-			['12345 (*1900)', "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:19000101\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
-			['12345 (*1900)', "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:19001231\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
-			['12345 *', "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:--1231\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
-			['12345 *', "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY;X-APPLE-OMIT-YEAR=1604:16041231\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
-			[null, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:;VALUE=text:circa 1800\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
-			[null, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nN:12345;;;;\r\nBDAY:20031231\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
-			['12345 (*900)', "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:09001231\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
+			[true, null],
+			[true, ''],
+			[true, 'yasfewf'],
+			[true, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
+			[true, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
+			[true, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:someday\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
+			[false, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:1900-01-01\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
+			[false, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:1900-12-31\r\nEND:VCARD\r\n", "Dr. Foo Bar"],
 		];
 	}
 }

@@ -45,6 +45,7 @@ OC.L10N.register(
     "Allow users to publish their data to a global and public address book" : "Резрешить пользователям публиковать свои данные в глобальной и общедосупной адресной книге",
     "Federated Cloud" : "Федерация облачных хранилищ",
     "Your Federated Cloud ID:" : "Ваш ID в федерации облачных хранилищ:",
+    "Share it:" : "Поделиться:",
     "Add to your website" : "Добавить к себе на сайт",
     "Share with me via Nextcloud" : "Поделитесь со мной через Nextcloud",
     "HTML Code:" : "HTML код:",

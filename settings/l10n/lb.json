@@ -1,4 +1,5 @@
 { "translations": {
+    "Enabled" : "Aktivéiert",
     "Wrong password" : "Falscht Passwuert",
     "Saved" : "Gespäichert",
     "Authentication error" : "Authentifikatioun's Fehler",

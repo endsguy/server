@@ -22,12 +22,13 @@
 namespace OCA\TwoFactorBackupCodes\Db;
 
 use OCP\AppFramework\Db\Mapper;
-use OCP\IDBConnection;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDb;
 use OCP\IUser;
 
 class BackupCodeMapper extends Mapper {
 
-	public function __construct(IDBConnection $db) {
+	public function __construct(IDb $db) {
 		parent::__construct($db, 'twofactor_backup_codes');
 	}
 

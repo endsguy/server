@@ -30,6 +30,7 @@
 
 namespace OCP\AppFramework;
 
+use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 
 

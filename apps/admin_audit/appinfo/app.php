@@ -1,7 +1,6 @@
 <?php
 /**
- * @copyright Copyright (c) 2016 Bjoern Schiessle <bjoern@schiessle.org>
- * @copyright Copyright (c) 2017 Lukas Reschke <lukas@statuscode.ch>
+
  *
  * @author Bjoern Schiessle <bjoern@schiessle.org>
  * @author Lukas Reschke <lukas@statuscode.ch>
@@ -26,12 +25,6 @@
 $logger = \OC::$server->getLogger();
 $userSession = \OC::$server->getUserSession();
 $groupManager = \OC::$server->getGroupManager();
-$eventDispatcher = \OC::$server->getEventDispatcher();
 
-$auditLogger = new \OCA\Admin_Audit\AuditLogger(
-	$logger,
-	$userSession,
-	$groupManager,
-	$eventDispatcher
-);
+$auditLogger = new \OCA\Admin_Audit\AuditLogger($logger, $userSession, $groupManager);
 $auditLogger->registerHooks();

@@ -98,12 +98,6 @@ class Updater extends BasicEmitter {
 		$this->log = $log;
 		$this->config = $config;
 		$this->checker = $checker;
-
-		// If at least PHP 7.0.0 is used we don't need to disable apps as we catch
-		// fatal errors and exceptions and disable the app just instead.
-		if(version_compare(phpversion(), '7.0.0', '>=')) {
-			$this->skip3rdPartyAppsDisable = true;
-		}
 	}
 
 	/**
@@ -266,11 +260,11 @@ class Updater extends BasicEmitter {
 		}
 
 		// update all shipped apps
-		$this->checkAppsRequirements();
+		$disabledApps = $this->checkAppsRequirements();
 		$this->doAppUpgrade();
 
 		// upgrade appstore apps
-		$this->upgradeAppStoreApps(\OC::$server->getAppManager()->getInstalledApps());
+		$this->upgradeAppStoreApps($disabledApps);
 
 		// install new shipped apps on upgrade
 		OC_App::loadApps('authentication');
@@ -388,7 +382,7 @@ class Updater extends BasicEmitter {
 					// load authentication, filesystem and logging apps after
 					// upgrading them. Other apps my need to rely on modifying
 					// user and/or filesystem aspects.
-					\OC_App::loadApp($appId);
+					\OC_App::loadApp($appId, false);
 				}
 			}
 		}
@@ -464,8 +458,7 @@ class Updater extends BasicEmitter {
 					\OC::$server->getAppFetcher(),
 					\OC::$server->getHTTPClientService(),
 					\OC::$server->getTempManager(),
-					$this->log,
-					\OC::$server->getConfig()
+					$this->log
 				);
 				if (Installer::isUpdateAvailable($app, \OC::$server->getAppFetcher())) {
 					$this->emit('\OC\Updater', 'upgradeAppStoreApp', [$app]);

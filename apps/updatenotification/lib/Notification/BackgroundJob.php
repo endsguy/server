@@ -30,11 +30,11 @@ use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;
+use OCP\IURLGenerator;
+use OCP\IUser;
 use OCP\Notification\IManager;
 
 class BackgroundJob extends TimedJob {
-
-	protected $connectionNotifications = [3, 7, 14, 30];
 
 	/** @var IConfig */
 	protected $config;
@@ -51,7 +51,10 @@ class BackgroundJob extends TimedJob {
 	/** @var IClientService */
 	protected $client;
 
-	/** @var string[] */
+	/** @var IURLGenerator */
+	protected $urlGenerator;
+
+	/** @var IUser[] */
 	protected $users;
 
 	/**
@@ -62,8 +65,9 @@ class BackgroundJob extends TimedJob {
 	 * @param IGroupManager $groupManager
 	 * @param IAppManager $appManager
 	 * @param IClientService $client
+	 * @param IURLGenerator $urlGenerator
 	 */
-	public function __construct(IConfig $config, IManager $notificationManager, IGroupManager $groupManager, IAppManager $appManager, IClientService $client) {
+	public function __construct(IConfig $config, IManager $notificationManager, IGroupManager $groupManager, IAppManager $appManager, IClientService $client, IURLGenerator $urlGenerator) {
 		// Run once a day
 		$this->setInterval(60 * 60 * 24);
 
@@ -72,6 +76,7 @@ class BackgroundJob extends TimedJob {
 		$this->groupManager = $groupManager;
 		$this->appManager = $appManager;
 		$this->client = $client;
+		$this->urlGenerator = $urlGenerator;
 	}
 
 	protected function run($argument) {
@@ -83,7 +88,7 @@ class BackgroundJob extends TimedJob {
 	 * Check for ownCloud update
 	 */
 	protected function checkCoreUpdate() {
-		if (in_array($this->getChannel(), ['daily', 'git'], true)) {
+		if (in_array($this->getChannel(), ['daily', 'git'])) {
 			// "These aren't the update channels you're looking for." - Ben Obi-Wan Kenobi
 			return;
 		}
@@ -91,59 +96,10 @@ class BackgroundJob extends TimedJob {
 		$updater = $this->createVersionCheck();
 
 		$status = $updater->check();
-		if ($status === false) {
-			$errors = 1 + (int) $this->config->getAppValue('updatenotification', 'update_check_errors', 0);
-			$this->config->setAppValue('updatenotification', 'update_check_errors', $errors);
-
-			if (in_array($errors, $this->connectionNotifications, true)) {
-				$this->sendErrorNotifications($errors);
-			}
-		} else if (is_array($status)) {
-			$this->config->setAppValue('updatenotification', 'update_check_errors', 0);
-			$this->clearErrorNotifications();
-
-			if (isset($status['version'])) {
-				$this->createNotifications('core', $status['version'], $status['versionstring']);
-			}
+		if (isset($status['version'])) {
+			$url = $this->urlGenerator->linkToRouteAbsolute('settings.AdminSettings.index') . '#updater';
+			$this->createNotifications('core', $status['version'], $url, $status['versionstring']);
 		}
-	}
-
-	/**
-	 * Send a message to the admin when the update server could not be reached
-	 * @param int $numDays
-	 */
-	protected function sendErrorNotifications($numDays) {
-		$this->clearErrorNotifications();
-
-		$notification = $this->notificationManager->createNotification();
-		try {
-			$notification->setApp('updatenotification')
-				->setDateTime(new \DateTime())
-				->setObject('updatenotification', 'error')
-				->setSubject('connection_error', ['days' => $numDays]);
-
-			foreach ($this->getUsersToNotify() as $uid) {
-				$notification->setUser($uid);
-				$this->notificationManager->notify($notification);
-			}
-		} catch (\InvalidArgumentException $e) {
-			return;
-		}
-	}
-
-	/**
-	 * Remove error notifications again
-	 */
-	protected function clearErrorNotifications() {
-		$notification = $this->notificationManager->createNotification();
-		try {
-			$notification->setApp('updatenotification')
-				->setSubject('connection_error')
-				->setObject('updatenotification', 'error');
-		} catch (\InvalidArgumentException $e) {
-			return;
-		}
-		$this->notificationManager->markProcessed($notification);
 	}
 
 	/**
@@ -154,7 +110,8 @@ class BackgroundJob extends TimedJob {
 		foreach ($apps as $app) {
 			$update = $this->isUpdateAvailable($app);
 			if ($update !== false) {
-				$this->createNotifications($app, $update);
+				$url = $this->urlGenerator->linkToRouteAbsolute('settings.AppSettings.viewApps') . '#app-' . $app;
+				$this->createNotifications($app, $update, $url);
 			}
 		}
 	}
@@ -164,9 +121,10 @@ class BackgroundJob extends TimedJob {
 	 *
 	 * @param string $app
 	 * @param string $version
+	 * @param string $url
 	 * @param string $visibleVersion
 	 */
-	protected function createNotifications($app, $version, $visibleVersion = '') {
+	protected function createNotifications($app, $version, $url, $visibleVersion = '') {
 		$lastNotification = $this->config->getAppValue('updatenotification', $app, false);
 		if ($lastNotification === $version) {
 			// We already notified about this update
@@ -180,7 +138,8 @@ class BackgroundJob extends TimedJob {
 		$notification = $this->notificationManager->createNotification();
 		$notification->setApp('updatenotification')
 			->setDateTime(new \DateTime())
-			->setObject($app, $version);
+			->setObject($app, $version)
+			->setLink($url);
 
 		if ($visibleVersion !== '') {
 			$notification->setSubject('update_available', ['version' => $visibleVersion]);

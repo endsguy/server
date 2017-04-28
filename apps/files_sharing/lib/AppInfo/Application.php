@@ -27,6 +27,7 @@
 
 namespace OCA\Files_Sharing\AppInfo;
 
+use OCA\FederatedFileSharing\DiscoveryManager;
 use OCA\Files_Sharing\Middleware\OCSShareAPIMiddleware;
 use OCA\Files_Sharing\MountProvider;
 use OCP\AppFramework\App;
@@ -34,8 +35,6 @@ use OC\AppFramework\Utility\SimpleContainer;
 use OCA\Files_Sharing\Controller\ExternalSharesController;
 use OCA\Files_Sharing\Controller\ShareController;
 use OCA\Files_Sharing\Middleware\SharingCheckMiddleware;
-use OCP\Defaults;
-use OCP\Federation\ICloudIdManager;
 use \OCP\IContainer;
 use OCP\IServerContainer;
 
@@ -67,7 +66,7 @@ class Application extends App {
 				$federatedSharingApp->getFederatedShareProvider(),
 				$server->getEventDispatcher(),
 				$server->getL10N($c->query('AppName')),
-				$server->query(Defaults::class)
+				$server->getThemingDefaults()
 			);
 		});
 		$container->registerService('ExternalSharesController', function (SimpleContainer $c) {
@@ -85,19 +84,20 @@ class Application extends App {
 		$container->registerService('HttpClientService', function (SimpleContainer $c) use ($server) {
 			return $server->getHTTPClientService();
 		});
-		$container->registerService(ICloudIdManager::class, function (SimpleContainer $c) use ($server) {
-			return $server->getCloudIdManager();
-		});
 		$container->registerService('ExternalManager', function (SimpleContainer $c) use ($server) {
 			$user = $server->getUserSession()->getUser();
 			$uid = $user ? $user->getUID() : null;
+			$discoveryManager = new DiscoveryManager(
+				\OC::$server->getMemCacheFactory(),
+				\OC::$server->getHTTPClientService()
+			);
 			return new \OCA\Files_Sharing\External\Manager(
 				$server->getDatabaseConnection(),
 				\OC\Files\Filesystem::getMountManager(),
 				\OC\Files\Filesystem::getLoader(),
 				$server->getHTTPClientService(),
 				$server->getNotificationManager(),
-				$server->query(\OCP\OCS\IDiscoveryService::class),
+				$discoveryManager,
 				$uid
 			);
 		});
@@ -111,9 +111,7 @@ class Application extends App {
 				$c->query('AppName'),
 				$server->getConfig(),
 				$server->getAppManager(),
-				$c['ControllerMethodReflector'],
-				$server->getShareManager(),
-				$server->getRequest()
+				$c['ControllerMethodReflector']
 			);
 		});
 
@@ -145,8 +143,7 @@ class Application extends App {
 				$server->getDatabaseConnection(),
 				function() use ($c) {
 					return $c->query('ExternalManager');
-				},
-				$server->getCloudIdManager()
+				}
 			);
 		});
 

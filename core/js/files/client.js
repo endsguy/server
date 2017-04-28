@@ -31,9 +31,9 @@
 			this._root = this._root.substr(0, this._root.length - 1);
 		}
 
-		var url = Client.PROTOCOL_HTTP + '://';
+		var url = 'http://';
 		if (options.useHTTPS) {
-			url = Client.PROTOCOL_HTTPS + '://';
+			url = 'https://';
 		}
 
 		url += options.host + this._root;
@@ -64,19 +64,6 @@
 	Client.NS_OWNCLOUD = 'http://owncloud.org/ns';
 	Client.NS_NEXTCLOUD = 'http://nextcloud.org/ns';
 	Client.NS_DAV = 'DAV:';
-
-	Client.PROPERTY_GETLASTMODIFIED	= '{' + Client.NS_DAV + '}getlastmodified';
-	Client.PROPERTY_GETETAG	= '{' + Client.NS_DAV + '}getetag';
-	Client.PROPERTY_GETCONTENTTYPE	= '{' + Client.NS_DAV + '}getcontenttype';
-	Client.PROPERTY_RESOURCETYPE	= '{' + Client.NS_DAV + '}resourcetype';
-	Client.PROPERTY_INTERNAL_FILEID	= '{' + Client.NS_OWNCLOUD + '}fileid';
-	Client.PROPERTY_PERMISSIONS	= '{' + Client.NS_OWNCLOUD + '}permissions';
-	Client.PROPERTY_SIZE	= '{' + Client.NS_OWNCLOUD + '}size';
-	Client.PROPERTY_GETCONTENTLENGTH	= '{' + Client.NS_DAV + '}getcontentlength';
-
-	Client.PROTOCOL_HTTP	= 'http';
-	Client.PROTOCOL_HTTPS	= 'https';
-
 	Client._PROPFIND_PROPERTIES = [
 		/**
 		 * Modified time
@@ -272,23 +259,23 @@
 			var props = response.propStat[0].properties;
 
 			var data = {
-				id: props[Client.PROPERTY_INTERNAL_FILEID],
+				id: props['{' + Client.NS_OWNCLOUD + '}fileid'],
 				path: OC.dirname(path) || '/',
 				name: OC.basename(path),
-				mtime: (new Date(props[Client.PROPERTY_GETLASTMODIFIED])).getTime()
+				mtime: (new Date(props['{' + Client.NS_DAV + '}getlastmodified'])).getTime()
 			};
 
-			var etagProp = props[Client.PROPERTY_GETETAG];
+			var etagProp = props['{' + Client.NS_DAV + '}getetag'];
 			if (!_.isUndefined(etagProp)) {
 				data.etag = this._parseEtag(etagProp);
 			}
 
-			var sizeProp = props[Client.PROPERTY_GETCONTENTLENGTH];
+			var sizeProp = props['{' + Client.NS_DAV + '}getcontentlength'];
 			if (!_.isUndefined(sizeProp)) {
 				data.size = parseInt(sizeProp, 10);
 			}
 
-			sizeProp = props[Client.PROPERTY_SIZE];
+			sizeProp = props['{' + Client.NS_OWNCLOUD + '}size'];
 			if (!_.isUndefined(sizeProp)) {
 				data.size = parseInt(sizeProp, 10);
 			}
@@ -307,12 +294,12 @@
 				data.isFavorite = false;
 			}
 
-			var contentType = props[Client.PROPERTY_GETCONTENTTYPE];
+			var contentType = props['{' + Client.NS_DAV + '}getcontenttype'];
 			if (!_.isUndefined(contentType)) {
 				data.mimetype = contentType;
 			}
 
-			var resType = props[Client.PROPERTY_RESOURCETYPE];
+			var resType = props['{' + Client.NS_DAV + '}resourcetype'];
 			var isFile = true;
 			if (!data.mimetype && resType) {
 				var xmlvalue = resType[0];
@@ -323,7 +310,7 @@
 			}
 
 			data.permissions = OC.PERMISSION_READ;
-			var permissionProp = props[Client.PROPERTY_PERMISSIONS];
+			var permissionProp = props['{' + Client.NS_OWNCLOUD + '}permissions'];
 			if (!_.isUndefined(permissionProp)) {
 				var permString = permissionProp || '';
 				data.mountType = null;
@@ -765,7 +752,7 @@
 		},
 
 		/**
-		 * Returns the password
+		 * Returns the password 
 		 *
 		 * @since 11.0.0
 		 * @return {String} password
@@ -829,3 +816,4 @@
 
 	OC.Files.Client = Client;
 })(OC, OC.Files.FileInfo);
+

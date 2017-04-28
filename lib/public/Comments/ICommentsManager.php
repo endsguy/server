@@ -23,8 +23,6 @@
  */
 namespace OCP\Comments;
 
-use OCP\IUser;
-
 /**
  * Interface ICommentsManager
  *
@@ -126,16 +124,6 @@ interface ICommentsManager {
 	 * @since 9.0.0
 	 */
 	public function getNumberOfCommentsForObject($objectType, $objectId, \DateTime $notOlderThan = null);
-
-	/**
-	 * Get the number of unread comments for all files in a folder
-	 *
-	 * @param int $folderId
-	 * @param IUser $user
-	 * @return array [$fileId => $unreadCount]
-	 * @since 12.0.0
-	 */
-	public function getNumberOfUnreadCommentsForFolder($folderId, IUser $user);
 
 	/**
 	 * creates a new comment and returns it. At this point of time, it is not

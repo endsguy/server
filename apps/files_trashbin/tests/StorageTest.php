@@ -31,7 +31,6 @@ namespace OCA\Files_Trashbin\Tests;
 
 use OC\Files\Storage\Temporary;
 use OC\Files\Filesystem;
-use OCP\ILogger;
 
 /**
  * Class Storage
@@ -529,11 +528,9 @@ class StorageTest extends \Test\TestCase {
 			->disableOriginalConstructor()->getMock();
 		$userManager->expects($this->any())
 			->method('userExists')->willReturn($userExists);
-		$logger = $this->getMockBuilder(ILogger::class)->getMock();
 		$storage = new \OCA\Files_Trashbin\Storage(
 			['mountPoint' => $mountPoint, 'storage' => $tmpStorage],
-			$userManager,
-			$logger
+			$userManager
 		);
 
 		$this->assertSame($expected,

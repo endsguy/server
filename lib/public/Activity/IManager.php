@@ -64,7 +64,6 @@ interface IManager {
 	 *  - setSubject()
 	 *
 	 * @param IEvent $event
-	 * @throws \BadMethodCallException if required values have not been set
 	 * @since 8.2.0
 	 */
 	public function publish(IEvent $event);

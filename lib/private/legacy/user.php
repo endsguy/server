@@ -125,16 +125,9 @@ class OC_User {
 	 * setup the configured backends in config.php
 	 */
 	public static function setupBackends() {
-		OC_App::loadApps(['prelogin']);
-		$backends = \OC::$server->getSystemConfig()->getValue('user_backends', []);
-		if (isset($backends['default']) && !$backends['default']) {
-			// clear default backends
-			self::clearBackends();
-		}
+		OC_App::loadApps(array('prelogin'));
+		$backends = \OC::$server->getSystemConfig()->getValue('user_backends', array());
 		foreach ($backends as $i => $config) {
-			if (!is_array($config)) {
-				continue;
-			}
 			$class = $config['class'];
 			$arguments = $config['arguments'];
 			if (class_exists($class)) {
@@ -187,22 +180,10 @@ class OC_User {
 		if ($uid) {
 			if (self::getUser() !== $uid) {
 				self::setUserId($uid);
-				$setUidAsDisplayName = true;
-				if($backend instanceof \OCP\UserInterface
-					&& $backend->implementsActions(OC_User_Backend::GET_DISPLAYNAME)) {
-
-					$backendDisplayName = $backend->getDisplayName($uid);
-					if(is_string($backendDisplayName) && trim($backendDisplayName) !== '') {
-						$setUidAsDisplayName = false;
-					}
-				}
-				if($setUidAsDisplayName) {
-					self::setDisplayName($uid);
-				}
-				$userSession = self::getUserSession();
-				$userSession->setLoginName($uid);
+				self::setDisplayName($uid);
+				self::getUserSession()->setLoginName($uid);
 				$request = OC::$server->getRequest();
-				$userSession->createSessionToken($request, $uid, $uid);
+				self::getUserSession()->createSessionToken($request, $uid, $uid);
 				// setup the filesystem
 				OC_Util::setupFS($uid);
 				// first call the post_login hooks, the login-process needs to be
@@ -334,9 +315,7 @@ class OC_User {
 	 * @return bool
 	 */
 	public static function isAdminUser($uid) {
-		$group = \OC::$server->getGroupManager()->get('admin');
-		$user = \OC::$server->getUserManager()->get($uid);
-		if ($group && $user && $group->inGroup($user) && self::$incognitoMode === false) {
+		if (OC_Group::inGroup($uid, 'admin') && self::$incognitoMode === false) {
 			return true;
 		}
 		return false;
